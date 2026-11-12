@@ -355,7 +355,7 @@ export const DirectCaller = Schema.Struct({ "type": Schema.Literal("direct").ann
 export type ServerToolCaller = { readonly "tool_id": string; readonly "type": "code_execution_20250825" }
 export const ServerToolCaller = Schema.Struct({
   "tool_id": Schema.String.annotate({ "title": "Tool Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -368,7 +368,7 @@ export const ServerToolCaller = Schema.Struct({
 export type ServerToolCaller_20260120 = { readonly "tool_id": string; readonly "type": "code_execution_20260120" }
 export const ServerToolCaller_20260120 = Schema.Struct({
   "tool_id": Schema.String.annotate({ "title": "Tool Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -382,7 +382,7 @@ export const BrowserStateChangeTabOpened = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -405,7 +405,7 @@ export const BrowserStateChangeDownloadStarted = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -414,7 +414,7 @@ export const BrowserStateChangeDownloadStarted = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -437,7 +437,7 @@ export const BrowserStateChangeDownloadCompleted = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -446,7 +446,7 @@ export const BrowserStateChangeDownloadCompleted = Schema.Struct({
       Schema.String.check(
         Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
           "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$",
           "title": "Path",
           "description":
@@ -462,9 +462,7 @@ export const BrowserStateChangeDownloadCompleted = Schema.Struct({
   ),
   "size_bytes": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({ "title": "Size Bytes", "description": "The completed download's size." })
   ),
@@ -473,7 +471,7 @@ export const BrowserStateChangeDownloadCompleted = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -496,7 +494,7 @@ export const BrowserStateChangeDownloadFailed = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -505,7 +503,7 @@ export const BrowserStateChangeDownloadFailed = Schema.Struct({
       Schema.String.check(
         Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
           "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$",
           "title": "Error",
           "description": "The failure or cancellation detail, when known."
@@ -519,7 +517,7 @@ export const BrowserStateChangeDownloadFailed = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -548,7 +546,7 @@ export const BrowserStateTabEntry = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -556,7 +554,7 @@ export const BrowserStateTabEntry = Schema.Struct({
     "title": "Title",
     "description": "The title of the page the tab is showing. May be empty."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -564,7 +562,7 @@ export const BrowserStateTabEntry = Schema.Struct({
     "title": "Url",
     "description": "The URL of the page the tab is showing. May be empty."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -690,21 +688,9 @@ export type RequestTextEditorCodeExecutionViewResultBlock = {
 export const RequestTextEditorCodeExecutionViewResultBlock = Schema.Struct({
   "content": Schema.String.annotate({ "title": "Content" }),
   "file_type": Schema.Literals(["text", "image", "pdf"]).annotate({ "title": "File Type" }),
-  "num_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Num Lines"
-    })
-  ),
-  "start_line": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Start Line"
-    })
-  ),
-  "total_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Total Lines"
-    })
-  ),
+  "num_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Num Lines" })),
+  "start_line": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Start Line" })),
+  "total_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Total Lines" })),
   "type": Schema.Literal("text_editor_code_execution_view_result").annotate({ "title": "Type" })
 }).annotate({
   "title": "RequestTextEditorCodeExecutionViewResultBlock",
@@ -731,26 +717,10 @@ export type RequestTextEditorCodeExecutionStrReplaceResultBlock = {
 }
 export const RequestTextEditorCodeExecutionStrReplaceResultBlock = Schema.Struct({
   "lines": Schema.optionalKey(Schema.Union([Schema.Array(Schema.String), Schema.Null]).annotate({ "title": "Lines" })),
-  "new_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "New Lines"
-    })
-  ),
-  "new_start": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "New Start"
-    })
-  ),
-  "old_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Old Lines"
-    })
-  ),
-  "old_start": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Old Start"
-    })
-  ),
+  "new_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Lines" })),
+  "new_start": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Start" })),
+  "old_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Lines" })),
+  "old_start": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Start" })),
   "type": Schema.Literal("text_editor_code_execution_str_replace_result").annotate({ "title": "Type" })
 }).annotate({
   "title": "RequestTextEditorCodeExecutionStrReplaceResultBlock",
@@ -2301,12 +2271,9 @@ export type ResponseTextEditorCodeExecutionViewResultBlock = {
 export const ResponseTextEditorCodeExecutionViewResultBlock = Schema.Struct({
   "content": Schema.String.annotate({ "title": "Content" }),
   "file_type": Schema.Literals(["text", "image", "pdf"]).annotate({ "title": "File Type" }),
-  "num_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Num Lines", "default": null }),
-  "start_line": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Start Line", "default": null }),
-  "total_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Total Lines", "default": null }),
+  "num_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Num Lines", "default": null }),
+  "start_line": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Start Line", "default": null }),
+  "total_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Total Lines", "default": null }),
   "type": Schema.Literal("text_editor_code_execution_view_result").annotate({
     "title": "Type",
     "default": "text_editor_code_execution_view_result"
@@ -2339,14 +2306,10 @@ export type ResponseTextEditorCodeExecutionStrReplaceResultBlock = {
 }
 export const ResponseTextEditorCodeExecutionStrReplaceResultBlock = Schema.Struct({
   "lines": Schema.Union([Schema.Array(Schema.String), Schema.Null]).annotate({ "title": "Lines", "default": null }),
-  "new_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "New Lines", "default": null }),
-  "new_start": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "New Start", "default": null }),
-  "old_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Old Lines", "default": null }),
-  "old_start": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Old Start", "default": null }),
+  "new_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Lines", "default": null }),
+  "new_start": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Start", "default": null }),
+  "old_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Lines", "default": null }),
+  "old_start": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Start", "default": null }),
   "type": Schema.Literal("text_editor_code_execution_str_replace_result").annotate({
     "title": "Type",
     "default": "text_editor_code_execution_str_replace_result"
@@ -2360,7 +2323,7 @@ export const ResponseToolReferenceBlock = Schema.Struct({
   "tool_name": Schema.String.annotate({ "title": "Tool Name" }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(256).annotate({ "expected": "a string with at most 256 code points" })).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,256}$"
     })
   ),
@@ -3169,7 +3132,7 @@ export const BetaDirectCaller = Schema.Struct({ "type": Schema.Literal("direct")
 export type BetaServerToolCaller = { readonly "tool_id": string; readonly "type": "code_execution_20250825" }
 export const BetaServerToolCaller = Schema.Struct({
   "tool_id": Schema.String.annotate({ "title": "Tool Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -3182,7 +3145,7 @@ export const BetaServerToolCaller = Schema.Struct({
 export type BetaServerToolCaller_20260120 = { readonly "tool_id": string; readonly "type": "code_execution_20260120" }
 export const BetaServerToolCaller_20260120 = Schema.Struct({
   "tool_id": Schema.String.annotate({ "title": "Tool Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -3196,7 +3159,7 @@ export const BetaBrowserStateChangeTabOpened = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3219,7 +3182,7 @@ export const BetaBrowserStateChangeDownloadStarted = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3228,7 +3191,7 @@ export const BetaBrowserStateChangeDownloadStarted = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -3251,7 +3214,7 @@ export const BetaBrowserStateChangeDownloadCompleted = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3260,7 +3223,7 @@ export const BetaBrowserStateChangeDownloadCompleted = Schema.Struct({
       Schema.String.check(
         Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
           "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$",
           "title": "Path",
           "description":
@@ -3276,9 +3239,7 @@ export const BetaBrowserStateChangeDownloadCompleted = Schema.Struct({
   ),
   "size_bytes": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({ "title": "Size Bytes", "description": "The completed download's size." })
   ),
@@ -3287,7 +3248,7 @@ export const BetaBrowserStateChangeDownloadCompleted = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -3310,7 +3271,7 @@ export const BetaBrowserStateChangeDownloadFailed = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3319,7 +3280,7 @@ export const BetaBrowserStateChangeDownloadFailed = Schema.Struct({
       Schema.String.check(
         Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
           "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$",
           "title": "Error",
           "description": "The failure or cancellation detail, when known."
@@ -3333,7 +3294,7 @@ export const BetaBrowserStateChangeDownloadFailed = Schema.Struct({
     "title": "Url",
     "description": "The final post-redirect URL the download was served from."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -3362,7 +3323,7 @@ export const BetaBrowserStateTabEntry = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3370,7 +3331,7 @@ export const BetaBrowserStateTabEntry = Schema.Struct({
     "title": "Title",
     "description": "The title of the page the tab is showing. May be empty."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   ),
@@ -3378,7 +3339,7 @@ export const BetaBrowserStateTabEntry = Schema.Struct({
     "title": "Url",
     "description": "The URL of the page the tab is showing. May be empty."
   }).check(Schema.isMaxCodePoints(4096).annotate({ "expected": "a string with at most 4096 code points" })).check(
-    Schema.isPattern(new RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$", "u")).annotate({
       "expected": "a string matching the RegExp ^[^\\x00-\\x1f\\x7f-\\x9f\\u2028\\u2029]*$"
     })
   )
@@ -3550,21 +3511,9 @@ export type BetaRequestTextEditorCodeExecutionViewResultBlock = {
 export const BetaRequestTextEditorCodeExecutionViewResultBlock = Schema.Struct({
   "content": Schema.String.annotate({ "title": "Content" }),
   "file_type": Schema.Literals(["text", "image", "pdf"]).annotate({ "title": "File Type" }),
-  "num_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Num Lines"
-    })
-  ),
-  "start_line": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Start Line"
-    })
-  ),
-  "total_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Total Lines"
-    })
-  ),
+  "num_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Num Lines" })),
+  "start_line": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Start Line" })),
+  "total_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Total Lines" })),
   "type": Schema.Literal("text_editor_code_execution_view_result").annotate({ "title": "Type" })
 }).annotate({
   "title": "RequestTextEditorCodeExecutionViewResultBlock",
@@ -3591,26 +3540,10 @@ export type BetaRequestTextEditorCodeExecutionStrReplaceResultBlock = {
 }
 export const BetaRequestTextEditorCodeExecutionStrReplaceResultBlock = Schema.Struct({
   "lines": Schema.optionalKey(Schema.Union([Schema.Array(Schema.String), Schema.Null]).annotate({ "title": "Lines" })),
-  "new_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "New Lines"
-    })
-  ),
-  "new_start": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "New Start"
-    })
-  ),
-  "old_lines": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Old Lines"
-    })
-  ),
-  "old_start": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-      "title": "Old Start"
-    })
-  ),
+  "new_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Lines" })),
+  "new_start": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Start" })),
+  "old_lines": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Lines" })),
+  "old_start": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Start" })),
   "type": Schema.Literal("text_editor_code_execution_str_replace_result").annotate({ "title": "Type" })
 }).annotate({
   "title": "RequestTextEditorCodeExecutionStrReplaceResultBlock",
@@ -3630,7 +3563,7 @@ export const BetaToolSearchToolResultErrorCode = Schema.Literals([
 export type BetaToolChangeToolReference = { readonly "name": string; readonly "type": "tool_reference" }
 export const BetaToolChangeToolReference = Schema.Struct({
   "name": Schema.String.annotate({ "title": "Name" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,128}$"
     })
   ),
@@ -5055,18 +4988,17 @@ export type BetaTokenTaskBudget = {
 export const BetaTokenTaskBudget = Schema.Struct({
   "remaining": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ).check(
-        Schema.makeFilterGroup([
-          Schema.isFinite().annotate({ "expected": "a finite number" }),
-          Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-        ]).annotate({
-          "title": "Remaining",
-          "description":
-            "Remaining tokens in the budget. Use this to track usage across contexts when implementing compaction client-side. Defaults to total if not provided."
-        })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+        .check(
+          Schema.makeFilterGroup([
+            Schema.isFinite().annotate({ "expected": "a finite number" }),
+            Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
+          ]).annotate({
+            "title": "Remaining",
+            "description":
+              "Remaining tokens in the budget. Use this to track usage across contexts when implementing compaction client-side. Defaults to total if not provided."
+          })
+        ),
       Schema.Null.annotate({
         "title": "Remaining",
         "description":
@@ -5459,12 +5391,9 @@ export type BetaResponseTextEditorCodeExecutionViewResultBlock = {
 export const BetaResponseTextEditorCodeExecutionViewResultBlock = Schema.Struct({
   "content": Schema.String.annotate({ "title": "Content" }),
   "file_type": Schema.Literals(["text", "image", "pdf"]).annotate({ "title": "File Type" }),
-  "num_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Num Lines", "default": null }),
-  "start_line": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Start Line", "default": null }),
-  "total_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Total Lines", "default": null }),
+  "num_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Num Lines", "default": null }),
+  "start_line": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Start Line", "default": null }),
+  "total_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Total Lines", "default": null }),
   "type": Schema.Literal("text_editor_code_execution_view_result").annotate({
     "title": "Type",
     "default": "text_editor_code_execution_view_result"
@@ -5497,14 +5426,10 @@ export type BetaResponseTextEditorCodeExecutionStrReplaceResultBlock = {
 }
 export const BetaResponseTextEditorCodeExecutionStrReplaceResultBlock = Schema.Struct({
   "lines": Schema.Union([Schema.Array(Schema.String), Schema.Null]).annotate({ "title": "Lines", "default": null }),
-  "new_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "New Lines", "default": null }),
-  "new_start": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "New Start", "default": null }),
-  "old_lines": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Old Lines", "default": null }),
-  "old_start": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "title": "Old Start", "default": null }),
+  "new_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Lines", "default": null }),
+  "new_start": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "New Start", "default": null }),
+  "old_lines": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Lines", "default": null }),
+  "old_start": Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Old Start", "default": null }),
   "type": Schema.Literal("text_editor_code_execution_str_replace_result").annotate({
     "title": "Type",
     "default": "text_editor_code_execution_str_replace_result"
@@ -5518,7 +5443,7 @@ export const BetaResponseToolReferenceBlock = Schema.Struct({
   "tool_name": Schema.String.annotate({ "title": "Tool Name" }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(256).annotate({ "expected": "a string with at most 256 code points" })).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,256}$"
     })
   ),
@@ -5533,7 +5458,7 @@ export type BetaResponseMCPToolUseBlock = {
 }
 export const BetaResponseMCPToolUseBlock = Schema.Struct({
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -6166,7 +6091,7 @@ export type BetaThinkingContentBlockDelta = {
 }
 export const BetaThinkingContentBlockDelta = Schema.Struct({
   "estimated_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "title": "Estimated Tokens",
       "description":
         "Per-frame increment of a coarse, running estimate of the tokens this thinking block has produced so far. Present whenever the `thinking-token-count-2026-05-13` beta is set; `null` unless `thinking.display` resolves to `\"omitted\"` and a count is due this frame. Sum the increments across `thinking_delta` frames on this block for a progress indicator. Each increment is a non-negative multiple of a fixed quantum and the cadence is rate-limited, so this is a deliberately lossy display hint, not a billable count; `usage.output_tokens` remains authoritative.",
@@ -6330,11 +6255,9 @@ export const BetaMemoryTool_20250818_ViewCommand = Schema.Struct({
   "command": Schema.Literal("view").annotate({ "description": "Command type identifier", "default": "view" }),
   "path": Schema.String.annotate({ "description": "Path to directory or file to view" }),
   "view_range": Schema.optionalKey(
-    Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
-      "description": "Optional line range for viewing specific lines"
-    }).check(Schema.isMinLength(2).annotate({ "expected": "a value with a length of at least 2" })).check(
-      Schema.isMaxLength(2).annotate({ "expected": "a value with a length of at most 2" })
-    )
+    Schema.Array(Schema.Int).annotate({ "description": "Optional line range for viewing specific lines" }).check(
+      Schema.isMinLength(2).annotate({ "expected": "a value with a length of at least 2" })
+    ).check(Schema.isMaxLength(2).annotate({ "expected": "a value with a length of at most 2" }))
   )
 }).annotate({ "identifier": "BetaMemoryTool_20250818_ViewCommand" })
 export type BetaBody_create_skill_v1_skills_post = {
@@ -7072,7 +6995,7 @@ export const RequestToolReferenceBlock = Schema.Struct({
   "tool_name": Schema.String.annotate({ "title": "Tool Name" }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(256).annotate({ "expected": "a string with at most 256 code points" })).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,256}$"
     })
   ),
@@ -7188,7 +7111,7 @@ export const RequestToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -7203,7 +7126,7 @@ export const RequestToolUseBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -7243,7 +7166,7 @@ export const RequestServerToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -7275,7 +7198,7 @@ export const ResponseToolUseBlock = Schema.Struct({
     "default": { "type": "direct" }
   }),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -7290,7 +7213,7 @@ export const ResponseToolUseBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -7323,7 +7246,7 @@ export const ResponseServerToolUseBlock = Schema.Struct({
     "default": { "type": "direct" }
   }),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -7971,7 +7894,7 @@ export const Tool = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,128}$"
     })
   ),
@@ -8196,9 +8119,7 @@ export const TextEditor_20250728 = Schema.Struct({
   ),
   "max_characters": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })),
       Schema.Null
     ]).annotate({
       "title": "Max Characters",
@@ -8375,9 +8296,7 @@ export const WebSearchTool_20250305 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -8444,9 +8363,7 @@ export const WebSearchTool_20260209 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -8514,9 +8431,7 @@ export const WebSearchTool_20260318 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -8762,9 +8677,7 @@ export const Usage = Schema.Struct({
     "default": null
   }),
   "cache_creation_input_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({
     "title": "Cache Creation Input Tokens",
@@ -8772,9 +8685,7 @@ export const Usage = Schema.Struct({
     "default": null
   }),
   "cache_read_input_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({
     "title": "Cache Read Input Tokens",
@@ -8835,9 +8746,7 @@ export type MessageDeltaUsage = {
 }
 export const MessageDeltaUsage = Schema.Struct({
   "cache_creation_input_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({
     "title": "Cache Creation Input Tokens",
@@ -8845,9 +8754,7 @@ export const MessageDeltaUsage = Schema.Struct({
     "default": null
   }),
   "cache_read_input_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({
     "title": "Cache Read Input Tokens",
@@ -8855,9 +8762,7 @@ export const MessageDeltaUsage = Schema.Struct({
     "default": null
   }),
   "input_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({
     "title": "Input Tokens",
@@ -9275,7 +9180,7 @@ export const BetaRequestToolReferenceBlock = Schema.Struct({
   "tool_name": Schema.String.annotate({ "title": "Tool Name" }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(256).annotate({ "expected": "a string with at most 256 code points" })).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,256}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,256}$"
     })
   ),
@@ -9301,7 +9206,7 @@ export const BetaRequestMCPToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -9418,7 +9323,7 @@ export const BetaRequestToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -9433,7 +9338,7 @@ export const BetaRequestToolUseBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -9474,7 +9379,7 @@ export const BetaRequestServerToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -9508,7 +9413,7 @@ export const BetaResponseToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -9523,7 +9428,7 @@ export const BetaResponseToolUseBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -9554,7 +9459,7 @@ export const BetaResponseServerToolUseBlock = Schema.Struct({
     })
   ),
   "id": Schema.String.annotate({ "title": "Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -10043,7 +9948,7 @@ export const BetaAdvisorTool_20260301 = Schema.Struct({
   ),
   "max_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(1024).annotate({ "expected": "a value greater than or equal to 1024" })
       ),
       Schema.Null
@@ -10055,9 +9960,7 @@ export const BetaAdvisorTool_20260301 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -10172,7 +10075,7 @@ export const BetaTool = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,128}$"
     })
   ),
@@ -10324,9 +10227,7 @@ export const BetaComputerUseTool_20241022 = Schema.Struct({
   ),
   "display_number": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({ "title": "Display Number", "description": "The X11 display number (e.g. 0, 1) for the display." })
   ),
@@ -10425,9 +10326,7 @@ export const BetaComputerUseTool_20250124 = Schema.Struct({
   ),
   "display_number": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({ "title": "Display Number", "description": "The X11 display number (e.g. 0, 1) for the display." })
   ),
@@ -10527,9 +10426,7 @@ export const BetaComputerUseTool_20251124 = Schema.Struct({
   ),
   "display_number": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({ "title": "Display Number", "description": "The X11 display number (e.g. 0, 1) for the display." })
   ),
@@ -10668,9 +10565,7 @@ export const BetaTextEditor_20250728 = Schema.Struct({
   ),
   "max_characters": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })),
       Schema.Null
     ]).annotate({
       "title": "Max Characters",
@@ -10743,7 +10638,7 @@ export const BetaResponseTool = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,128}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,128}$"
     })
   ),
@@ -10964,9 +10859,7 @@ export const BetaWebSearchTool_20250305 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -11033,9 +10926,7 @@ export const BetaWebSearchTool_20260209 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -11103,9 +10994,7 @@ export const BetaWebSearchTool_20260318 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -12366,7 +12255,7 @@ export const RequestWebSearchToolResultBlock = Schema.Struct({
     RequestWebSearchToolResultError
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12387,7 +12276,7 @@ export const ResponseWebSearchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12415,7 +12304,7 @@ export const RequestCodeExecutionToolResultBlock = Schema.Struct({
     RequestEncryptedCodeExecutionResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12438,7 +12327,7 @@ export const RequestBashCodeExecutionToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12471,7 +12360,7 @@ export const RequestTextEditorCodeExecutionToolResultBlock = Schema.Struct({
     RequestTextEditorCodeExecutionStrReplaceResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12497,7 +12386,7 @@ export const ResponseTextEditorCodeExecutionToolResultBlock = Schema.Struct({
     ResponseTextEditorCodeExecutionStrReplaceResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12671,7 +12560,7 @@ export const ResponseCodeExecutionToolResultBlock = Schema.Struct({
     ResponseEncryptedCodeExecutionResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12690,7 +12579,7 @@ export const ResponseBashCodeExecutionToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12712,7 +12601,7 @@ export const ResponseToolSearchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12863,7 +12752,7 @@ export const BetaRequestMCPToolResultBlock = Schema.Struct({
   ),
   "is_error": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Is Error" })),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -12908,7 +12797,7 @@ export const BetaRequestWebSearchToolResultBlock = Schema.Struct({
     BetaRequestWebSearchToolResultError
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12929,7 +12818,7 @@ export const BetaResponseWebSearchToolResultBlock = Schema.Struct({
   "content": Schema.Union([BetaResponseWebSearchToolResultError, Schema.Array(BetaResponseWebSearchResultBlock)])
     .annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12957,7 +12846,7 @@ export const BetaRequestAdvisorToolResultBlock = Schema.Struct({
     BetaRequestAdvisorRedactedResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -12978,7 +12867,7 @@ export const BetaResponseAdvisorToolResultBlock = Schema.Struct({
     BetaResponseAdvisorRedactedResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13006,7 +12895,7 @@ export const BetaRequestCodeExecutionToolResultBlock = Schema.Struct({
     BetaRequestEncryptedCodeExecutionResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13028,7 +12917,7 @@ export const BetaRequestBashCodeExecutionToolResultBlock = Schema.Struct({
   "content": Schema.Union([BetaRequestBashCodeExecutionToolResultError, BetaRequestBashCodeExecutionResultBlock])
     .annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13061,7 +12950,7 @@ export const BetaRequestTextEditorCodeExecutionToolResultBlock = Schema.Struct({
     BetaRequestTextEditorCodeExecutionStrReplaceResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13087,7 +12976,7 @@ export const BetaResponseTextEditorCodeExecutionToolResultBlock = Schema.Struct(
     BetaResponseTextEditorCodeExecutionStrReplaceResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13360,7 +13249,7 @@ export const BetaResponseMCPToolResultBlock = Schema.Struct({
   ]).annotate({ "title": "Content" }),
   "is_error": Schema.Boolean.annotate({ "title": "Is Error", "default": false }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -13420,7 +13309,7 @@ export const BetaResponseCodeExecutionToolResultBlock = Schema.Struct({
     BetaResponseEncryptedCodeExecutionResultBlock
   ]).annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13441,7 +13330,7 @@ export const BetaResponseBashCodeExecutionToolResultBlock = Schema.Struct({
   "content": Schema.Union([BetaResponseBashCodeExecutionToolResultError, BetaResponseBashCodeExecutionResultBlock])
     .annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13462,7 +13351,7 @@ export const BetaResponseToolSearchToolResultBlock = Schema.Struct({
   "content": Schema.Union([BetaResponseToolSearchToolResultError, BetaResponseToolSearchToolSearchResultBlock])
     .annotate({ "title": "Content" }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13641,7 +13530,7 @@ export const RequestToolSearchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -13730,9 +13619,7 @@ export const WebFetchTool_20250910 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -13742,9 +13629,7 @@ export const WebFetchTool_20250910 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -13816,9 +13701,7 @@ export const WebFetchTool_20260209 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -13828,9 +13711,7 @@ export const WebFetchTool_20260209 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -13903,9 +13784,7 @@ export const WebFetchTool_20260309 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -13915,9 +13794,7 @@ export const WebFetchTool_20260309 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14002,9 +13879,7 @@ export const WebFetchTool_20260318 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -14014,9 +13889,7 @@ export const WebFetchTool_20260318 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14069,7 +13942,7 @@ export const ResponseWebFetchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -14154,7 +14027,7 @@ export const BetaRequestToolSearchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -14252,9 +14125,7 @@ export const BetaWebFetchTool_20250910 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -14264,9 +14135,7 @@ export const BetaWebFetchTool_20250910 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14338,9 +14207,7 @@ export const BetaWebFetchTool_20260209 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -14350,9 +14217,7 @@ export const BetaWebFetchTool_20260209 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14425,9 +14290,7 @@ export const BetaWebFetchTool_20260309 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -14437,9 +14300,7 @@ export const BetaWebFetchTool_20260309 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14524,9 +14385,7 @@ export const BetaWebFetchTool_20260318 = Schema.Struct({
   ),
   "max_content_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Content Tokens",
@@ -14536,9 +14395,7 @@ export const BetaWebFetchTool_20260318 = Schema.Struct({
   ),
   "max_uses": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" })),
       Schema.Null
     ]).annotate({
       "title": "Max Uses",
@@ -14590,11 +14447,7 @@ export type BetaFallbackConfigV2 = {
 } & { readonly [x: string]: Schema.Json }
 export const BetaFallbackConfigV2 = Schema.StructWithRest(
   Schema.Struct({
-    "max_tokens": Schema.optionalKey(
-      Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
-        "title": "Max Tokens"
-      })
-    ),
+    "max_tokens": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]).annotate({ "title": "Max Tokens" })),
     "model": Model,
     "output_config": Schema.optionalKey(Schema.Union([BetaOutputConfig, Schema.Null])),
     "speed": Schema.optionalKey(Schema.Union([BetaSpeed, Schema.Null])),
@@ -14649,7 +14502,7 @@ export const BetaResponseWebFetchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -14678,9 +14531,7 @@ export const BetaUsage = Schema.Struct({
   ),
   "cache_creation_input_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "title": "Cache Creation Input Tokens",
@@ -14690,9 +14541,7 @@ export const BetaUsage = Schema.Struct({
   ),
   "cache_read_input_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "title": "Cache Read Input Tokens",
@@ -14767,9 +14616,7 @@ export type BetaMessageDeltaUsage = {
 export const BetaMessageDeltaUsage = Schema.Struct({
   "cache_creation_input_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "title": "Cache Creation Input Tokens",
@@ -14779,9 +14626,7 @@ export const BetaMessageDeltaUsage = Schema.Struct({
   ),
   "cache_read_input_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "title": "Cache Read Input Tokens",
@@ -14798,9 +14643,7 @@ export const BetaMessageDeltaUsage = Schema.Struct({
   ),
   "input_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "title": "Input Tokens",
@@ -14923,7 +14766,7 @@ export const RequestToolResultBlock = Schema.Struct({
   ),
   "is_error": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Is Error" })),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -14932,7 +14775,7 @@ export const RequestToolResultBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -15076,13 +14919,13 @@ export const ModelInfo = Schema.Struct({
     })
   ),
   "max_input_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "title": "Max Input Tokens",
       "description": "Maximum input context window size in tokens for this model."
     })
   ),
   "max_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "title": "Max Tokens",
       "description": "Maximum value for the `max_tokens` parameter when using this model."
     })
@@ -15141,7 +14984,7 @@ export const BetaRequestToolResultBlock = Schema.Struct({
   ),
   "is_error": Schema.optionalKey(Schema.Boolean.annotate({ "title": "Is Error" })),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
     })
   ),
@@ -15150,7 +14993,7 @@ export const BetaRequestToolResultBlock = Schema.Struct({
       Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
         })
       ),
@@ -15386,13 +15229,13 @@ export const BetaModelInfo = Schema.Struct({
     })
   ),
   "max_input_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "title": "Max Input Tokens",
       "description": "Maximum input context window size in tokens for this model."
     })
   ),
   "max_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "title": "Max Tokens",
       "description": "Maximum value for the `max_tokens` parameter when using this model."
     })
@@ -15433,7 +15276,7 @@ export const RequestWebFetchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -15552,7 +15395,7 @@ export const BetaRequestWebFetchToolResultBlock = Schema.Struct({
     "title": "Content"
   }),
   "tool_use_id": Schema.String.annotate({ "title": "Tool Use Id" }).check(
-    Schema.isPattern(new RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^srvtoolu_[a-zA-Z0-9_]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^srvtoolu_[a-zA-Z0-9_]+$"
     })
   ),
@@ -16269,7 +16112,7 @@ export const MessageBatchIndividualRequestParams = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,64}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,64}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,64}$"
     })
   ),
@@ -16752,7 +16595,7 @@ export const BetaMessageBatchIndividualRequestParams = Schema.Struct({
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
     Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]{1,64}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]{1,64}$", "u")).annotate({
       "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]{1,64}$"
     })
   ),
@@ -17402,9 +17245,8 @@ export const ListSkillVersionsV1SkillsSkillIdVersionsGetParams = Schema.Struct({
   ),
   "limit": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" })),
       Schema.Null
     ]).annotate({
       "title": "Limit",
@@ -18229,9 +18071,8 @@ export const BetaListSkillVersionsV1SkillsSkillIdVersionsGetParams = Schema.Stru
   ),
   "limit": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" })),
       Schema.Null
     ]).annotate({
       "title": "Limit",
@@ -18408,12 +18249,14 @@ export type WithOptionalResponse<A, Config extends OperationConfig | undefined> 
   : Config extends { readonly includeResponse?: false | undefined } | undefined ? A
   : A | [A, HttpClientResponse.HttpClientResponse]
 
-export const make = (
-  httpClient: HttpClient.HttpClient,
+export const make = <E, R>(
+  httpClient: HttpClient.HttpClient.With<E, R>,
   options: {
-    readonly transformClient?: ((client: HttpClient.HttpClient) => Effect.Effect<HttpClient.HttpClient>) | undefined
+    readonly transformClient?:
+      | ((client: HttpClient.HttpClient.With<E, R>) => Effect.Effect<HttpClient.HttpClient.With<E, R>>)
+      | undefined
   } = {}
-): AnthropicClient => {
+): AnthropicClient<E, R> => {
   const unexpectedStatus = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.flatMap(
       Effect.orElseSucceed(response.json, () => "Unexpected status code"),
@@ -18431,7 +18274,7 @@ export const make = (
   const withResponse = <Config extends OperationConfig>(config: Config | undefined) =>
   (
     f: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<any, any>
-  ): (request: HttpClientRequest.HttpClientRequest) => Effect.Effect<any, any> => {
+  ): (request: HttpClientRequest.HttpClientRequest) => Effect.Effect<any, any, R> => {
     const withOptionalResponse = (
       config?.includeResponse
         ? (response: HttpClientResponse.HttpClientResponse) => Effect.map(f(response), (a) => [a, response])
@@ -18487,7 +18330,7 @@ export const make = (
     Effect.map(response.arrayBuffer, (buffer) => new Uint8Array(buffer))
   const binaryRequest = (
     request: HttpClientRequest.HttpClientRequest
-  ): Stream.Stream<Uint8Array, HttpClientError.HttpClientError> =>
+  ): Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R> =>
     executeStreamRequest(request).pipe(
       Effect.map((response) => response.stream),
       Stream.unwrap
@@ -19570,8 +19413,8 @@ export const make = (
   }
 }
 
-export interface AnthropicClient {
-  readonly httpClient: HttpClient.HttpClient
+export interface AnthropicClient<E = HttpClientError.HttpClientError, R = never> {
+  readonly httpClient: HttpClient.HttpClient.With<E, R>
   /**
    * Send a structured list of input messages with text and/or image content, and the model will generate the next message in the conversation.
    *
@@ -19588,7 +19431,8 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessagesPost200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"MessagesPost4XX", MessagesPost4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"MessagesPost4XX", MessagesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19598,7 +19442,8 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessagesPost200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"MessagesPost4XX", MessagesPost4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"MessagesPost4XX", MessagesPost4XX>,
+      R
     >
   }
   /**
@@ -19617,7 +19462,8 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CompletePost200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"CompletePost4XX", CompletePost4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"CompletePost4XX", CompletePost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19627,7 +19473,8 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CompletePost200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"CompletePost4XX", CompletePost4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"CompletePost4XX", CompletePost4XX>,
+      R
     >
   }
   /**
@@ -19640,7 +19487,8 @@ export interface AnthropicClient {
       options: { readonly params?: typeof ModelsListParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModelsList200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsList4XX", ModelsList4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsList4XX", ModelsList4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -19648,7 +19496,8 @@ export interface AnthropicClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ModelsList200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsList4XX", ModelsList4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsList4XX", ModelsList4XX>,
+      R
     >
   }
   /**
@@ -19662,7 +19511,8 @@ export interface AnthropicClient {
       options: { readonly params?: typeof ModelsGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModelsGet200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsGet4XX", ModelsGet4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsGet4XX", ModelsGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       modelId: string,
@@ -19671,7 +19521,8 @@ export interface AnthropicClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ModelsGet200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsGet4XX", ModelsGet4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"ModelsGet4XX", ModelsGet4XX>,
+      R
     >
   }
   /**
@@ -19684,9 +19535,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof MessageBatchesListParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesList200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesList4XX", MessageBatchesList4XX>
+      | AnthropicClientError<"MessageBatchesList4XX", MessageBatchesList4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19695,9 +19548,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesList200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesList4XX", MessageBatchesList4XX>
+      | AnthropicClientError<"MessageBatchesList4XX", MessageBatchesList4XX>,
+      R
     >
   }
   /**
@@ -19716,9 +19571,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesPost4XX", MessageBatchesPost4XX>
+      | AnthropicClientError<"MessageBatchesPost4XX", MessageBatchesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19728,9 +19585,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesPost4XX", MessageBatchesPost4XX>
+      | AnthropicClientError<"MessageBatchesPost4XX", MessageBatchesPost4XX>,
+      R
     >
   }
   /**
@@ -19744,9 +19603,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof MessageBatchesRetrieveParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesRetrieve200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesRetrieve4XX", MessageBatchesRetrieve4XX>
+      | AnthropicClientError<"MessageBatchesRetrieve4XX", MessageBatchesRetrieve4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -19756,9 +19617,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesRetrieve200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesRetrieve4XX", MessageBatchesRetrieve4XX>
+      | AnthropicClientError<"MessageBatchesRetrieve4XX", MessageBatchesRetrieve4XX>,
+      R
     >
   }
   /**
@@ -19774,9 +19637,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof MessageBatchesDeleteParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesDelete4XX", MessageBatchesDelete4XX>
+      | AnthropicClientError<"MessageBatchesDelete4XX", MessageBatchesDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -19786,9 +19651,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesDelete4XX", MessageBatchesDelete4XX>
+      | AnthropicClientError<"MessageBatchesDelete4XX", MessageBatchesDelete4XX>,
+      R
     >
   }
   /**
@@ -19804,9 +19671,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof MessageBatchesCancelParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesCancel200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesCancel4XX", MessageBatchesCancel4XX>
+      | AnthropicClientError<"MessageBatchesCancel4XX", MessageBatchesCancel4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -19816,9 +19685,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<MessageBatchesCancel200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesCancel4XX", MessageBatchesCancel4XX>
+      | AnthropicClientError<"MessageBatchesCancel4XX", MessageBatchesCancel4XX>,
+      R
     >
   }
   /**
@@ -19834,9 +19705,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof MessageBatchesResultsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesResults4XX", MessageBatchesResults4XX>
+      | AnthropicClientError<"MessageBatchesResults4XX", MessageBatchesResults4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -19846,9 +19719,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessageBatchesResults4XX", MessageBatchesResults4XX>
+      | AnthropicClientError<"MessageBatchesResults4XX", MessageBatchesResults4XX>,
+      R
     >
   }
   /**
@@ -19867,9 +19742,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessagesCountTokensPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessagesCountTokensPost4XX", MessagesCountTokensPost4XX>
+      | AnthropicClientError<"MessagesCountTokensPost4XX", MessagesCountTokensPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19879,9 +19756,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<MessagesCountTokensPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"MessagesCountTokensPost4XX", MessagesCountTokensPost4XX>
+      | AnthropicClientError<"MessagesCountTokensPost4XX", MessagesCountTokensPost4XX>,
+      R
     >
   }
   /**
@@ -19892,9 +19771,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof ListFilesV1FilesGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListFilesV1FilesGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"ListFilesV1FilesGet4XX", ListFilesV1FilesGet4XX>
+      | AnthropicClientError<"ListFilesV1FilesGet4XX", ListFilesV1FilesGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19903,9 +19784,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFilesV1FilesGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"ListFilesV1FilesGet4XX", ListFilesV1FilesGet4XX>
+      | AnthropicClientError<"ListFilesV1FilesGet4XX", ListFilesV1FilesGet4XX>,
+      R
     >
   }
   /**
@@ -19920,9 +19803,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UploadFileV1FilesPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"UploadFileV1FilesPost4XX", UploadFileV1FilesPost4XX>
+      | AnthropicClientError<"UploadFileV1FilesPost4XX", UploadFileV1FilesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -19932,9 +19817,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UploadFileV1FilesPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"UploadFileV1FilesPost4XX", UploadFileV1FilesPost4XX>
+      | AnthropicClientError<"UploadFileV1FilesPost4XX", UploadFileV1FilesPost4XX>,
+      R
     >
   }
   /**
@@ -19949,9 +19836,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<GetFileMetadataV1FilesFileIdGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"GetFileMetadataV1FilesFileIdGet4XX", GetFileMetadataV1FilesFileIdGet4XX>
+      | AnthropicClientError<"GetFileMetadataV1FilesFileIdGet4XX", GetFileMetadataV1FilesFileIdGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -19961,9 +19850,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetFileMetadataV1FilesFileIdGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"GetFileMetadataV1FilesFileIdGet4XX", GetFileMetadataV1FilesFileIdGet4XX>
+      | AnthropicClientError<"GetFileMetadataV1FilesFileIdGet4XX", GetFileMetadataV1FilesFileIdGet4XX>,
+      R
     >
   }
   /**
@@ -19978,9 +19869,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeleteFileV1FilesFileIdDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DeleteFileV1FilesFileIdDelete4XX", DeleteFileV1FilesFileIdDelete4XX>
+      | AnthropicClientError<"DeleteFileV1FilesFileIdDelete4XX", DeleteFileV1FilesFileIdDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -19990,9 +19883,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteFileV1FilesFileIdDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DeleteFileV1FilesFileIdDelete4XX", DeleteFileV1FilesFileIdDelete4XX>
+      | AnthropicClientError<"DeleteFileV1FilesFileIdDelete4XX", DeleteFileV1FilesFileIdDelete4XX>,
+      R
     >
   }
   /**
@@ -20007,9 +19902,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DownloadFileV1FilesFileIdContentGet4XX", DownloadFileV1FilesFileIdContentGet4XX>
+      | AnthropicClientError<"DownloadFileV1FilesFileIdContentGet4XX", DownloadFileV1FilesFileIdContentGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -20019,9 +19916,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DownloadFileV1FilesFileIdContentGet4XX", DownloadFileV1FilesFileIdContentGet4XX>
+      | AnthropicClientError<"DownloadFileV1FilesFileIdContentGet4XX", DownloadFileV1FilesFileIdContentGet4XX>,
+      R
     >
   }
   /**
@@ -20030,7 +19929,7 @@ export interface AnthropicClient {
   readonly "downloadFileV1FilesFileIdContentGetStream": (
     fileId: string,
     options: { readonly params?: typeof DownloadFileV1FilesFileIdContentGetParams.Encoded | undefined } | undefined
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * List Skills
    */
@@ -20039,9 +19938,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof ListSkillsV1SkillsGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListSkillsV1SkillsGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"ListSkillsV1SkillsGet4XX", ListSkillsV1SkillsGet4XX>
+      | AnthropicClientError<"ListSkillsV1SkillsGet4XX", ListSkillsV1SkillsGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20050,9 +19951,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListSkillsV1SkillsGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"ListSkillsV1SkillsGet4XX", ListSkillsV1SkillsGet4XX>
+      | AnthropicClientError<"ListSkillsV1SkillsGet4XX", ListSkillsV1SkillsGet4XX>,
+      R
     >
   }
   /**
@@ -20067,9 +19970,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillV1SkillsPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"CreateSkillV1SkillsPost4XX", CreateSkillV1SkillsPost4XX>
+      | AnthropicClientError<"CreateSkillV1SkillsPost4XX", CreateSkillV1SkillsPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20079,9 +19984,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillV1SkillsPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"CreateSkillV1SkillsPost4XX", CreateSkillV1SkillsPost4XX>
+      | AnthropicClientError<"CreateSkillV1SkillsPost4XX", CreateSkillV1SkillsPost4XX>,
+      R
     >
   }
   /**
@@ -20096,9 +20003,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<GetSkillV1SkillsSkillIdGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"GetSkillV1SkillsSkillIdGet4XX", GetSkillV1SkillsSkillIdGet4XX>
+      | AnthropicClientError<"GetSkillV1SkillsSkillIdGet4XX", GetSkillV1SkillsSkillIdGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20108,9 +20017,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetSkillV1SkillsSkillIdGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"GetSkillV1SkillsSkillIdGet4XX", GetSkillV1SkillsSkillIdGet4XX>
+      | AnthropicClientError<"GetSkillV1SkillsSkillIdGet4XX", GetSkillV1SkillsSkillIdGet4XX>,
+      R
     >
   }
   /**
@@ -20125,9 +20036,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillV1SkillsSkillIdDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DeleteSkillV1SkillsSkillIdDelete4XX", DeleteSkillV1SkillsSkillIdDelete4XX>
+      | AnthropicClientError<"DeleteSkillV1SkillsSkillIdDelete4XX", DeleteSkillV1SkillsSkillIdDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20137,9 +20050,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillV1SkillsSkillIdDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"DeleteSkillV1SkillsSkillIdDelete4XX", DeleteSkillV1SkillsSkillIdDelete4XX>
+      | AnthropicClientError<"DeleteSkillV1SkillsSkillIdDelete4XX", DeleteSkillV1SkillsSkillIdDelete4XX>,
+      R
     >
   }
   /**
@@ -20154,12 +20069,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListSkillVersionsV1SkillsSkillIdVersionsGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "ListSkillVersionsV1SkillsSkillIdVersionsGet4XX",
         ListSkillVersionsV1SkillsSkillIdVersionsGet4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20169,12 +20086,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListSkillVersionsV1SkillsSkillIdVersionsGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "ListSkillVersionsV1SkillsSkillIdVersionsGet4XX",
         ListSkillVersionsV1SkillsSkillIdVersionsGet4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20190,12 +20109,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillVersionV1SkillsSkillIdVersionsPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "CreateSkillVersionV1SkillsSkillIdVersionsPost4XX",
         CreateSkillVersionV1SkillsSkillIdVersionsPost4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20206,12 +20127,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillVersionV1SkillsSkillIdVersionsPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "CreateSkillVersionV1SkillsSkillIdVersionsPost4XX",
         CreateSkillVersionV1SkillsSkillIdVersionsPost4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20227,12 +20150,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<GetSkillVersionV1SkillsSkillIdVersionsVersionGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "GetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX",
         GetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20243,12 +20168,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetSkillVersionV1SkillsSkillIdVersionsVersionGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "GetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX",
         GetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20264,12 +20191,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX",
         DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20280,12 +20209,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX",
         DeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20304,7 +20235,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessagesPost200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaMessagesPost4XX", BetaMessagesPost4XX>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | AnthropicClientError<"BetaMessagesPost4XX", BetaMessagesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20314,7 +20249,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessagesPost200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaMessagesPost4XX", BetaMessagesPost4XX>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | AnthropicClientError<"BetaMessagesPost4XX", BetaMessagesPost4XX>,
+      R
     >
   }
   /**
@@ -20327,7 +20266,8 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaModelsListParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaModelsList200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsList4XX", BetaModelsList4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsList4XX", BetaModelsList4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20336,7 +20276,8 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaModelsList200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsList4XX", BetaModelsList4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsList4XX", BetaModelsList4XX>,
+      R
     >
   }
   /**
@@ -20350,7 +20291,8 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaModelsGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaModelsGet200, Config>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsGet4XX", BetaModelsGet4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsGet4XX", BetaModelsGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       modelId: string,
@@ -20360,7 +20302,8 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaModelsGet200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsGet4XX", BetaModelsGet4XX>
+      E | HttpClientError.HttpClientError | SchemaError | AnthropicClientError<"BetaModelsGet4XX", BetaModelsGet4XX>,
+      R
     >
   }
   /**
@@ -20373,9 +20316,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaMessageBatchesListParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesList200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesList4XX", BetaMessageBatchesList4XX>
+      | AnthropicClientError<"BetaMessageBatchesList4XX", BetaMessageBatchesList4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20384,9 +20329,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesList200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesList4XX", BetaMessageBatchesList4XX>
+      | AnthropicClientError<"BetaMessageBatchesList4XX", BetaMessageBatchesList4XX>,
+      R
     >
   }
   /**
@@ -20405,9 +20352,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesPost4XX", BetaMessageBatchesPost4XX>
+      | AnthropicClientError<"BetaMessageBatchesPost4XX", BetaMessageBatchesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20417,9 +20366,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesPost4XX", BetaMessageBatchesPost4XX>
+      | AnthropicClientError<"BetaMessageBatchesPost4XX", BetaMessageBatchesPost4XX>,
+      R
     >
   }
   /**
@@ -20436,9 +20387,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesRetrieve200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesRetrieve4XX", BetaMessageBatchesRetrieve4XX>
+      | AnthropicClientError<"BetaMessageBatchesRetrieve4XX", BetaMessageBatchesRetrieve4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -20448,9 +20401,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesRetrieve200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesRetrieve4XX", BetaMessageBatchesRetrieve4XX>
+      | AnthropicClientError<"BetaMessageBatchesRetrieve4XX", BetaMessageBatchesRetrieve4XX>,
+      R
     >
   }
   /**
@@ -20466,9 +20421,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaMessageBatchesDeleteParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesDelete4XX", BetaMessageBatchesDelete4XX>
+      | AnthropicClientError<"BetaMessageBatchesDelete4XX", BetaMessageBatchesDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -20478,9 +20435,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesDelete4XX", BetaMessageBatchesDelete4XX>
+      | AnthropicClientError<"BetaMessageBatchesDelete4XX", BetaMessageBatchesDelete4XX>,
+      R
     >
   }
   /**
@@ -20496,9 +20455,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaMessageBatchesCancelParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesCancel200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesCancel4XX", BetaMessageBatchesCancel4XX>
+      | AnthropicClientError<"BetaMessageBatchesCancel4XX", BetaMessageBatchesCancel4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -20508,9 +20469,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaMessageBatchesCancel200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesCancel4XX", BetaMessageBatchesCancel4XX>
+      | AnthropicClientError<"BetaMessageBatchesCancel4XX", BetaMessageBatchesCancel4XX>,
+      R
     >
   }
   /**
@@ -20526,9 +20489,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaMessageBatchesResultsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesResults4XX", BetaMessageBatchesResults4XX>
+      | AnthropicClientError<"BetaMessageBatchesResults4XX", BetaMessageBatchesResults4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       messageBatchId: string,
@@ -20538,9 +20503,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessageBatchesResults4XX", BetaMessageBatchesResults4XX>
+      | AnthropicClientError<"BetaMessageBatchesResults4XX", BetaMessageBatchesResults4XX>,
+      R
     >
   }
   /**
@@ -20559,9 +20526,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessagesCountTokensPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessagesCountTokensPost4XX", BetaMessagesCountTokensPost4XX>
+      | AnthropicClientError<"BetaMessagesCountTokensPost4XX", BetaMessagesCountTokensPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20571,9 +20540,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaMessagesCountTokensPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaMessagesCountTokensPost4XX", BetaMessagesCountTokensPost4XX>
+      | AnthropicClientError<"BetaMessagesCountTokensPost4XX", BetaMessagesCountTokensPost4XX>,
+      R
     >
   }
   /**
@@ -20584,9 +20555,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaListFilesV1FilesGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaListFilesV1FilesGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaListFilesV1FilesGet4XX", BetaListFilesV1FilesGet4XX>
+      | AnthropicClientError<"BetaListFilesV1FilesGet4XX", BetaListFilesV1FilesGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20595,9 +20568,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaListFilesV1FilesGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaListFilesV1FilesGet4XX", BetaListFilesV1FilesGet4XX>
+      | AnthropicClientError<"BetaListFilesV1FilesGet4XX", BetaListFilesV1FilesGet4XX>,
+      R
     >
   }
   /**
@@ -20612,9 +20587,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaUploadFileV1FilesPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaUploadFileV1FilesPost4XX", BetaUploadFileV1FilesPost4XX>
+      | AnthropicClientError<"BetaUploadFileV1FilesPost4XX", BetaUploadFileV1FilesPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20624,9 +20601,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaUploadFileV1FilesPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaUploadFileV1FilesPost4XX", BetaUploadFileV1FilesPost4XX>
+      | AnthropicClientError<"BetaUploadFileV1FilesPost4XX", BetaUploadFileV1FilesPost4XX>,
+      R
     >
   }
   /**
@@ -20641,9 +20620,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetFileMetadataV1FilesFileIdGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaGetFileMetadataV1FilesFileIdGet4XX", BetaGetFileMetadataV1FilesFileIdGet4XX>
+      | AnthropicClientError<"BetaGetFileMetadataV1FilesFileIdGet4XX", BetaGetFileMetadataV1FilesFileIdGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -20653,9 +20634,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaGetFileMetadataV1FilesFileIdGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaGetFileMetadataV1FilesFileIdGet4XX", BetaGetFileMetadataV1FilesFileIdGet4XX>
+      | AnthropicClientError<"BetaGetFileMetadataV1FilesFileIdGet4XX", BetaGetFileMetadataV1FilesFileIdGet4XX>,
+      R
     >
   }
   /**
@@ -20670,9 +20653,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteFileV1FilesFileIdDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDeleteFileV1FilesFileIdDelete4XX", BetaDeleteFileV1FilesFileIdDelete4XX>
+      | AnthropicClientError<"BetaDeleteFileV1FilesFileIdDelete4XX", BetaDeleteFileV1FilesFileIdDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -20682,9 +20667,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteFileV1FilesFileIdDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDeleteFileV1FilesFileIdDelete4XX", BetaDeleteFileV1FilesFileIdDelete4XX>
+      | AnthropicClientError<"BetaDeleteFileV1FilesFileIdDelete4XX", BetaDeleteFileV1FilesFileIdDelete4XX>,
+      R
     >
   }
   /**
@@ -20699,9 +20686,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDownloadFileV1FilesFileIdContentGet4XX", BetaDownloadFileV1FilesFileIdContentGet4XX>
+      | AnthropicClientError<"BetaDownloadFileV1FilesFileIdContentGet4XX", BetaDownloadFileV1FilesFileIdContentGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
@@ -20711,9 +20700,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDownloadFileV1FilesFileIdContentGet4XX", BetaDownloadFileV1FilesFileIdContentGet4XX>
+      | AnthropicClientError<"BetaDownloadFileV1FilesFileIdContentGet4XX", BetaDownloadFileV1FilesFileIdContentGet4XX>,
+      R
     >
   }
   /**
@@ -20722,7 +20713,7 @@ export interface AnthropicClient {
   readonly "betaDownloadFileV1FilesFileIdContentGetStream": (
     fileId: string,
     options: { readonly params?: typeof BetaDownloadFileV1FilesFileIdContentGetParams.Encoded | undefined } | undefined
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * List Skills
    */
@@ -20731,9 +20722,11 @@ export interface AnthropicClient {
       options: { readonly params?: typeof BetaListSkillsV1SkillsGetParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaListSkillsV1SkillsGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaListSkillsV1SkillsGet4XX", BetaListSkillsV1SkillsGet4XX>
+      | AnthropicClientError<"BetaListSkillsV1SkillsGet4XX", BetaListSkillsV1SkillsGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20742,9 +20735,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaListSkillsV1SkillsGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaListSkillsV1SkillsGet4XX", BetaListSkillsV1SkillsGet4XX>
+      | AnthropicClientError<"BetaListSkillsV1SkillsGet4XX", BetaListSkillsV1SkillsGet4XX>,
+      R
     >
   }
   /**
@@ -20759,9 +20754,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateSkillV1SkillsPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaCreateSkillV1SkillsPost4XX", BetaCreateSkillV1SkillsPost4XX>
+      | AnthropicClientError<"BetaCreateSkillV1SkillsPost4XX", BetaCreateSkillV1SkillsPost4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -20771,9 +20768,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateSkillV1SkillsPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaCreateSkillV1SkillsPost4XX", BetaCreateSkillV1SkillsPost4XX>
+      | AnthropicClientError<"BetaCreateSkillV1SkillsPost4XX", BetaCreateSkillV1SkillsPost4XX>,
+      R
     >
   }
   /**
@@ -20788,9 +20787,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetSkillV1SkillsSkillIdGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaGetSkillV1SkillsSkillIdGet4XX", BetaGetSkillV1SkillsSkillIdGet4XX>
+      | AnthropicClientError<"BetaGetSkillV1SkillsSkillIdGet4XX", BetaGetSkillV1SkillsSkillIdGet4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20800,9 +20801,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaGetSkillV1SkillsSkillIdGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaGetSkillV1SkillsSkillIdGet4XX", BetaGetSkillV1SkillsSkillIdGet4XX>
+      | AnthropicClientError<"BetaGetSkillV1SkillsSkillIdGet4XX", BetaGetSkillV1SkillsSkillIdGet4XX>,
+      R
     >
   }
   /**
@@ -20817,9 +20820,11 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteSkillV1SkillsSkillIdDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDeleteSkillV1SkillsSkillIdDelete4XX", BetaDeleteSkillV1SkillsSkillIdDelete4XX>
+      | AnthropicClientError<"BetaDeleteSkillV1SkillsSkillIdDelete4XX", BetaDeleteSkillV1SkillsSkillIdDelete4XX>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20829,9 +20834,11 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteSkillV1SkillsSkillIdDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | AnthropicClientError<"BetaDeleteSkillV1SkillsSkillIdDelete4XX", BetaDeleteSkillV1SkillsSkillIdDelete4XX>
+      | AnthropicClientError<"BetaDeleteSkillV1SkillsSkillIdDelete4XX", BetaDeleteSkillV1SkillsSkillIdDelete4XX>,
+      R
     >
   }
   /**
@@ -20846,12 +20853,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaListSkillVersionsV1SkillsSkillIdVersionsGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaListSkillVersionsV1SkillsSkillIdVersionsGet4XX",
         BetaListSkillVersionsV1SkillsSkillIdVersionsGet4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20861,12 +20870,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaListSkillVersionsV1SkillsSkillIdVersionsGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaListSkillVersionsV1SkillsSkillIdVersionsGet4XX",
         BetaListSkillVersionsV1SkillsSkillIdVersionsGet4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20882,12 +20893,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateSkillVersionV1SkillsSkillIdVersionsPost200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaCreateSkillVersionV1SkillsSkillIdVersionsPost4XX",
         BetaCreateSkillVersionV1SkillsSkillIdVersionsPost4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20898,12 +20911,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateSkillVersionV1SkillsSkillIdVersionsPost200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaCreateSkillVersionV1SkillsSkillIdVersionsPost4XX",
         BetaCreateSkillVersionV1SkillsSkillIdVersionsPost4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20919,12 +20934,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX",
         BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20935,12 +20952,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX",
         BetaGetSkillVersionV1SkillsSkillIdVersionsVersionGet4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20956,12 +20975,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX",
         BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -20972,12 +20993,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX",
         BetaDeleteSkillVersionV1SkillsSkillIdVersionsVersionDelete4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -20995,12 +21018,14 @@ export interface AnthropicClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaDownloadSkillVersionContentV1SkillsSkillIdVersionsVersionContentGet4XX",
         BetaDownloadSkillVersionContentV1SkillsSkillIdVersionsVersionContentGet4XX
-      >
+      >,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -21013,12 +21038,14 @@ export interface AnthropicClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | AnthropicClientError<
         "BetaDownloadSkillVersionContentV1SkillsSkillIdVersionsVersionContentGet4XX",
         BetaDownloadSkillVersionContentV1SkillsSkillIdVersionsVersionContentGet4XX
-      >
+      >,
+      R
     >
   }
   /**
@@ -21032,7 +21059,7 @@ export interface AnthropicClient {
         | typeof BetaDownloadSkillVersionContentV1SkillsSkillIdVersionsVersionContentGetParams.Encoded
         | undefined
     } | undefined
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
 }
 
 export interface AnthropicClientError<Tag extends string, E> {

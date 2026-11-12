@@ -415,9 +415,7 @@ export const TranscriptionSegment = Schema.Struct({
     Schema.isFinite().annotate({ "expected": "a finite number" })
   ),
   "text": Schema.String.annotate({ "description": "Text content of the segment." }),
-  "tokens": Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
-    "description": "Array of token IDs for the text content."
-  }),
+  "tokens": Schema.Array(Schema.Int).annotate({ "description": "Array of token IDs for the text content." }),
   "temperature": Schema.Number.annotate({
     "description": "Temperature parameter used for generating the segment.",
     "format": "float"
@@ -485,7 +483,7 @@ export const TranscriptTextDeltaEvent = Schema.Struct({
         )
       ),
       "bytes": Schema.optionalKey(
-        Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
+        Schema.Array(Schema.Int).annotate({
           "description": "The bytes that were used to generate the log probability.\n"
         })
       )
@@ -683,7 +681,7 @@ export const ChatCompletionTokenLogprob = Schema.Struct({
       "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely."
   }).check(Schema.isFinite().annotate({ "expected": "a finite number" })),
   "bytes": Schema.Union([
-    Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
+    Schema.Array(Schema.Int).annotate({
       "description":
         "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token."
     }),
@@ -696,7 +694,7 @@ export const ChatCompletionTokenLogprob = Schema.Struct({
         "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely."
     }).check(Schema.isFinite().annotate({ "expected": "a finite number" })),
     "bytes": Schema.Union([
-      Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
+      Schema.Array(Schema.Int).annotate({
         "description":
           "A list of integers representing the UTF-8 bytes representation of the token. Useful in instances where characters are represented by multiple tokens and their byte representations must be combined to generate the correct text representation. Can be `null` if there is no bytes representation for the token."
       }),
@@ -1240,7 +1238,7 @@ export type ChatCompletionMessageToolCallChunk = {
   readonly "function"?: { readonly "name"?: string; readonly "arguments"?: string }
 }
 export const ChatCompletionMessageToolCallChunk = Schema.Struct({
-  "index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "index": Schema.Int,
   "id": Schema.optionalKey(Schema.String.annotate({ "description": "The ID of the tool call." })),
   "type": Schema.optionalKey(
     Schema.Literal("function").annotate({
@@ -1624,7 +1622,7 @@ export type TopLogProb = {
 export const TopLogProb = Schema.Struct({
   "token": Schema.String,
   "logprob": Schema.Finite,
-  "bytes": Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "bytes": Schema.Array(Schema.Int)
 }).annotate({
   "title": "Top log probability",
   "description": "The top log probability of a token.",
@@ -2512,7 +2510,7 @@ export type MCPProtocolError = {
 }
 export const MCPProtocolError = Schema.Struct({
   "type": Schema.Literal("mcp_protocol_error"),
-  "code": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "code": Schema.Int,
   "message": Schema.String
 }).annotate({ "identifier": "MCPProtocolError" })
 export type MCPToolExecutionError = { readonly "type": "mcp_tool_execution_error"; readonly "content": Schema.Json }
@@ -2523,7 +2521,7 @@ export const MCPToolExecutionError = Schema.Struct({
 export type HTTPError = { readonly "type": "http_error"; readonly "code": number; readonly "message": string }
 export const HTTPError = Schema.Struct({
   "type": Schema.Literal("http_error"),
-  "code": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "code": Schema.Int,
   "message": Schema.String
 }).annotate({ "identifier": "HTTPError" })
 export type MCPToolCallStatus = "in_progress" | "completed" | "incomplete" | "calling" | "failed"
@@ -2745,14 +2743,14 @@ export const CreateEmbeddingRequest = Schema.Struct({
     }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
       Schema.isMaxLength(2048).annotate({ "expected": "a value with a length of at most 2048" })
     ),
-    Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
+    Schema.Array(Schema.Int).annotate({
       "title": "array",
       "description": "The array of integers that will be turned into an embedding."
     }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
       Schema.isMaxLength(2048).annotate({ "expected": "a value with a length of at most 2048" })
     ),
     Schema.Array(
-      Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).check(
+      Schema.Array(Schema.Int).check(
         Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
       )
     ).annotate({
@@ -3091,87 +3089,77 @@ export const EvalRunOutputItemResult = Schema.StructWithRest(
   "description": "A single grader result for an evaluation run output item.\n",
   "identifier": "EvalRunOutputItemResult"
 })
-export type OpenAIFile =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "id": string
-    readonly "bytes": number | null
-    readonly "created_at": number
-    readonly "expires_at"?: number | null
-    readonly "filename": string
-    readonly "object": "file"
-    readonly "purpose":
-      | "assistants"
-      | "assistants_output"
-      | "batch"
-      | "batch_output"
-      | "fine-tune"
-      | "fine-tune-results"
-      | "vision"
-      | "user_data"
-    readonly "status": "uploaded" | "processed" | "error"
-    readonly "status_details"?: string | null
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type OpenAIFile = null | string | number | boolean | {
+  readonly "id": string
+  readonly "bytes": number | null
+  readonly "created_at": number
+  readonly "expires_at"?: number | null
+  readonly "filename": string
+  readonly "object": "file"
+  readonly "purpose":
+    | "assistants"
+    | "assistants_output"
+    | "batch"
+    | "batch_output"
+    | "fine-tune"
+    | "fine-tune-results"
+    | "vision"
+    | "user_data"
+  readonly "status": "uploaded" | "processed" | "error"
+  readonly "status_details"?: string | null
+} | ReadonlyArray<Schema.Json>
 export const OpenAIFile = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "id": Schema.String.annotate({
-        "description": "The file identifier, which can be referenced in the API endpoints."
-      }),
-      "bytes": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-        .annotate({
-          "description":
-            "The size of the file, in bytes. In a completed file upload response, this can\nbe null when the file size is not yet available.\n"
-        }),
-      "created_at": Schema.Number.annotate({
-        "description": "The Unix timestamp (in seconds) for when the file was created.",
-        "format": "unixtime"
-      }).check(Schema.isInt().annotate({ "expected": "an integer" })),
-      "expires_at": Schema.optionalKey(
-        Schema.Union([
-          Schema.Number.annotate({
-            "description": "The Unix timestamp (in seconds) for when the file will expire.",
-            "format": "unixtime"
-          }).check(Schema.isInt().annotate({ "expected": "an integer" })),
-          Schema.Null
-        ])
-      ),
-      "filename": Schema.String.annotate({ "description": "The name of the file." }),
-      "object": Schema.Literal("file").annotate({ "description": "The object type, which is always `file`." }),
-      "purpose": Schema.Literals([
-        "assistants",
-        "assistants_output",
-        "batch",
-        "batch_output",
-        "fine-tune",
-        "fine-tune-results",
-        "vision",
-        "user_data"
-      ]).annotate({
-        "description":
-          "The intended purpose of the file. Supported values are `assistants`, `assistants_output`, `batch`, `batch_output`, `fine-tune`, `fine-tune-results`, `vision`, and `user_data`."
-      }),
-      "status": Schema.Literals(["uploaded", "processed", "error"]).annotate({
-        "description":
-          "Deprecated. The current status of the file, which can be either `uploaded`, `processed`, or `error`."
-      }),
-      "status_details": Schema.optionalKey(
-        Schema.Union([Schema.String, Schema.Null]).annotate({
-          "description":
-            "Deprecated. For details on why a fine-tuning training file failed validation, see the `error` field on `fine_tuning.job`. Completed file upload responses can return null when these details are unset."
-        })
-      )
+  Schema.Struct({
+    "id": Schema.String.annotate({
+      "description": "The file identifier, which can be referenced in the API endpoints."
     }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+    "bytes": Schema.Union([Schema.Int, Schema.Null]).annotate({
+      "description":
+        "The size of the file, in bytes. In a completed file upload response, this can\nbe null when the file size is not yet available.\n"
+    }),
+    "created_at": Schema.Number.annotate({
+      "description": "The Unix timestamp (in seconds) for when the file was created.",
+      "format": "unixtime"
+    }).check(Schema.isInt().annotate({ "expected": "an integer" })),
+    "expires_at": Schema.optionalKey(
+      Schema.Union([
+        Schema.Number.annotate({
+          "description": "The Unix timestamp (in seconds) for when the file will expire.",
+          "format": "unixtime"
+        }).check(Schema.isInt().annotate({ "expected": "an integer" })),
+        Schema.Null
+      ])
+    ),
+    "filename": Schema.String.annotate({ "description": "The name of the file." }),
+    "object": Schema.Literal("file").annotate({ "description": "The object type, which is always `file`." }),
+    "purpose": Schema.Literals([
+      "assistants",
+      "assistants_output",
+      "batch",
+      "batch_output",
+      "fine-tune",
+      "fine-tune-results",
+      "vision",
+      "user_data"
+    ]).annotate({
+      "description":
+        "The intended purpose of the file. Supported values are `assistants`, `assistants_output`, `batch`, `batch_output`, `fine-tune`, `fine-tune-results`, `vision`, and `user_data`."
+    }),
+    "status": Schema.Literals(["uploaded", "processed", "error"]).annotate({
+      "description":
+        "Deprecated. The current status of the file, which can be either `uploaded`, `processed`, or `error`."
+    }),
+    "status_details": Schema.optionalKey(
+      Schema.Union([Schema.String, Schema.Null]).annotate({
+        "description":
+          "Deprecated. For details on why a fine-tuning training file failed validation, see the `error` field on `fine_tuning.job`. Completed file upload responses can return null when these details are unset."
+      })
+    )
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({
   "title": "OpenAIFile",
@@ -3346,14 +3334,10 @@ export const RunGraderResponse = Schema.Struct({
     "scores": Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" })),
     "token_usage": Schema.Union([
       Schema.Struct({
-        "prompt_tokens": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-        "total_tokens": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-        "completion_tokens": Schema.optionalKey(
-          Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-        ),
-        "cached_tokens": Schema.optionalKey(
-          Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-        )
+        "prompt_tokens": Schema.Int,
+        "total_tokens": Schema.Int,
+        "completion_tokens": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null])),
+        "cached_tokens": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null]))
       }),
       Schema.Null
     ]),
@@ -3459,9 +3443,8 @@ export const FineTuneSupervisedHyperparameters = Schema.Struct({
   "batch_size": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "Number of examples in each batch. A larger batch size means that model parameters are updated less frequently, but with lower variance.\n"
@@ -3479,9 +3462,8 @@ export const FineTuneSupervisedHyperparameters = Schema.Struct({
   "n_epochs": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "The number of epochs to train the model for. An epoch refers to one full cycle through the training dataset.\n"
@@ -3511,9 +3493,8 @@ export const FineTuneDPOHyperparameters = Schema.Struct({
   "batch_size": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "Number of examples in each batch. A larger batch size means that model parameters are updated less frequently, but with lower variance.\n"
@@ -3531,9 +3512,8 @@ export const FineTuneDPOHyperparameters = Schema.Struct({
   "n_epochs": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "The number of epochs to train the model for. An epoch refers to one full cycle through the training dataset.\n"
@@ -3556,9 +3536,8 @@ export const FineTuneReinforcementHyperparameters = Schema.Struct({
   "batch_size": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "Number of examples in each batch. A larger batch size means that model parameters are updated less frequently, but with lower variance.\n"
@@ -3576,9 +3555,8 @@ export const FineTuneReinforcementHyperparameters = Schema.Struct({
   "n_epochs": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
     ], { mode: "oneOf" }).annotate({
       "description":
         "The number of epochs to train the model for. An epoch refers to one full cycle through the training dataset.\n"
@@ -3599,17 +3577,13 @@ export const FineTuneReinforcementHyperparameters = Schema.Struct({
   "eval_interval": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      )
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
     ], { mode: "oneOf" }).annotate({ "description": "The number of training steps between evaluation runs.\n" })
   ),
   "eval_samples": Schema.optionalKey(
     Schema.Union([
       Schema.Literal("auto"),
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      )
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
     ], { mode: "oneOf" }).annotate({ "description": "Number of evaluation samples to generate per training step.\n" })
   )
 }).annotate({
@@ -4287,7 +4261,7 @@ export const LiveCallReferRequest = Schema.Struct({
   "target_uri": Schema.String.annotate({
     "description": "Nonblank URI for the SIP Refer-To header, such as tel:+14155550123 or sip:agent@example.com."
   }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
-    Schema.isPattern(new RegExp("\\S", "u")).annotate({ "expected": "a string matching the RegExp \\S" })
+    Schema.isPattern(new globalThis.RegExp("\\S", "u")).annotate({ "expected": "a string matching the RegExp \\S" })
   )
 }).annotate({
   "description": "Parameters used to transfer a Live SIP call to another destination.",
@@ -4304,43 +4278,34 @@ export const LiveCallRejectRequest = Schema.Struct({
   "description": "Parameters used to reject an incoming Live SIP call.",
   "identifier": "LiveCallRejectRequest"
 })
-export type Model =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "id": string
-    readonly "created": number
-    readonly "object": "model"
-    readonly "owned_by": string
-    readonly "shutdown_date"?: string | null
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type Model = null | string | number | boolean | {
+  readonly "id": string
+  readonly "created": number
+  readonly "object": "model"
+  readonly "owned_by": string
+  readonly "shutdown_date"?: string | null
+} | ReadonlyArray<Schema.Json>
 export const Model = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "id": Schema.String.annotate({
-        "description": "The model identifier, which can be referenced in the API endpoints."
-      }),
-      "created": Schema.Number.annotate({
-        "description": "The Unix timestamp (in seconds) when the model was created.",
-        "format": "unixtime"
-      }).check(Schema.isInt().annotate({ "expected": "an integer" })),
-      "object": Schema.Literal("model").annotate({ "description": "The object type, which is always \"model\"." }),
-      "owned_by": Schema.String.annotate({ "description": "The organization that owns the model." }),
-      "shutdown_date": Schema.optionalKey(
-        Schema.Union([Schema.String.annotate({ "format": "date" }), Schema.Null]).annotate({
-          "description": "The date when the model will shut down, or null if not announced."
-        })
-      )
+  Schema.Struct({
+    "id": Schema.String.annotate({
+      "description": "The model identifier, which can be referenced in the API endpoints."
     }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+    "created": Schema.Number.annotate({
+      "description": "The Unix timestamp (in seconds) when the model was created.",
+      "format": "unixtime"
+    }).check(Schema.isInt().annotate({ "expected": "an integer" })),
+    "object": Schema.Literal("model").annotate({ "description": "The object type, which is always \"model\"." }),
+    "owned_by": Schema.String.annotate({ "description": "The organization that owns the model." }),
+    "shutdown_date": Schema.optionalKey(
+      Schema.Union([Schema.String.annotate({ "format": "date" }), Schema.Null]).annotate({
+        "description": "The date when the model will shut down, or null if not announced."
+      })
+    )
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({
   "title": "Model",
@@ -6683,9 +6648,8 @@ export const ProjectServiceAccountCreateRequest = Schema.Struct({
   ),
   "expires_in_seconds": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(31536000).annotate({ "expected": "a value less than or equal to 31536000" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(31536000).annotate({ "expected": "a value less than or equal to 31536000" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -9221,10 +9185,10 @@ export const MessageContentTextAnnotationsFileCitationObject = Schema.Struct({
   "file_citation": Schema.Struct({
     "file_id": Schema.String.annotate({ "description": "The ID of the specific File the citation is from." })
   }),
-  "start_index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+  "start_index": Schema.Int.check(
     Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
   ),
-  "end_index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+  "end_index": Schema.Int.check(
     Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
   )
 }).annotate({
@@ -9246,10 +9210,10 @@ export const MessageContentTextAnnotationsFilePathObject = Schema.Struct({
   "file_path": Schema.Struct({
     "file_id": Schema.String.annotate({ "description": "The ID of the file that was generated." })
   }),
-  "start_index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+  "start_index": Schema.Int.check(
     Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
   ),
-  "end_index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+  "end_index": Schema.Int.check(
     Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
   )
 }).annotate({
@@ -9322,14 +9286,10 @@ export const MessageDeltaContentTextAnnotationsFileCitationObject = Schema.Struc
     })
   ),
   "start_index": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    )
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
   ),
   "end_index": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    )
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
   )
 }).annotate({
   "title": "File citation",
@@ -9359,14 +9319,10 @@ export const MessageDeltaContentTextAnnotationsFilePathObject = Schema.Struct({
     })
   ),
   "start_index": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    )
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
   ),
   "end_index": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    )
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
   )
 }).annotate({
   "title": "File path",
@@ -10016,7 +9972,7 @@ export const PersonalityEnum = Schema.Union([Schema.String, Schema.Literals(["fr
 export type TokenCountsResource = { readonly "object": "response.input_tokens"; readonly "input_tokens": number }
 export const TokenCountsResource = Schema.Struct({
   "object": Schema.Literal("response.input_tokens"),
-  "input_tokens": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))
+  "input_tokens": Schema.Int
 }).annotate({ "title": "Token counts", "identifier": "TokenCountsResource" })
 export type PromptCacheRetentionEnum = "in_memory" | "in-memory" | "24h"
 export const PromptCacheRetentionEnum = Schema.Literals(["in_memory", "in-memory", "24h"]).annotate({
@@ -11375,11 +11331,10 @@ export type MultiAgentConfigResource = {
 export const MultiAgentConfigResource = Schema.Struct({
   "enabled": Schema.Boolean.annotate({ "description": "Whether subagent tools are enabled. Defaults to false." }),
   "max_concurrent_subagents": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-    ).check(
-      Schema.isLessThanOrEqualTo(4294967295).annotate({ "expected": "a value less than or equal to 4294967295" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+      .check(
+        Schema.isLessThanOrEqualTo(4294967295).annotate({ "expected": "a value less than or equal to 4294967295" })
+      ),
     Schema.Null
   ]).annotate({
     "description":
@@ -11807,9 +11762,7 @@ export const SessionSpendControlResource = Schema.Struct({
       })
     ),
   "consumed": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
     Schema.Null
   ]).annotate({ "description": "Best-effort recorded spend floored to whole USD cents, or null when unavailable." })
 }).annotate({
@@ -12002,13 +11955,12 @@ export const EnvironmentResourceSelfHosted = Schema.Struct({
 export type SessionSpendControlParam = { readonly "limit": number | null }
 export const SessionSpendControlParam = Schema.Struct({
   "limit": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-    ).check(
-      Schema.isLessThanOrEqualTo(4503599627370495).annotate({
-        "expected": "a value less than or equal to 4503599627370495"
-      })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+      .check(
+        Schema.isLessThanOrEqualTo(4503599627370495).annotate({
+          "expected": "a value less than or equal to 4503599627370495"
+        })
+      ),
     Schema.Null
   ]).annotate({ "description": "Positive USD cents, or null to remove the limit.", "format": "int64" })
 }).annotate({
@@ -14016,7 +13968,7 @@ export type BetaTopLogProb = {
 export const BetaTopLogProb = Schema.Struct({
   "token": Schema.String,
   "logprob": Schema.Finite,
-  "bytes": Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "bytes": Schema.Array(Schema.Int)
 }).annotate({
   "title": "Top log probability",
   "description": "The top log probability of a token.",
@@ -14647,7 +14599,7 @@ export type BetaMCPProtocolError = {
 }
 export const BetaMCPProtocolError = Schema.Struct({
   "type": Schema.Literal("mcp_protocol_error"),
-  "code": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "code": Schema.Int,
   "message": Schema.String
 }).annotate({ "identifier": "BetaMCPProtocolError" })
 export type BetaMCPToolExecutionError = { readonly "type": "mcp_tool_execution_error"; readonly "content": Schema.Json }
@@ -14658,7 +14610,7 @@ export const BetaMCPToolExecutionError = Schema.Struct({
 export type BetaHTTPError = { readonly "type": "http_error"; readonly "code": number; readonly "message": string }
 export const BetaHTTPError = Schema.Struct({
   "type": Schema.Literal("http_error"),
-  "code": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "code": Schema.Int,
   "message": Schema.String
 }).annotate({ "identifier": "BetaHTTPError" })
 export type BetaMCPToolCallStatus = "in_progress" | "completed" | "incomplete" | "calling" | "failed"
@@ -15140,7 +15092,7 @@ export const BetaPersonalityEnum = Schema.Union([Schema.String, Schema.Literals(
 export type BetaTokenCountsResource = { readonly "object": "response.input_tokens"; readonly "input_tokens": number }
 export const BetaTokenCountsResource = Schema.Struct({
   "object": Schema.Literal("response.input_tokens"),
-  "input_tokens": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))
+  "input_tokens": Schema.Int
 }).annotate({ "title": "Token counts", "identifier": "BetaTokenCountsResource" })
 export type FileSearchRankingOptions = { readonly "ranker"?: FileSearchRanker; readonly "score_threshold": number }
 export const FileSearchRankingOptions = Schema.Struct({
@@ -15489,7 +15441,7 @@ export const MisalignmentErrorDetailsResource = Schema.Struct({
       }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(96).annotate({ "expected": "a string with at most 96 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[A-Za-z0-9._~:-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[A-Za-z0-9._~:-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[A-Za-z0-9._~:-]+$"
         })
       ),
@@ -15800,9 +15752,8 @@ export const CreateImageVariationRequestMultipart = Schema.Struct({
   ),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
       Schema.Null
     ]).annotate({ "description": "The number of images to generate. Must be between 1 and 10." })
   ),
@@ -16024,7 +15975,7 @@ export const TranscriptTextDoneEvent = Schema.Struct({
         )
       ),
       "bytes": Schema.optionalKey(
-        Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).annotate({
+        Schema.Array(Schema.Int).annotate({
           "description": "The bytes that were used to generate the log probability.\n"
         })
       )
@@ -16179,11 +16130,7 @@ export type Batch = {
   readonly "object": "batch"
   readonly "endpoint": string
   readonly "model"?: string
-  readonly "errors"?:
-    | { readonly "object"?: string; readonly "data"?: ReadonlyArray<BatchError> } & {
-      readonly [x: string]: Schema.Json
-    }
-    | null
+  readonly "errors"?: { readonly "object"?: string; readonly "data"?: ReadonlyArray<BatchError> } | null
   readonly "input_file_id": string
   readonly "completion_window": string
   readonly "status":
@@ -16226,15 +16173,12 @@ export const Batch = Schema.Struct({
   })),
   "errors": Schema.optionalKey(
     Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "object": Schema.optionalKey(
-            Schema.String.annotate({ "description": "The object type, which is always `list`." })
-          ),
-          "data": Schema.optionalKey(Schema.Array(BatchError))
-        }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+      Schema.Struct({
+        "object": Schema.optionalKey(
+          Schema.String.annotate({ "description": "The object type, which is always `list`." })
+        ),
+        "data": Schema.optionalKey(Schema.Array(BatchError))
+      }),
       Schema.Null
     ])
   ),
@@ -16267,49 +16211,49 @@ export const Batch = Schema.Struct({
     "format": "unixtime"
   }).check(Schema.isInt().annotate({ "expected": "an integer" })),
   "in_progress_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch started processing.",
       "format": "unixtime"
     })
   ),
   "expires_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch will expire.",
       "format": "unixtime"
     })
   ),
   "finalizing_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch started finalizing.",
       "format": "unixtime"
     })
   ),
   "completed_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch was completed.",
       "format": "unixtime"
     })
   ),
   "failed_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch failed.",
       "format": "unixtime"
     })
   ),
   "expired_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch expired.",
       "format": "unixtime"
     })
   ),
   "cancelling_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch started cancelling.",
       "format": "unixtime"
     })
   ),
   "cancelled_at": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description": "The Unix timestamp (in seconds) for when the batch was cancelled.",
       "format": "unixtime"
     })
@@ -16420,12 +16364,10 @@ export const CreateCompletionResponse = Schema.Struct({
       "description":
         "The reason the model stopped generating tokens. This will be `stop` if the model hit a natural stop point or a provided stop sequence,\n`length` if the maximum number of tokens specified in the request was reached,\nor `content_filter` if content was omitted due to a flag from our content filters. The value is null while a streamed completion is unfinished.\n"
     }),
-    "index": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+    "index": Schema.Int,
     "logprobs": Schema.Union([
       Schema.Struct({
-        "text_offset": Schema.optionalKey(
-          Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
-        ),
+        "text_offset": Schema.optionalKey(Schema.Array(Schema.Int)),
         "token_logprobs": Schema.optionalKey(Schema.Array(Schema.Finite)),
         "tokens": Schema.optionalKey(Schema.Array(Schema.String)),
         "top_logprobs": Schema.optionalKey(Schema.Array(Schema.Record(Schema.String, Schema.Finite)))
@@ -16719,11 +16661,11 @@ export const CreateCompletionRequest = Schema.Struct({
   "prompt": Schema.Union([
     Schema.String,
     Schema.Array(Schema.String),
-    Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).check(
+    Schema.Array(Schema.Int).check(
       Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
     ),
     Schema.Array(
-      Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))).check(
+      Schema.Array(Schema.Int).check(
         Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
       )
     ).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })),
@@ -16734,9 +16676,8 @@ export const CreateCompletionRequest = Schema.Struct({
   }),
   "best_of": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ).check(Schema.isLessThanOrEqualTo(20).annotate({ "expected": "a value less than or equal to 20" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+        .check(Schema.isLessThanOrEqualTo(20).annotate({ "expected": "a value less than or equal to 20" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -16760,19 +16701,15 @@ export const CreateCompletionRequest = Schema.Struct({
     })
   ),
   "logit_bias": Schema.optionalKey(
-    Schema.Union([
-      Schema.Record(Schema.String, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
-      Schema.Null
-    ]).annotate({
+    Schema.Union([Schema.Record(Schema.String, Schema.Int), Schema.Null]).annotate({
       "description":
         "Modify the likelihood of specified tokens appearing in the completion.\n\nAccepts a JSON object that maps tokens (specified by their token ID in the GPT tokenizer) to an associated bias value from -100 to 100. You can use this [tokenizer tool](https://platform.openai.com/tokenizer?view=bpe) to convert text to token IDs. Mathematically, the bias is added to the logits generated by the model prior to sampling. The exact effect will vary per model, but values between -1 and 1 should decrease or increase likelihood of selection; values like -100 or 100 should result in a ban or exclusive selection of the relevant token.\n\nAs an example, you can pass `{\"50256\": -100}` to prevent the <|endoftext|> token from being generated.\n"
     })
   ),
   "logprobs": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ).check(Schema.isLessThanOrEqualTo(5).annotate({ "expected": "a value less than or equal to 5" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+        .check(Schema.isLessThanOrEqualTo(5).annotate({ "expected": "a value less than or equal to 5" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -16781,9 +16718,7 @@ export const CreateCompletionRequest = Schema.Struct({
   ),
   "max_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -16792,9 +16727,8 @@ export const CreateCompletionRequest = Schema.Struct({
   ),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(128).annotate({ "expected": "a value less than or equal to 128" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(128).annotate({ "expected": "a value less than or equal to 128" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -16813,7 +16747,7 @@ export const CreateCompletionRequest = Schema.Struct({
     })
   ),
   "seed": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description":
         "If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same `seed` and parameters should return the same result.\n\nDeterminism is not guaranteed, and you should refer to the `system_fingerprint` response parameter to monitor changes in the backend.\n",
       "format": "int64"
@@ -17028,7 +16962,7 @@ export type LogProb = {
 export const LogProb = Schema.Struct({
   "token": Schema.String,
   "logprob": Schema.Finite,
-  "bytes": Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "bytes": Schema.Array(Schema.Int),
   "top_logprobs": Schema.Array(TopLogProb)
 }).annotate({ "title": "Log probability", "description": "The log probability of a token.", "identifier": "LogProb" })
 export type ReasoningItem = {
@@ -17725,7 +17659,7 @@ export const MCPTool = Schema.Struct({
       "description":
         "The Secure MCP Tunnel ID to use instead of a direct server URL. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided.\n"
     }).check(
-      Schema.isPattern(new RegExp("^tunnel_[a-z0-9]{32}$", "u")).annotate({
+      Schema.isPattern(new globalThis.RegExp("^tunnel_[a-z0-9]{32}$", "u")).annotate({
         "expected": "a string matching the RegExp ^tunnel_[a-z0-9]{32}$"
       })
     )
@@ -17942,7 +17876,7 @@ export type FunctionToolParam = {
 export const FunctionToolParam = Schema.Struct({
   "name": Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" }))
     .check(Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })).check(
-      Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+      Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
         "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
       })
     ),
@@ -18036,7 +17970,7 @@ export const ToolSearchOutputFunctionToolParam = Schema.Struct({
   "name": Schema.String.annotate({ "description": "The name of the loaded function tool." }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })).check(
-    Schema.isPattern(new RegExp("^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$"
     })
   ),
@@ -18720,9 +18654,8 @@ export const EditImageBodyJsonParam = Schema.Struct({
   ).check(Schema.isMaxCodePoints(32000).annotate({ "expected": "a string with at most 32000 code points" })),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
       Schema.Null
     ]).annotate({ "description": "The number of edited images to generate." })
   ),
@@ -18758,9 +18691,8 @@ export const EditImageBodyJsonParam = Schema.Struct({
   ),
   "output_compression": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+        .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" })),
       Schema.Null
     ]).annotate({ "description": "Compression level for `jpeg` or `webp` output." })
   ),
@@ -18855,9 +18787,8 @@ export const CreateImageEditRequestMultipart = Schema.Struct({
   }),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
       Schema.Null
     ]).annotate({ "description": "The number of images to generate. Must be between 1 and 10." })
   ),
@@ -18884,7 +18815,7 @@ export const CreateImageEditRequestMultipart = Schema.Struct({
     })
   ),
   "output_compression": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description":
         "The compression level (0-100%) for the generated images. This parameter\nis only supported for the GPT image models with the `webp` or `jpeg` output\nformats, and defaults to 100.\n"
     })
@@ -18976,9 +18907,8 @@ export const CreateImageRequest = Schema.Struct({
   }),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(10).annotate({ "expected": "a value less than or equal to 10" })),
       Schema.Null
     ]).annotate({ "description": "The number of images to generate. Must be between 1 and 10." })
   ),
@@ -19002,7 +18932,7 @@ export const CreateImageRequest = Schema.Struct({
     })
   ),
   "output_compression": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description":
         "The compression level (0-100%) for the generated images. This parameter is only supported for the GPT image models with the `webp` or `jpeg` output formats, and defaults to 100."
     })
@@ -19488,9 +19418,9 @@ export const LiveDataChannelConfigParam = Schema.Struct({
         }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
           Schema.isMaxCodePoints(256).annotate({ "expected": "a string with at most 256 code points" })
         ).check(
-          Schema.isPattern(new RegExp("^(?:error|info|[a-z][a-z0-9_-]*(?:\\.[a-z0-9_-]+)+)$", "u")).annotate({
-            "expected": "a string matching the RegExp ^(?:error|info|[a-z][a-z0-9_-]*(?:\\.[a-z0-9_-]+)+)$"
-          })
+          Schema.isPattern(new globalThis.RegExp("^(?:error|info|[a-z][a-z0-9_-]*(?:\\.[a-z0-9_-]+)+)$", "u")).annotate(
+            { "expected": "a string matching the RegExp ^(?:error|info|[a-z][a-z0-9_-]*(?:\\.[a-z0-9_-]+)+)$" }
+          )
         )
       ).check(Schema.isMaxLength(256).annotate({ "expected": "a value with a length of at most 256" }))
     ], { mode: "oneOf" }).annotate({
@@ -19548,7 +19478,7 @@ export const LiveSIPTrunk = Schema.Struct({
   "caller_number": Schema.String.annotate({
     "description": "Caller phone number in E.164 format to use in the SIP From header."
   }).check(
-    Schema.isPattern(new RegExp("^\\+[1-9][0-9]{1,14}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^\\+[1-9][0-9]{1,14}$", "u")).annotate({
       "expected": "a string matching the RegExp ^\\+[1-9][0-9]{1,14}$"
     })
   )
@@ -19690,8 +19620,8 @@ export type UsageTimeBucket = {
 }
 export const UsageTimeBucket = Schema.Struct({
   "object": Schema.Literal("bucket"),
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "start_time": Schema.Int,
+  "end_time": Schema.Int,
   "results": Schema.Array(
     Schema.Union([
       UsageCompletionsResult,
@@ -20187,9 +20117,7 @@ export type RealtimeTranscriptionSessionCreateRequest = {
     readonly "prefix_padding_ms"?: number
     readonly "silence_duration_ms"?: number
   }
-  readonly "input_audio_noise_reduction"?:
-    | null
-    | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
+  readonly "input_audio_noise_reduction"?: null | { readonly "type"?: NoiseReductionType }
   readonly "input_audio_format"?: "pcm16" | "g711_ulaw" | "g711_alaw"
   readonly "input_audio_transcription"?: AudioTranscription
   readonly "include"?: ReadonlyArray<"item.input_audio_transcription.logprobs">
@@ -20227,12 +20155,7 @@ export const RealtimeTranscriptionSessionCreateRequest = Schema.Struct({
     })
   ),
   "input_audio_noise_reduction": Schema.optionalKey(
-    Schema.Union([
-      Schema.Null,
-      Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-        Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-      ])
-    ]).annotate({
+    Schema.Union([Schema.Null, Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) })]).annotate({
       "description":
         "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n"
     })
@@ -20388,9 +20311,7 @@ export type RealtimeTranscriptionSessionCreateRequestGA = {
     readonly "input"?: {
       readonly "format"?: RealtimeAudioFormats
       readonly "transcription"?: AudioTranscription
-      readonly "noise_reduction"?:
-        | null
-        | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
+      readonly "noise_reduction"?: null | { readonly "type"?: NoiseReductionType }
       readonly "turn_detection"?: RealtimeTurnDetection
     }
   }
@@ -20411,12 +20332,7 @@ export const RealtimeTranscriptionSessionCreateRequestGA = Schema.Struct({
           })
         ),
         "noise_reduction": Schema.optionalKey(
-          Schema.Union([
-            Schema.Null,
-            Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-              Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-            ])
-          ]).annotate({
+          Schema.Union([Schema.Null, Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) })]).annotate({
             "description":
               "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n"
           })
@@ -20452,9 +20368,7 @@ export type RealtimeTranscriptionSessionCreateResponseGA = {
     readonly "input"?: {
       readonly "format"?: RealtimeAudioFormats
       readonly "transcription"?: AudioTranscriptionResponse | null
-      readonly "noise_reduction"?:
-        | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
-        | null
+      readonly "noise_reduction"?: { readonly "type"?: NoiseReductionType } | null
       readonly "turn_detection"?: {
         readonly "type"?: string
         readonly "threshold"?: number
@@ -20494,12 +20408,9 @@ export const RealtimeTranscriptionSessionCreateResponseGA = Schema.Struct({
           })
         ),
         "noise_reduction": Schema.optionalKey(
-          Schema.Union([
-            Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-              Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-            ]),
-            Schema.Null
-          ]).annotate({ "description": "Configuration for input audio noise reduction.\n" })
+          Schema.Union([Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), Schema.Null]).annotate({
+            "description": "Configuration for input audio noise reduction.\n"
+          })
         ),
         "turn_detection": Schema.optionalKey(
           Schema.Union([
@@ -20563,17 +20474,13 @@ export type RealtimeSessionCreateResponse = {
     readonly "input"?: {
       readonly "format"?: RealtimeAudioFormats
       readonly "transcription"?: AudioTranscriptionResponse
-      readonly "noise_reduction"?:
-        | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
-        | null
-      readonly "turn_detection"?:
-        | {
-          readonly "type"?: string
-          readonly "threshold"?: number
-          readonly "prefix_padding_ms"?: number
-          readonly "silence_duration_ms"?: number
-        } & { readonly [x: string]: Schema.Json }
-        | null
+      readonly "noise_reduction"?: { readonly "type"?: NoiseReductionType } | null
+      readonly "turn_detection"?: {
+        readonly "type"?: string
+        readonly "threshold"?: number
+        readonly "prefix_padding_ms"?: number
+        readonly "silence_duration_ms"?: number
+      } | null
     }
     readonly "output"?: {
       readonly "format"?: RealtimeAudioFormats
@@ -20586,14 +20493,12 @@ export type RealtimeSessionCreateResponse = {
     readonly "group_id"?: string
     readonly "metadata"?: { readonly [x: string]: Schema.Json }
   }
-  readonly "turn_detection"?:
-    | {
-      readonly "type"?: string
-      readonly "threshold"?: number
-      readonly "prefix_padding_ms"?: number
-      readonly "silence_duration_ms"?: number
-    } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "turn_detection"?: {
+    readonly "type"?: string
+    readonly "threshold"?: number
+    readonly "prefix_padding_ms"?: number
+    readonly "silence_duration_ms"?: number
+  } | null
   readonly "tools"?: ReadonlyArray<RealtimeFunctionTool>
   readonly "tool_choice"?: string
   readonly "max_output_tokens"?: number | "inf"
@@ -20646,32 +20551,22 @@ export const RealtimeSessionCreateResponse = Schema.Struct({
           })
         ),
         "noise_reduction": Schema.optionalKey(
-          Schema.Union([
-            Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-              Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-            ]),
-            Schema.Null
-          ]).annotate({ "description": "Configuration for input audio noise reduction.\n" })
+          Schema.Union([Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), Schema.Null]).annotate({
+            "description": "Configuration for input audio noise reduction.\n"
+          })
         ),
         "turn_detection": Schema.optionalKey(
           Schema.Union([
-            Schema.StructWithRest(
-              Schema.Struct({
-                "type": Schema.optionalKey(
-                  Schema.String.annotate({
-                    "description": "Type of turn detection, only `server_vad` is currently supported.\n"
-                  })
-                ),
-                "threshold": Schema.optionalKey(Schema.Finite),
-                "prefix_padding_ms": Schema.optionalKey(
-                  Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))
-                ),
-                "silence_duration_ms": Schema.optionalKey(
-                  Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))
-                )
-              }),
-              [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-            ),
+            Schema.Struct({
+              "type": Schema.optionalKey(
+                Schema.String.annotate({
+                  "description": "Type of turn detection, only `server_vad` is currently supported.\n"
+                })
+              ),
+              "threshold": Schema.optionalKey(Schema.Finite),
+              "prefix_padding_ms": Schema.optionalKey(Schema.Int),
+              "silence_duration_ms": Schema.optionalKey(Schema.Int)
+            }),
             Schema.Null
           ]).annotate({ "description": "Configuration for turn detection.\n" })
         )
@@ -20716,34 +20611,31 @@ export const RealtimeSessionCreateResponse = Schema.Struct({
   ),
   "turn_detection": Schema.optionalKey(
     Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "type": Schema.optionalKey(
-            Schema.String.annotate({
-              "description": "Type of turn detection, only `server_vad` is currently supported.\n"
-            })
-          ),
-          "threshold": Schema.optionalKey(
-            Schema.Number.annotate({
-              "description":
-                "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n"
-            }).check(Schema.isFinite().annotate({ "expected": "a finite number" }))
-          ),
-          "prefix_padding_ms": Schema.optionalKey(
-            Schema.Number.annotate({
-              "description":
-                "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n"
-            }).check(Schema.isInt().annotate({ "expected": "an integer" }))
-          ),
-          "silence_duration_ms": Schema.optionalKey(
-            Schema.Number.annotate({
-              "description":
-                "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n"
-            }).check(Schema.isInt().annotate({ "expected": "an integer" }))
-          )
-        }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+      Schema.Struct({
+        "type": Schema.optionalKey(
+          Schema.String.annotate({
+            "description": "Type of turn detection, only `server_vad` is currently supported.\n"
+          })
+        ),
+        "threshold": Schema.optionalKey(
+          Schema.Number.annotate({
+            "description":
+              "Activation threshold for VAD (0.0 to 1.0), this defaults to 0.5. A\nhigher threshold will require louder audio to activate the model, and\nthus might perform better in noisy environments.\n"
+          }).check(Schema.isFinite().annotate({ "expected": "a finite number" }))
+        ),
+        "prefix_padding_ms": Schema.optionalKey(
+          Schema.Number.annotate({
+            "description":
+              "Amount of audio to include before the VAD detected speech (in\nmilliseconds). Defaults to 300ms.\n"
+          }).check(Schema.isInt().annotate({ "expected": "an integer" }))
+        ),
+        "silence_duration_ms": Schema.optionalKey(
+          Schema.Number.annotate({
+            "description":
+              "Duration of silence to detect speech stop (in milliseconds). Defaults\nto 500ms. With shorter values the model will respond more quickly,\nbut may jump in on short pauses from the user.\n"
+          }).check(Schema.isInt().annotate({ "expected": "an integer" }))
+        )
+      }),
       Schema.Null
     ]).annotate({
       "description":
@@ -20759,9 +20651,7 @@ export const RealtimeSessionCreateResponse = Schema.Struct({
     })
   ),
   "max_output_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Literal("inf")], {
-      mode: "oneOf"
-    }).annotate({
+    Schema.Union([Schema.Int, Schema.Literal("inf")], { mode: "oneOf" }).annotate({
       "description":
         "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
     })
@@ -21962,19 +21852,11 @@ export const ChatkitWorkflow = Schema.Struct({
     Schema.Null
   ]),
   "state_variables": Schema.Union([
-    Schema.Record(
-      Schema.String,
-      Schema.Union([
-        Schema.String,
-        Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-        Schema.Boolean,
-        Schema.Finite,
-        Schema.Null
-      ])
-    ).annotate({
-      "description":
-        "State variable key-value pairs applied when invoking the workflow. Defaults to null when no overrides were provided."
-    }),
+    Schema.Record(Schema.String, Schema.Union([Schema.String, Schema.Int, Schema.Boolean, Schema.Finite, Schema.Null]))
+      .annotate({
+        "description":
+          "State variable key-value pairs applied when invoking the workflow. Defaults to null when no overrides were provided."
+      }),
     Schema.Null
   ]),
   "tracing": Schema.suspend((): Schema.Codec<ChatkitWorkflowTracing> => ChatkitWorkflowTracing).annotate({
@@ -22025,7 +21907,7 @@ export const WorkflowParam = Schema.Struct({
         Schema.String.check(
           Schema.isMaxCodePoints(10485760).annotate({ "expected": "a string with at most 10485760 code points" })
         ),
-        Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+        Schema.Int,
         Schema.Boolean,
         Schema.Finite
       ], { mode: "oneOf" })
@@ -22296,7 +22178,7 @@ export const DecisionInputImage = Schema.Struct({
   }).check(Schema.isMinCodePoints(0).annotate({ "expected": "a string with at least 0 code points" })).check(
     Schema.isMaxCodePoints(1073741824).annotate({ "expected": "a string with at most 1073741824 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^(data:|https?:\\/\\/)", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^(data:|https?:\\/\\/)", "u")).annotate({
       "expected": "a string matching the RegExp ^(data:|https?:\\/\\/)"
     })
   ),
@@ -22851,10 +22733,14 @@ export const CommandExecutionItemResource = Schema.Struct({
     Schema.String.check(Schema.isMinCodePoints(0).annotate({ "expected": "a string with at least 0 code points" })),
     Schema.Null
   ]).annotate({ "description": "The command output, if available." }),
-  "exit_code": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The process exit code, if the command completed.", "format": "int64" }),
-  "duration_ms": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The command duration in milliseconds.", "format": "int64" })
+  "exit_code": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The process exit code, if the command completed.",
+    "format": "int64"
+  }),
+  "duration_ms": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The command duration in milliseconds.",
+    "format": "int64"
+  })
 }).annotate({
   "description": "A command execution produced by the agent.",
   "identifier": "CommandExecutionItemResource"
@@ -23650,7 +23536,7 @@ export const PublicCreateEndpointBody = Schema.Struct({
   "url": Schema.String.annotate({ "description": "The HTTPS URL that receives webhook deliveries." }).check(
     Schema.isMaxCodePoints(2048).annotate({ "expected": "a string with at most 2048 code points" })
   ).check(
-    Schema.isPattern(new RegExp("^https:\\/\\/", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^https:\\/\\/", "u")).annotate({
       "expected": "a string matching the RegExp ^https:\\/\\/"
     })
   ),
@@ -23673,7 +23559,7 @@ export const PublicUpdateEndpointBody = Schema.Struct({
     Schema.String.annotate({ "description": "A new HTTPS URL that receives webhook deliveries." }).check(
       Schema.isMaxCodePoints(2048).annotate({ "expected": "a string with at most 2048 code points" })
     ).check(
-      Schema.isPattern(new RegExp("^https:\\/\\/", "u")).annotate({
+      Schema.isPattern(new globalThis.RegExp("^https:\\/\\/", "u")).annotate({
         "expected": "a string matching the RegExp ^https:\\/\\/"
       })
     )
@@ -24058,7 +23944,7 @@ export const BetaMCPTool = Schema.Struct({
       "description":
         "The Secure MCP Tunnel ID to use instead of a direct server URL. One of\n`server_url`, `connector_id`, or `tunnel_id` must be provided.\n"
     }).check(
-      Schema.isPattern(new RegExp("^tunnel_[a-z0-9]{32}$", "u")).annotate({
+      Schema.isPattern(new globalThis.RegExp("^tunnel_[a-z0-9]{32}$", "u")).annotate({
         "expected": "a string matching the RegExp ^tunnel_[a-z0-9]{32}$"
       })
     )
@@ -24312,7 +24198,7 @@ export type BetaFunctionToolParam = {
 export const BetaFunctionToolParam = Schema.Struct({
   "name": Schema.String.check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" }))
     .check(Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })).check(
-      Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+      Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
         "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
       })
     ),
@@ -24372,7 +24258,7 @@ export const BetaToolSearchOutputFunctionToolParam = Schema.Struct({
   "name": Schema.String.annotate({ "description": "The name of the loaded function tool." }).check(
     Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
   ).check(Schema.isMaxCodePoints(128).annotate({ "expected": "a string with at most 128 code points" })).check(
-    Schema.isPattern(new RegExp("^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$", "u")).annotate({
       "expected": "a string matching the RegExp ^(?![\\s\\S]*[\\r\\n])[a-zA-Z0-9_.-]+$"
     })
   ),
@@ -26209,7 +26095,7 @@ export type BetaLogProb = {
 export const BetaLogProb = Schema.Struct({
   "token": Schema.String,
   "logprob": Schema.Finite,
-  "bytes": Schema.Array(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "bytes": Schema.Array(Schema.Int),
   "top_logprobs": Schema.Array(BetaTopLogProb)
 }).annotate({
   "title": "Log probability",
@@ -26904,7 +26790,7 @@ export const BetaMisalignmentErrorDetailsResource = Schema.Struct({
       }).check(Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })).check(
         Schema.isMaxCodePoints(96).annotate({ "expected": "a string with at most 96 code points" })
       ).check(
-        Schema.isPattern(new RegExp("^[A-Za-z0-9._~:-]+$", "u")).annotate({
+        Schema.isPattern(new globalThis.RegExp("^[A-Za-z0-9._~:-]+$", "u")).annotate({
           "expected": "a string matching the RegExp ^[A-Za-z0-9._~:-]+$"
         })
       ),
@@ -27386,9 +27272,7 @@ export type ChatCompletionResponseMessage = {
     }
   >
   readonly "role": "assistant"
-  readonly "function_call"?:
-    | { readonly "arguments": string; readonly "name": string } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "function_call"?: { readonly "arguments": string; readonly "name": string } | null
   readonly "audio"?: {
     readonly "id": string
     readonly "expires_at": number
@@ -27430,16 +27314,13 @@ export const ChatCompletionResponseMessage = Schema.Struct({
   "role": Schema.Literal("assistant").annotate({ "description": "The role of the author of this message." }),
   "function_call": Schema.optionalKey(
     Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "arguments": Schema.String.annotate({
-            "description":
-              "The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
-          }),
-          "name": Schema.String.annotate({ "description": "The name of the function to call." })
+      Schema.Struct({
+        "arguments": Schema.String.annotate({
+          "description":
+            "The arguments to call the function with, as generated by the model in JSON format. Note that the model does not always generate valid JSON, and may hallucinate parameters not defined by your function schema. Validate the arguments in your code before calling your function."
         }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+        "name": Schema.String.annotate({ "description": "The name of the function to call." })
+      }),
       Schema.Null
     ]).annotate({
       "description":
@@ -27653,7 +27534,7 @@ export const CreateContainerBody = Schema.Struct({
       "anchor": Schema.Literal("last_active_at").annotate({
         "description": "Time anchor for the expiration time. Currently only 'last_active_at' is supported."
       }),
-      "minutes": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))
+      "minutes": Schema.Int
     }).annotate({ "description": "Container expiration time in seconds relative to the 'anchor' time." })
   ),
   "skills": Schema.optionalKey(
@@ -28503,7 +28384,7 @@ export const LiveSIPTransport = Schema.Struct({
   "destination": Schema.String.annotate({
     "description": "Phone number to call in E.164 format. SIP URI destinations are not supported."
   }).check(
-    Schema.isPattern(new RegExp("^\\+[1-9][0-9]{1,14}$", "u")).annotate({
+    Schema.isPattern(new globalThis.RegExp("^\\+[1-9][0-9]{1,14}$", "u")).annotate({
       "expected": "a string matching the RegExp ^\\+[1-9][0-9]{1,14}$"
     })
   ),
@@ -29024,34 +28905,25 @@ export const MessageDeltaObject = Schema.Struct({
   "description": "Represents a message delta i.e. any changed fields on a message during streaming.\n",
   "identifier": "MessageDeltaObject"
 })
-export type ListVectorStoresResponse =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "object": string
-    readonly "data": ReadonlyArray<VectorStoreObject>
-    readonly "first_id": string
-    readonly "last_id": string
-    readonly "has_more": boolean
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type ListVectorStoresResponse = null | string | number | boolean | {
+  readonly "object": string
+  readonly "data": ReadonlyArray<VectorStoreObject>
+  readonly "first_id": string
+  readonly "last_id": string
+  readonly "has_more": boolean
+} | ReadonlyArray<Schema.Json>
 export const ListVectorStoresResponse = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "object": Schema.String,
-      "data": Schema.Array(VectorStoreObject),
-      "first_id": Schema.String,
-      "last_id": Schema.String,
-      "has_more": Schema.Boolean
-    }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+  Schema.Struct({
+    "object": Schema.String,
+    "data": Schema.Array(VectorStoreObject),
+    "first_id": Schema.String,
+    "last_id": Schema.String,
+    "has_more": Schema.Boolean
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({ "identifier": "ListVectorStoresResponse" })
 export type CreateVectorStoreRequest = {
@@ -29193,8 +29065,8 @@ export type DecisionsUsageBucket = {
 }
 export const DecisionsUsageBucket = Schema.Struct({
   "object": Schema.Literal("bucket"),
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
+  "start_time": Schema.Int,
+  "end_time": Schema.Int,
   "results": Schema.Array(DecisionsUsageResult)
 }).annotate({ "identifier": "DecisionsUsageBucket" })
 export type ExternalStorageListResource = {
@@ -29653,12 +29525,11 @@ export const SubagentResource = Schema.Struct({
     "description": "The Unix timestamp, in seconds, when the subagent was first opened. Resuming does not change it.",
     "format": "int64"
   }).check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "closed_at": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({
-      "description":
-        "The Unix timestamp, in seconds, when the subagent was closed. Null while active, including after resume.",
-      "format": "int64"
-    })
+  "closed_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description":
+      "The Unix timestamp, in seconds, when the subagent was closed. Null while active, including after resume.",
+    "format": "int64"
+  })
 }).annotate({ "description": "A subagent created within a session.", "identifier": "SubagentResource" })
 export type AgentMessageItemResource = {
   readonly "id": string
@@ -29906,12 +29777,11 @@ export const TurnResource = Schema.Struct({
       "The Unix timestamp, in seconds, used to order the turn by creation time. Subagent turns use their start time, falling back to completion time or the subagent opening time when the preceding timestamps are unavailable.",
     "format": "int64"
   }).check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "started_at": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The Unix timestamp, in seconds, when the turn started.", "format": "int64" }),
-  "completed_at": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-    Schema.Null
-  ]).annotate({
+  "started_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The Unix timestamp, in seconds, when the turn started.",
+    "format": "int64"
+  }),
+  "completed_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
     "description": "The Unix timestamp, in seconds, when the turn reached a terminal state.",
     "format": "int64"
   }),
@@ -31983,25 +31853,20 @@ export type RunObject = {
     | "completed"
     | "incomplete"
     | "expired"
-  readonly "required_action":
-    | {
-      readonly "type": "submit_tool_outputs"
-      readonly "submit_tool_outputs": { readonly "tool_calls": ReadonlyArray<RunToolCallObject> }
-    } & { readonly [x: string]: Schema.Json }
-    | null
-  readonly "last_error":
-    | { readonly "code": "server_error" | "rate_limit_exceeded" | "invalid_prompt"; readonly "message": string } & {
-      readonly [x: string]: Schema.Json
-    }
-    | null
+  readonly "required_action": {
+    readonly "type": "submit_tool_outputs"
+    readonly "submit_tool_outputs": { readonly "tool_calls": ReadonlyArray<RunToolCallObject> }
+  } | null
+  readonly "last_error": {
+    readonly "code": "server_error" | "rate_limit_exceeded" | "invalid_prompt"
+    readonly "message": string
+  } | null
   readonly "expires_at": number | null
   readonly "started_at": number | null
   readonly "cancelled_at": number | null
   readonly "failed_at": number | null
   readonly "completed_at": number | null
-  readonly "incomplete_details":
-    | { readonly "reason"?: "max_completion_tokens" | "max_prompt_tokens" } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "incomplete_details": { readonly "reason"?: "max_completion_tokens" | "max_prompt_tokens" } | null
   readonly "model": string
   readonly "instructions": string
   readonly "tools": ReadonlyArray<AssistantToolsCode | AssistantToolsFileSearch | AssistantToolsFunction>
@@ -32046,67 +31911,56 @@ export const RunObject = Schema.Struct({
       "The status of the run, which can be either `queued`, `in_progress`, `requires_action`, `cancelling`, `cancelled`, `failed`, `completed`, `incomplete`, or `expired`."
   }),
   "required_action": Schema.Union([
-    Schema.StructWithRest(
-      Schema.Struct({
-        "type": Schema.Literal("submit_tool_outputs").annotate({
-          "description": "For now, this is always `submit_tool_outputs`."
-        }),
-        "submit_tool_outputs": Schema.Struct({
-          "tool_calls": Schema.Array(RunToolCallObject).annotate({
-            "description": "A list of the relevant tool calls."
-          })
-        }).annotate({ "description": "Details on the tool outputs needed for this run to continue." })
+    Schema.Struct({
+      "type": Schema.Literal("submit_tool_outputs").annotate({
+        "description": "For now, this is always `submit_tool_outputs`."
       }),
-      [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-    ),
+      "submit_tool_outputs": Schema.Struct({
+        "tool_calls": Schema.Array(RunToolCallObject).annotate({ "description": "A list of the relevant tool calls." })
+      }).annotate({ "description": "Details on the tool outputs needed for this run to continue." })
+    }),
     Schema.Null
   ]).annotate({
     "description": "Details on the action required to continue the run. Will be `null` if no action is required."
   }),
   "last_error": Schema.Union([
-    Schema.StructWithRest(
-      Schema.Struct({
-        "code": Schema.Literals(["server_error", "rate_limit_exceeded", "invalid_prompt"]).annotate({
-          "description": "One of `server_error`, `rate_limit_exceeded`, or `invalid_prompt`."
-        }),
-        "message": Schema.String.annotate({ "description": "A human-readable description of the error." })
+    Schema.Struct({
+      "code": Schema.Literals(["server_error", "rate_limit_exceeded", "invalid_prompt"]).annotate({
+        "description": "One of `server_error`, `rate_limit_exceeded`, or `invalid_prompt`."
       }),
-      [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-    ),
+      "message": Schema.String.annotate({ "description": "A human-readable description of the error." })
+    }),
     Schema.Null
   ]).annotate({ "description": "The last error associated with this run. Will be `null` if there are no errors." }),
-  "expires_at": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The Unix timestamp (in seconds) for when the run will expire.", "format": "unixtime" }),
-  "started_at": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The Unix timestamp (in seconds) for when the run was started.", "format": "unixtime" }),
-  "cancelled_at": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-    Schema.Null
-  ]).annotate({
+  "expires_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The Unix timestamp (in seconds) for when the run will expire.",
+    "format": "unixtime"
+  }),
+  "started_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The Unix timestamp (in seconds) for when the run was started.",
+    "format": "unixtime"
+  }),
+  "cancelled_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
     "description": "The Unix timestamp (in seconds) for when the run was cancelled.",
     "format": "unixtime"
   }),
-  "failed_at": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-    .annotate({ "description": "The Unix timestamp (in seconds) for when the run failed.", "format": "unixtime" }),
-  "completed_at": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-    Schema.Null
-  ]).annotate({
+  "failed_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
+    "description": "The Unix timestamp (in seconds) for when the run failed.",
+    "format": "unixtime"
+  }),
+  "completed_at": Schema.Union([Schema.Int, Schema.Null]).annotate({
     "description": "The Unix timestamp (in seconds) for when the run was completed.",
     "format": "unixtime"
   }),
   "incomplete_details": Schema.Union([
-    Schema.StructWithRest(
-      Schema.Struct({
-        "reason": Schema.optionalKey(
-          Schema.Literals(["max_completion_tokens", "max_prompt_tokens"]).annotate({
-            "description":
-              "The reason why the run is incomplete. This will point to which specific token limit was reached over the course of the run."
-          })
-        )
-      }),
-      [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-    ),
+    Schema.Struct({
+      "reason": Schema.optionalKey(
+        Schema.Literals(["max_completion_tokens", "max_prompt_tokens"]).annotate({
+          "description":
+            "The reason why the run is incomplete. This will point to which specific token limit was reached over the course of the run."
+        })
+      )
+    }),
     Schema.Null
   ]).annotate({ "description": "Details on why the run is incomplete. Will be `null` if the run is not incomplete." }),
   "model": Schema.String.annotate({
@@ -32136,7 +31990,7 @@ export const RunObject = Schema.Struct({
     })
   ),
   "max_prompt_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+    Schema.Int.check(
       Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
     ),
     Schema.Null
@@ -32144,7 +31998,7 @@ export const RunObject = Schema.Struct({
     "description": "The maximum number of prompt tokens specified to have been used over the course of the run.\n"
   }),
   "max_completion_tokens": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+    Schema.Int.check(
       Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
     ),
     Schema.Null
@@ -32251,7 +32105,7 @@ export const CreateRunRequest = Schema.Struct({
   ),
   "max_prompt_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
       ),
       Schema.Null
@@ -32262,7 +32116,7 @@ export const CreateRunRequest = Schema.Struct({
   ),
   "max_completion_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
       ),
       Schema.Null
@@ -33932,12 +33786,10 @@ export type CreateThreadAndRunRequest = {
     | null
   readonly "instructions"?: string | null
   readonly "tools"?: ReadonlyArray<AssistantToolsCode | AssistantToolsFileSearch | AssistantToolsFunction> | null
-  readonly "tool_resources"?:
-    | {
-      readonly "code_interpreter"?: { readonly "file_ids"?: ReadonlyArray<string> }
-      readonly "file_search"?: { readonly "vector_store_ids"?: ReadonlyArray<string> }
-    } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "tool_resources"?: {
+    readonly "code_interpreter"?: { readonly "file_ids"?: ReadonlyArray<string> }
+    readonly "file_search"?: { readonly "vector_store_ids"?: ReadonlyArray<string> }
+  } | null
   readonly "metadata"?: Metadata
   readonly "temperature"?: number | null
   readonly "top_p"?: number | null
@@ -34023,27 +33875,24 @@ export const CreateThreadAndRunRequest = Schema.Struct({
   ),
   "tool_resources": Schema.optionalKey(
     Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "code_interpreter": Schema.optionalKey(Schema.Struct({
-            "file_ids": Schema.optionalKey(
-              Schema.Array(Schema.String).annotate({
-                "description":
-                  "A list of [file](https://developers.openai.com/api/reference/resources/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n"
-              }).check(Schema.isMaxLength(20).annotate({ "expected": "a value with a length of at most 20" }))
-            )
-          })),
-          "file_search": Schema.optionalKey(Schema.Struct({
-            "vector_store_ids": Schema.optionalKey(
-              Schema.Array(Schema.String).annotate({
-                "description":
-                  "The ID of the [vector store](https://developers.openai.com/api/reference/resources/vector_stores) attached to this assistant. There can be a maximum of 1 vector store attached to the assistant.\n"
-              }).check(Schema.isMaxLength(1).annotate({ "expected": "a value with a length of at most 1" }))
-            )
-          }))
-        }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+      Schema.Struct({
+        "code_interpreter": Schema.optionalKey(Schema.Struct({
+          "file_ids": Schema.optionalKey(
+            Schema.Array(Schema.String).annotate({
+              "description":
+                "A list of [file](https://developers.openai.com/api/reference/resources/files) IDs made available to the `code_interpreter` tool. There can be a maximum of 20 files associated with the tool.\n"
+            }).check(Schema.isMaxLength(20).annotate({ "expected": "a value with a length of at most 20" }))
+          )
+        })),
+        "file_search": Schema.optionalKey(Schema.Struct({
+          "vector_store_ids": Schema.optionalKey(
+            Schema.Array(Schema.String).annotate({
+              "description":
+                "The ID of the [vector store](https://developers.openai.com/api/reference/resources/vector_stores) attached to this assistant. There can be a maximum of 1 vector store attached to the assistant.\n"
+            }).check(Schema.isMaxLength(1).annotate({ "expected": "a value with a length of at most 1" }))
+          )
+        }))
+      }),
       Schema.Null
     ]).annotate({
       "description":
@@ -34081,7 +33930,7 @@ export const CreateThreadAndRunRequest = Schema.Struct({
   ),
   "max_prompt_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
       ),
       Schema.Null
@@ -34092,7 +33941,7 @@ export const CreateThreadAndRunRequest = Schema.Struct({
   ),
   "max_completion_tokens": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(256).annotate({ "expected": "a value greater than or equal to 256" })
       ),
       Schema.Null
@@ -34132,34 +33981,25 @@ export const RunStepDeltaObject = Schema.Struct({
   "description": "Represents a run step delta i.e. any changed fields on a run step during streaming.\n",
   "identifier": "RunStepDeltaObject"
 })
-export type ListMessagesResponse =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "object": string
-    readonly "data": ReadonlyArray<MessageObject>
-    readonly "first_id": string
-    readonly "last_id": string
-    readonly "has_more": boolean
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type ListMessagesResponse = null | string | number | boolean | {
+  readonly "object": string
+  readonly "data": ReadonlyArray<MessageObject>
+  readonly "first_id": string
+  readonly "last_id": string
+  readonly "has_more": boolean
+} | ReadonlyArray<Schema.Json>
 export const ListMessagesResponse = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "object": Schema.String,
-      "data": Schema.Array(MessageObject),
-      "first_id": Schema.String,
-      "last_id": Schema.String,
-      "has_more": Schema.Boolean
-    }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+  Schema.Struct({
+    "object": Schema.String,
+    "data": Schema.Array(MessageObject),
+    "first_id": Schema.String,
+    "last_id": Schema.String,
+    "has_more": Schema.Boolean
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({ "identifier": "ListMessagesResponse" })
 export type MessageStreamEvent =
@@ -34201,34 +34041,25 @@ export const CreateVectorStoreFileRequest = Schema.Struct({
   "chunking_strategy": Schema.optionalKey(ChunkingStrategyRequestParam),
   "attributes": Schema.optionalKey(VectorStoreFileAttributes)
 }).annotate({ "identifier": "CreateVectorStoreFileRequest" })
-export type ListVectorStoreFilesResponse =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "object": string
-    readonly "data": ReadonlyArray<VectorStoreFileObject>
-    readonly "first_id": string
-    readonly "last_id": string
-    readonly "has_more": boolean
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type ListVectorStoreFilesResponse = null | string | number | boolean | {
+  readonly "object": string
+  readonly "data": ReadonlyArray<VectorStoreFileObject>
+  readonly "first_id": string
+  readonly "last_id": string
+  readonly "has_more": boolean
+} | ReadonlyArray<Schema.Json>
 export const ListVectorStoreFilesResponse = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "object": Schema.String,
-      "data": Schema.Array(VectorStoreFileObject),
-      "first_id": Schema.String,
-      "last_id": Schema.String,
-      "has_more": Schema.Boolean
-    }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+  Schema.Struct({
+    "object": Schema.String,
+    "data": Schema.Array(VectorStoreFileObject),
+    "first_id": Schema.String,
+    "last_id": Schema.String,
+    "has_more": Schema.Boolean
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({ "identifier": "ListVectorStoreFilesResponse" })
 export type PublicDecisionsUsageResponseResource = {
@@ -35743,12 +35574,10 @@ export type CreateChatCompletionStreamResponse = {
   readonly "choices": ReadonlyArray<
     {
       readonly "delta": ChatCompletionStreamResponseDelta
-      readonly "logprobs"?:
-        | {
-          readonly "content": ReadonlyArray<ChatCompletionTokenLogprob> | null
-          readonly "refusal": ReadonlyArray<ChatCompletionTokenLogprob> | null
-        } & { readonly [x: string]: Schema.Json }
-        | null
+      readonly "logprobs"?: {
+        readonly "content": ReadonlyArray<ChatCompletionTokenLogprob> | null
+        readonly "refusal": ReadonlyArray<ChatCompletionTokenLogprob> | null
+      } | null
       readonly "finish_reason"?: "stop" | "length" | "tool_calls" | "content_filter" | "function_call" | null
       readonly "index": number
     }
@@ -35770,17 +35599,14 @@ export const CreateChatCompletionStreamResponse = Schema.Struct({
     "delta": ChatCompletionStreamResponseDelta,
     "logprobs": Schema.optionalKey(
       Schema.Union([
-        Schema.StructWithRest(
-          Schema.Struct({
-            "content": Schema.Union([Schema.Array(ChatCompletionTokenLogprob), Schema.Null]).annotate({
-              "description": "A list of message content tokens with log probability information."
-            }),
-            "refusal": Schema.Union([Schema.Array(ChatCompletionTokenLogprob), Schema.Null]).annotate({
-              "description": "A list of message refusal tokens with log probability information."
-            })
+        Schema.Struct({
+          "content": Schema.Union([Schema.Array(ChatCompletionTokenLogprob), Schema.Null]).annotate({
+            "description": "A list of message content tokens with log probability information."
           }),
-          [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-        ),
+          "refusal": Schema.Union([Schema.Array(ChatCompletionTokenLogprob), Schema.Null]).annotate({
+            "description": "A list of message refusal tokens with log probability information."
+          })
+        }),
         Schema.Null
       ]).annotate({ "description": "Log probability information for the choice." })
     ),
@@ -36025,9 +35851,7 @@ export type RealtimeSessionCreateRequestGA = {
     readonly "input"?: {
       readonly "format"?: RealtimeAudioFormats
       readonly "transcription"?: AudioTranscription
-      readonly "noise_reduction"?:
-        | null
-        | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
+      readonly "noise_reduction"?: null | { readonly "type"?: NoiseReductionType }
       readonly "turn_detection"?: RealtimeTurnDetection
     }
     readonly "output"?: {
@@ -36105,12 +35929,7 @@ export const RealtimeSessionCreateRequestGA = Schema.Struct({
           })
         ),
         "noise_reduction": Schema.optionalKey(
-          Schema.Union([
-            Schema.Null,
-            Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-              Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-            ])
-          ]).annotate({
+          Schema.Union([Schema.Null, Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) })]).annotate({
             "description":
               "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n"
           })
@@ -36198,9 +36017,7 @@ export const RealtimeSessionCreateRequestGA = Schema.Struct({
   ),
   "reasoning": Schema.optionalKey(RealtimeReasoning),
   "max_output_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Literal("inf")], {
-      mode: "oneOf"
-    }).annotate({
+    Schema.Union([Schema.Int, Schema.Literal("inf")], { mode: "oneOf" }).annotate({
       "description":
         "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
     })
@@ -36244,9 +36061,7 @@ export type RealtimeSessionCreateResponseGA = {
     readonly "input"?: {
       readonly "format"?: RealtimeAudioFormats
       readonly "transcription"?: AudioTranscriptionResponse | null
-      readonly "noise_reduction"?:
-        | { readonly "type"?: NoiseReductionType } & { readonly [x: string]: Schema.Json }
-        | null
+      readonly "noise_reduction"?: { readonly "type"?: NoiseReductionType } | null
       readonly "turn_detection"?: RealtimeTurnDetection
     }
     readonly "output"?: {
@@ -36335,12 +36150,7 @@ export const RealtimeSessionCreateResponseGA = Schema.Struct({
           })
         ),
         "noise_reduction": Schema.optionalKey(
-          Schema.Union([
-            Schema.StructWithRest(Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), [
-              Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))
-            ]),
-            Schema.Null
-          ]).annotate({
+          Schema.Union([Schema.Struct({ "type": Schema.optionalKey(NoiseReductionType) }), Schema.Null]).annotate({
             "description":
               "Configuration for input audio noise reduction. This can be set to `null` to turn off.\nNoise reduction filters audio added to the input audio buffer before it is sent to VAD and the model.\nFiltering the audio can improve VAD and turn detection accuracy (reducing false positives) and model performance by improving perception of the input audio.\n"
           })
@@ -36424,9 +36234,7 @@ export const RealtimeSessionCreateResponseGA = Schema.Struct({
   ),
   "reasoning": Schema.optionalKey(RealtimeReasoning),
   "max_output_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Literal("inf")], {
-      mode: "oneOf"
-    }).annotate({
+    Schema.Union([Schema.Int, Schema.Literal("inf")], { mode: "oneOf" }).annotate({
       "description":
         "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
     })
@@ -36611,9 +36419,7 @@ export const RealtimeSessionCreateRequest = Schema.Struct({
     }).check(Schema.isFinite().annotate({ "expected": "a finite number" }))
   ),
   "max_response_output_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Literal("inf")], {
-      mode: "oneOf"
-    }).annotate({
+    Schema.Union([Schema.Int, Schema.Literal("inf")], { mode: "oneOf" }).annotate({
       "description":
         "Maximum number of output tokens for a single assistant response,\ninclusive of tool calls. Provide an integer between 1 and 4096 to\nlimit output tokens, or `inf` for the maximum available tokens for a\ngiven model. Defaults to `inf`.\n"
     })
@@ -38366,34 +38172,25 @@ export const RunStepStreamEvent = Schema.Union([
     "description": "Occurs when a [run step](https://developers.openai.com/api/docs/assistants/migration) expires."
   })
 ], { mode: "oneOf" }).annotate({ "identifier": "RunStepStreamEvent" })
-export type ListRunStepsResponse =
-  | null
-  | string
-  | number
-  | boolean
-  | {
-    readonly "object": string
-    readonly "data": ReadonlyArray<RunStepObject>
-    readonly "first_id": string
-    readonly "last_id": string
-    readonly "has_more": boolean
-  } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type ListRunStepsResponse = null | string | number | boolean | {
+  readonly "object": string
+  readonly "data": ReadonlyArray<RunStepObject>
+  readonly "first_id": string
+  readonly "last_id": string
+  readonly "has_more": boolean
+} | ReadonlyArray<Schema.Json>
 export const ListRunStepsResponse = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "object": Schema.String,
-      "data": Schema.Array(RunStepObject),
-      "first_id": Schema.String,
-      "last_id": Schema.String,
-      "has_more": Schema.Boolean
-    }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+  Schema.Struct({
+    "object": Schema.String,
+    "data": Schema.Array(RunStepObject),
+    "first_id": Schema.String,
+    "last_id": Schema.String,
+    "has_more": Schema.Boolean
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ]).annotate({ "identifier": "ListRunStepsResponse" })
 export type ChatCompletionList = {
@@ -38442,18 +38239,14 @@ export type CreateChatCompletionRequest = {
   readonly "frequency_penalty"?: number | null
   readonly "presence_penalty"?: number | null
   readonly "web_search_options"?: {
-    readonly "user_location"?:
-      | { readonly "type": "approximate"; readonly "approximate": WebSearchLocation } & {
-        readonly [x: string]: Schema.Json
-      }
-      | null
+    readonly "user_location"?: { readonly "type": "approximate"; readonly "approximate": WebSearchLocation } | null
     readonly "search_context_size"?: WebSearchContextSize
   }
   readonly "response_format"?: ResponseFormatText | ResponseFormatJsonSchema | ResponseFormatJsonObject
-  readonly "audio"?:
-    | { readonly "voice": VoiceIdsOrCustomVoice; readonly "format": "wav" | "aac" | "mp3" | "flac" | "opus" | "pcm16" }
-      & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "audio"?: {
+    readonly "voice": VoiceIdsOrCustomVoice
+    readonly "format": "wav" | "aac" | "mp3" | "flac" | "opus" | "pcm16"
+  } | null
   readonly "store"?: boolean | null
   readonly "moderation"?: ModerationParam | null
   readonly "stream"?: boolean | null
@@ -38560,7 +38353,7 @@ export const CreateChatCompletionRequest = Schema.Struct({
   "verbosity": Schema.optionalKey(Verbosity),
   "reasoning_effort": Schema.optionalKey(ReasoningEffort),
   "max_completion_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description":
         "An upper bound for the number of tokens that can be generated for a completion, including visible output tokens and [reasoning tokens](https://developers.openai.com/api/docs/guides/reasoning).\n"
     })
@@ -38591,15 +38384,12 @@ export const CreateChatCompletionRequest = Schema.Struct({
     Schema.Struct({
       "user_location": Schema.optionalKey(
         Schema.Union([
-          Schema.StructWithRest(
-            Schema.Struct({
-              "type": Schema.Literal("approximate").annotate({
-                "description": "The type of location approximation. Always `approximate`.\n"
-              }),
-              "approximate": WebSearchLocation
+          Schema.Struct({
+            "type": Schema.Literal("approximate").annotate({
+              "description": "The type of location approximation. Always `approximate`.\n"
             }),
-            [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-          ),
+            "approximate": WebSearchLocation
+          }),
           Schema.Null
         ]).annotate({ "description": "Approximate location parameters for the search.\n" })
       ),
@@ -38618,19 +38408,16 @@ export const CreateChatCompletionRequest = Schema.Struct({
   ),
   "audio": Schema.optionalKey(
     Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "voice": Schema.suspend((): Schema.Codec<VoiceIdsOrCustomVoice> => VoiceIdsOrCustomVoice).annotate({
-            "description":
-              "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `nova`, `onyx`,\n`sage`, `shimmer`, `marin`, and `cedar`. You may also provide a\ncustom voice object with an `id`, for example `{ \"id\": \"voice_1234\" }`.\nCustom voices must be created from audio samples.\n"
-          }),
-          "format": Schema.Literals(["wav", "aac", "mp3", "flac", "opus", "pcm16"]).annotate({
-            "description":
-              "Specifies the output audio format. Must be one of `wav`, `mp3`, `flac`,\n`opus`, or `pcm16`.\n"
-          })
+      Schema.Struct({
+        "voice": Schema.suspend((): Schema.Codec<VoiceIdsOrCustomVoice> => VoiceIdsOrCustomVoice).annotate({
+          "description":
+            "The voice the model uses to respond. Supported built-in voices are\n`alloy`, `ash`, `ballad`, `coral`, `echo`, `fable`, `nova`, `onyx`,\n`sage`, `shimmer`, `marin`, and `cedar`. You may also provide a\ncustom voice object with an `id`, for example `{ \"id\": \"voice_1234\" }`.\nCustom voices must be created from audio samples.\n"
         }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+        "format": Schema.Literals(["wav", "aac", "mp3", "flac", "opus", "pcm16"]).annotate({
+          "description":
+            "Specifies the output audio format. Must be one of `wav`, `mp3`, `flac`,\n`opus`, or `pcm16`.\n"
+        })
+      }),
       Schema.Null
     ]).annotate({
       "description":
@@ -38659,10 +38446,7 @@ export const CreateChatCompletionRequest = Schema.Struct({
   ),
   "stop": Schema.optionalKey(StopConfiguration),
   "logit_bias": Schema.optionalKey(
-    Schema.Union([
-      Schema.Record(Schema.String, Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
-      Schema.Null
-    ]).annotate({
+    Schema.Union([Schema.Record(Schema.String, Schema.Int), Schema.Null]).annotate({
       "description":
         "Modify the likelihood of specified tokens appearing in the completion.\n\nAccepts a JSON object that maps tokens (specified by their token ID in the\ntokenizer) to an associated bias value from -100 to 100. Mathematically,\nthe bias is added to the logits generated by the model prior to sampling.\nThe exact effect will vary per model, but values between -1 and 1 should\ndecrease or increase likelihood of selection; values like -100 or 100\nshould result in a ban or exclusive selection of the relevant token.\n"
     })
@@ -38674,16 +38458,15 @@ export const CreateChatCompletionRequest = Schema.Struct({
     })
   ),
   "max_tokens": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null]).annotate({
+    Schema.Union([Schema.Int, Schema.Null]).annotate({
       "description":
         "The maximum number of [tokens](https://platform.openai.com/tokenizer) that can be generated in the\nchat completion. This value can be used to control\n[costs](https://openai.com/api/pricing/) for text generated via API.\n\nThis value is now deprecated in favor of `max_completion_tokens`, and is\nnot compatible with [o-series models](https://developers.openai.com/api/docs/guides/reasoning).\n"
     })
   ),
   "n": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(128).annotate({ "expected": "a value less than or equal to 128" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(128).annotate({ "expected": "a value less than or equal to 128" })),
       Schema.Null
     ]).annotate({
       "description":
@@ -38698,7 +38481,7 @@ export const CreateChatCompletionRequest = Schema.Struct({
   ),
   "seed": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+      Schema.Int.check(
         Schema.isGreaterThanOrEqualTo(-9223372036854776000).annotate({
           "expected": "a value greater than or equal to -9223372036854776000"
         })
@@ -39356,7 +39139,7 @@ export const InputItem = Schema.Union([
           Schema.String.annotate({ "description": "The namespace of the tool that produced the output." }).check(
             Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
           ).check(Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })).check(
-            Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+            Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
               "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
             })
           ),
@@ -40096,11 +39879,10 @@ export const SessionEventAgentSessionTurnItemAdded = Schema.Struct({
     Schema.Null
   ]).annotate({ "description": "The ID of the turn associated with the event, when applicable." }),
   "output_index": Schema.Union([
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(
-      Schema.isLessThanOrEqualTo(4294967295).annotate({ "expected": "a value less than or equal to 4294967295" })
-    ),
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(
+        Schema.isLessThanOrEqualTo(4294967295).annotate({ "expected": "a value less than or equal to 4294967295" })
+      ),
     Schema.Null
   ]).annotate({
     "description": "The index of the item in the turn output, when the item is agent output.",
@@ -40997,7 +40779,7 @@ export const BetaInputItem = Schema.Union([
           Schema.String.annotate({ "description": "The namespace of the tool that produced the output." }).check(
             Schema.isMinLength(1).annotate({ "expected": "a value with a length of at least 1" })
           ).check(Schema.isMaxCodePoints(64).annotate({ "expected": "a string with at most 64 code points" })).check(
-            Schema.isPattern(new RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
+            Schema.isPattern(new globalThis.RegExp("^[a-zA-Z0-9_-]+$", "u")).annotate({
               "expected": "a string matching the RegExp ^[a-zA-Z0-9_-]+$"
             })
           ),
@@ -45568,13 +45350,11 @@ export type FineTuningJob = {
   }
   readonly "fine_tuned_model": string | null
   readonly "finished_at": number | null
-  readonly "hyperparameters"?:
-    | {
-      readonly "batch_size"?: "auto" | number | null
-      readonly "learning_rate_multiplier"?: "auto" | number
-      readonly "n_epochs"?: "auto" | number
-    } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "hyperparameters"?: {
+    readonly "batch_size"?: "auto" | number | null
+    readonly "learning_rate_multiplier"?: "auto" | number
+    readonly "n_epochs"?: "auto" | number
+  } | null
   readonly "model": string
   readonly "object": "fine_tuning.job"
   readonly "organization_id": string
@@ -45609,13 +45389,11 @@ export type FineTuningJob = {
   }
   readonly "fine_tuned_model": string | null
   readonly "finished_at": number | null
-  readonly "hyperparameters":
-    | {
-      readonly "batch_size"?: "auto" | number | null
-      readonly "learning_rate_multiplier"?: "auto" | number
-      readonly "n_epochs"?: "auto" | number
-    } & { readonly [x: string]: Schema.Json }
-    | null
+  readonly "hyperparameters": {
+    readonly "batch_size"?: "auto" | number | null
+    readonly "learning_rate_multiplier"?: "auto" | number
+    readonly "n_epochs"?: "auto" | number
+  } | null
   readonly "model": string
   readonly "object": "fine_tuning.job"
   readonly "organization_id": string
@@ -45684,45 +45462,42 @@ export const FineTuningJob = Schema.Union([
     ]),
     "hyperparameters": Schema.optionalKey(
       Schema.Union([
-        Schema.StructWithRest(
-          Schema.Struct({
-            "batch_size": Schema.optionalKey(
-              Schema.Union([
-                Schema.Union([
-                  Schema.Literal("auto"),
-                  Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-                    Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-                  ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
-                ], { mode: "oneOf" }).annotate({
-                  "description":
-                    "Number of examples in each batch. A larger batch size means that model parameters\nare updated less frequently, but with lower variance.\n"
-                }),
-                Schema.Null
-              ])
-            ),
-            "learning_rate_multiplier": Schema.optionalKey(
+        Schema.Struct({
+          "batch_size": Schema.optionalKey(
+            Schema.Union([
               Schema.Union([
                 Schema.Literal("auto"),
-                Schema.Finite.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" }))
-              ], { mode: "oneOf" }).annotate({
-                "description":
-                  "Scaling factor for the learning rate. A smaller learning rate may be useful to avoid\noverfitting.\n"
-              })
-            ),
-            "n_epochs": Schema.optionalKey(
-              Schema.Union([
-                Schema.Literal("auto"),
-                Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+                Schema.Int.check(
                   Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-                ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+                ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
               ], { mode: "oneOf" }).annotate({
                 "description":
-                  "The number of epochs to train the model for. An epoch refers to one full cycle\nthrough the training dataset.\n"
-              })
-            )
-          }),
-          [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-        ),
+                  "Number of examples in each batch. A larger batch size means that model parameters\nare updated less frequently, but with lower variance.\n"
+              }),
+              Schema.Null
+            ])
+          ),
+          "learning_rate_multiplier": Schema.optionalKey(
+            Schema.Union([
+              Schema.Literal("auto"),
+              Schema.Finite.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" }))
+            ], { mode: "oneOf" }).annotate({
+              "description":
+                "Scaling factor for the learning rate. A smaller learning rate may be useful to avoid\noverfitting.\n"
+            })
+          ),
+          "n_epochs": Schema.optionalKey(
+            Schema.Union([
+              Schema.Literal("auto"),
+              Schema.Int.check(
+                Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
+              ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+            ], { mode: "oneOf" }).annotate({
+              "description":
+                "The number of epochs to train the model for. An epoch refers to one full cycle\nthrough the training dataset.\n"
+            })
+          )
+        }),
         Schema.Null
       ]).annotate({
         "description":
@@ -45777,8 +45552,9 @@ export const FineTuningJob = Schema.Union([
         Schema.Null
       ])
     ),
-    "seed": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-      .annotate({ "description": "The seed used for the fine-tuning job." }),
+    "seed": Schema.Union([Schema.Int, Schema.Null]).annotate({
+      "description": "The seed used for the fine-tuning job."
+    }),
     "estimated_finish": Schema.optionalKey(
       Schema.Union([
         Schema.Number.annotate({
@@ -45850,45 +45626,42 @@ export const FineTuningJob = Schema.Union([
       Schema.Null
     ]),
     "hyperparameters": Schema.Union([
-      Schema.StructWithRest(
-        Schema.Struct({
-          "batch_size": Schema.optionalKey(
-            Schema.Union([
-              Schema.Union([
-                Schema.Literal("auto"),
-                Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-                  Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-                ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
-              ], { mode: "oneOf" }).annotate({
-                "description":
-                  "Number of examples in each batch. A larger batch size means that model parameters\nare updated less frequently, but with lower variance.\n"
-              }),
-              Schema.Null
-            ])
-          ),
-          "learning_rate_multiplier": Schema.optionalKey(
+      Schema.Struct({
+        "batch_size": Schema.optionalKey(
+          Schema.Union([
             Schema.Union([
               Schema.Literal("auto"),
-              Schema.Finite.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" }))
-            ], { mode: "oneOf" }).annotate({
-              "description":
-                "Scaling factor for the learning rate. A smaller learning rate may be useful to avoid\noverfitting.\n"
-            })
-          ),
-          "n_epochs": Schema.optionalKey(
-            Schema.Union([
-              Schema.Literal("auto"),
-              Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+              Schema.Int.check(
                 Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-              ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+              ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
             ], { mode: "oneOf" }).annotate({
               "description":
-                "The number of epochs to train the model for. An epoch refers to one full cycle\nthrough the training dataset.\n"
-            })
-          )
-        }),
-        [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-      ),
+                "Number of examples in each batch. A larger batch size means that model parameters\nare updated less frequently, but with lower variance.\n"
+            }),
+            Schema.Null
+          ])
+        ),
+        "learning_rate_multiplier": Schema.optionalKey(
+          Schema.Union([
+            Schema.Literal("auto"),
+            Schema.Finite.check(Schema.isGreaterThan(0).annotate({ "expected": "a value greater than 0" }))
+          ], { mode: "oneOf" }).annotate({
+            "description":
+              "Scaling factor for the learning rate. A smaller learning rate may be useful to avoid\noverfitting.\n"
+          })
+        ),
+        "n_epochs": Schema.optionalKey(
+          Schema.Union([
+            Schema.Literal("auto"),
+            Schema.Int.check(
+              Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
+            ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
+          ], { mode: "oneOf" }).annotate({
+            "description":
+              "The number of epochs to train the model for. An epoch refers to one full cycle\nthrough the training dataset.\n"
+          })
+        )
+      }),
       Schema.Null
     ]).annotate({
       "description":
@@ -45942,8 +45715,9 @@ export const FineTuningJob = Schema.Union([
         Schema.Null
       ])
     ),
-    "seed": Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-      .annotate({ "description": "The seed used for the fine-tuning job." }),
+    "seed": Schema.Union([Schema.Int, Schema.Null]).annotate({
+      "description": "The seed used for the fine-tuning job."
+    }),
     "estimated_finish": Schema.optionalKey(
       Schema.Union([
         Schema.Number.annotate({
@@ -46006,7 +45780,7 @@ export const CreateFineTuningJobRequest = Schema.Struct({
       "batch_size": Schema.optionalKey(
         Schema.Union([
           Schema.Literal("auto"),
-          Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+          Schema.Int.check(
             Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
           ).check(Schema.isLessThanOrEqualTo(256).annotate({ "expected": "a value less than or equal to 256" }))
         ], { mode: "oneOf" }).annotate({
@@ -46026,7 +45800,7 @@ export const CreateFineTuningJobRequest = Schema.Struct({
       "n_epochs": Schema.optionalKey(
         Schema.Union([
           Schema.Literal("auto"),
-          Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
+          Schema.Int.check(
             Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
           ).check(Schema.isLessThanOrEqualTo(50).annotate({ "expected": "a value less than or equal to 50" }))
         ], { mode: "oneOf" }).annotate({
@@ -46094,11 +45868,10 @@ export const CreateFineTuningJobRequest = Schema.Struct({
   ),
   "seed": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-      ).check(
-        Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })
-      ),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+        .check(
+          Schema.isLessThanOrEqualTo(2147483647).annotate({ "expected": "a value less than or equal to 2147483647" })
+        ),
       Schema.Null
     ]).annotate({
       "description":
@@ -46151,7 +45924,7 @@ export type ListAssistantsParams = {
   readonly "before"?: string
 }
 export const ListAssistantsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String)
@@ -46245,7 +46018,7 @@ export const CreateTranslation503 = ErrorResponse
 export type ListVoiceConsentsParams = { readonly "after"?: string; readonly "limit"?: number }
 export const ListVoiceConsentsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "limit": Schema.optionalKey(Schema.Int)
 })
 export type ListVoiceConsents200 = VoiceConsentListResource
 export const ListVoiceConsents200 = VoiceConsentListResource
@@ -46294,7 +46067,7 @@ export const CreateVoice500 = ErrorResponse
 export type ListBatchesParams = { readonly "after"?: string; readonly "limit"?: number }
 export const ListBatchesParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "limit": Schema.optionalKey(Schema.Int)
 })
 export type ListBatches200 = ListBatchesResponse
 export const ListBatches200 = ListBatchesResponse
@@ -46345,7 +46118,7 @@ export const ListChatCompletionsParams = Schema.Struct({
   "model": Schema.optionalKey(Schema.String),
   "metadata": Schema.optionalKey(Metadata),
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
 })
 export type ListChatCompletions200 = ChatCompletionList
@@ -46409,7 +46182,7 @@ export type GetChatCompletionMessagesParams = {
 }
 export const GetChatCompletionMessagesParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
 })
 export type GetChatCompletionMessages200 = ChatCompletionMessageList
@@ -46445,7 +46218,7 @@ export type ListContainersParams = {
   readonly "name"?: string
 }
 export const ListContainersParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "name": Schema.optionalKey(Schema.String)
@@ -46490,7 +46263,7 @@ export type ListContainerFilesParams = {
   readonly "after"?: string
 }
 export const ListContainerFilesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String)
 })
@@ -46543,7 +46316,7 @@ export type ListConversationItemsParams = {
   readonly "include"?: ReadonlyArray<IncludeEnum>
 }
 export const ListConversationItemsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "include": Schema.optionalKey(Schema.Array(IncludeEnum))
@@ -46558,26 +46331,19 @@ export type ListConversationItems429 = ErrorResponse
 export const ListConversationItems429 = ErrorResponse
 export type CreateConversationItemsParams = { readonly "include"?: ReadonlyArray<IncludeEnum> }
 export const CreateConversationItemsParams = Schema.Struct({ "include": Schema.optionalKey(Schema.Array(IncludeEnum)) })
-export type CreateConversationItemsRequestJson =
-  | null
-  | string
-  | number
-  | boolean
-  | { readonly "items": ReadonlyArray<InputItem> } & { readonly [x: string]: Schema.Json }
-  | ReadonlyArray<Schema.Json>
+export type CreateConversationItemsRequestJson = null | string | number | boolean | {
+  readonly "items": ReadonlyArray<InputItem>
+} | ReadonlyArray<Schema.Json>
 export const CreateConversationItemsRequestJson = Schema.Union([
   Schema.Null,
   Schema.String,
   Schema.Finite,
   Schema.Boolean,
-  Schema.StructWithRest(
-    Schema.Struct({
-      "items": Schema.Array(InputItem).annotate({
-        "description": "The items to add to the conversation. You may add up to 20 items at a time.\n"
-      }).check(Schema.isMaxLength(20).annotate({ "expected": "a value with a length of at most 20" }))
-    }),
-    [Schema.Record(Schema.String, Schema.Json.annotate({ "expected": "JSON value" }))]
-  ),
+  Schema.Struct({
+    "items": Schema.Array(InputItem).annotate({
+      "description": "The items to add to the conversation. You may add up to 20 items at a time.\n"
+    }).check(Schema.isMaxLength(20).annotate({ "expected": "a value with a length of at most 20" }))
+  }),
   Schema.Array(Schema.Json.annotate({ "expected": "JSON value" }))
 ])
 export type CreateConversationItems200 = ConversationItemList
@@ -46630,7 +46396,7 @@ export type ListEvalsParams = {
 }
 export const ListEvalsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "order_by": Schema.optionalKey(Schema.Literals(["created_at", "updated_at"]))
 })
@@ -46685,7 +46451,7 @@ export type GetEvalRunsParams = {
 }
 export const GetEvalRunsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "status": Schema.optionalKey(Schema.Literals(["queued", "in_progress", "completed", "canceled", "failed"]))
 })
@@ -46741,7 +46507,7 @@ export type GetEvalRunOutputItemsParams = {
 }
 export const GetEvalRunOutputItemsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "status": Schema.optionalKey(Schema.Literals(["fail", "pass"])),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
 })
@@ -46769,7 +46535,7 @@ export type ListFilesParams = {
 }
 export const ListFilesParams = Schema.Struct({
   "purpose": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String)
 })
@@ -46836,7 +46602,7 @@ export type ListFineTuningCheckpointPermissionsParams = {
 export const ListFineTuningCheckpointPermissionsParams = Schema.Struct({
   "project_id": Schema.optionalKey(Schema.String),
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["ascending", "descending"]))
 })
 export type ListFineTuningCheckpointPermissions200 = ListFineTuningCheckpointPermissionResponse
@@ -46870,7 +46636,7 @@ export type ListPaginatedFineTuningJobsParams = {
 }
 export const ListPaginatedFineTuningJobsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "metadata": Schema.optionalKey(Schema.Union([Schema.Record(Schema.String, Schema.String), Schema.Null]))
 })
 export type ListPaginatedFineTuningJobs200 = ListPaginatedFineTuningJobsResponse
@@ -46904,7 +46670,7 @@ export const CancelFineTuningJob429 = ErrorResponse
 export type ListFineTuningJobCheckpointsParams = { readonly "after"?: string; readonly "limit"?: number }
 export const ListFineTuningJobCheckpointsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "limit": Schema.optionalKey(Schema.Int)
 })
 export type ListFineTuningJobCheckpoints200 = ListFineTuningJobCheckpointsResponse
 export const ListFineTuningJobCheckpoints200 = ListFineTuningJobCheckpointsResponse
@@ -46917,7 +46683,7 @@ export const ListFineTuningJobCheckpoints429 = ErrorResponse
 export type ListFineTuningEventsParams = { readonly "after"?: string; readonly "limit"?: number }
 export const ListFineTuningEventsParams = Schema.Struct({
   "after": Schema.optionalKey(Schema.String),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })))
+  "limit": Schema.optionalKey(Schema.Int)
 })
 export type ListFineTuningEvents200 = ListFineTuningJobEventsResponse
 export const ListFineTuningEvents200 = ListFineTuningJobEventsResponse
@@ -47188,7 +46954,7 @@ export const ListAuditLogsParams = Schema.Struct({
   "actor_emails[]": Schema.optionalKey(Schema.Array(Schema.String)),
   "resource_ids[]": Schema.optionalKey(Schema.Array(Schema.String)),
   "tenant_only": Schema.optionalKey(Schema.Boolean),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String)
 })
@@ -47206,7 +46972,7 @@ export type ListOrganizationCertificatesParams = {
   readonly "order"?: "asc" | "desc"
 }
 export const ListOrganizationCertificatesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
 })
@@ -47306,8 +47072,8 @@ export type UsageCostsParams = {
   readonly "page"?: string
 }
 export const UsageCostsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literal("1d")),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "api_key_ids": Schema.optionalKey(Schema.Array(Schema.String)),
@@ -47315,7 +47081,7 @@ export const UsageCostsParams = Schema.Struct({
   "group_by": Schema.optionalKey(
     Schema.Array(Schema.Literals(["project_id", "user_id", "line_item", "api_key_id", "api_source"]))
   ),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageCosts200 = UsageResponse
@@ -47349,9 +47115,8 @@ export type ListGroupsParams = {
 }
 export const ListGroupsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -47425,9 +47190,8 @@ export type ListGroupRoleAssignmentsParams = {
 }
 export const ListGroupRoleAssignmentsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -47481,9 +47245,8 @@ export type ListGroupUsersParams = {
 }
 export const ListGroupUsersParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -47538,7 +47301,7 @@ export type RemoveGroupUser429 = ErrorResponse
 export const RemoveGroupUser429 = ErrorResponse
 export type ListInvitesParams = { readonly "limit"?: number; readonly "after"?: string }
 export const ListInvitesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String)
 })
 export type ListInvites200 = InviteListResponse
@@ -47591,7 +47354,7 @@ export type ListProjectsParams = {
   readonly "include_archived"?: boolean
 }
 export const ListProjectsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "include_archived": Schema.optionalKey(Schema.Boolean)
 })
@@ -47643,7 +47406,7 @@ export type ListProjectApiKeysParams = {
   readonly "owner_project_access"?: "active" | "inactive" | "any"
 }
 export const ListProjectApiKeysParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "owner_project_access": Schema.optionalKey(Schema.Literals(["active", "inactive", "any"]))
 })
@@ -47693,7 +47456,7 @@ export type ListProjectCertificatesParams = {
   readonly "order"?: "asc" | "desc"
 }
 export const ListProjectCertificatesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
 })
@@ -47758,9 +47521,8 @@ export type ListProjectGroupsParams = {
 }
 export const ListProjectGroupsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -47875,7 +47637,7 @@ export type ListProjectRateLimitsParams = {
   readonly "before"?: string
 }
 export const ListProjectRateLimitsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String)
 })
@@ -47899,7 +47661,7 @@ export type UpdateProjectRateLimits404 = ErrorResponse
 export const UpdateProjectRateLimits404 = ErrorResponse
 export type ListProjectServiceAccountsParams = { readonly "limit"?: number; readonly "after"?: string }
 export const ListProjectServiceAccountsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String)
 })
 export type ListProjectServiceAccounts200 = ProjectServiceAccountListResponse
@@ -47966,9 +47728,8 @@ export type ListProjectSpendAlertsParams = {
 }
 export const ListProjectSpendAlertsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
@@ -48020,7 +47781,7 @@ export type DeleteProjectSpendAlert404 = ErrorResponse
 export const DeleteProjectSpendAlert404 = ErrorResponse
 export type ListProjectUsersParams = { readonly "limit"?: number; readonly "after"?: string }
 export const ListProjectUsersParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String)
 })
 export type ListProjectUsers200 = ProjectUserListResponse
@@ -48088,9 +47849,8 @@ export type ListRolesParams = {
 }
 export const ListRolesParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -48155,9 +47915,8 @@ export type ListOrganizationSpendAlertsParams = {
 }
 export const ListOrganizationSpendAlertsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
@@ -48214,15 +47973,15 @@ export type UsageAudioSpeechesParams = {
   readonly "page"?: string
 }
 export const UsageAudioSpeechesParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "api_key_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "models": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model"]))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageAudioSpeeches200 = UsageResponse
@@ -48246,15 +48005,15 @@ export type UsageAudioTranscriptionsParams = {
   readonly "page"?: string
 }
 export const UsageAudioTranscriptionsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "api_key_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "models": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model"]))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageAudioTranscriptions200 = UsageResponse
@@ -48275,12 +48034,12 @@ export type UsageCodeInterpreterSessionsParams = {
   readonly "page"?: string
 }
 export const UsageCodeInterpreterSessionsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literal("project_id"))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageCodeInterpreterSessions200 = UsageResponse
@@ -48307,8 +48066,8 @@ export type UsageCompletionsParams = {
   readonly "page"?: string
 }
 export const UsageCompletionsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
@@ -48320,7 +48079,7 @@ export const UsageCompletionsParams = Schema.Struct({
       Schema.Literals(["project_id", "user_id", "api_key_id", "model", "batch", "service_tier", "api_source"])
     )
   ),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageCompletions200 = UsageResponse
@@ -48344,15 +48103,15 @@ export type UsageEmbeddingsParams = {
   readonly "page"?: string
 }
 export const UsageEmbeddingsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "api_key_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "models": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model"]))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageEmbeddings200 = UsageResponse
@@ -48376,8 +48135,8 @@ export type UsageFileSearchCallsParams = {
   readonly "page"?: string
 }
 export const UsageFileSearchCallsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
@@ -48386,7 +48145,7 @@ export const UsageFileSearchCallsParams = Schema.Struct({
   "group_by": Schema.optionalKey(
     Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "vector_store_id"]))
   ),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageFileSearchCalls200 = UsageResponse
@@ -48412,8 +48171,8 @@ export type UsageImagesParams = {
   readonly "page"?: string
 }
 export const UsageImagesParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "sources": Schema.optionalKey(Schema.Array(Schema.Literals(["image.generation", "image.edit", "image.variation"]))),
   "sizes": Schema.optionalKey(
@@ -48426,7 +48185,7 @@ export const UsageImagesParams = Schema.Struct({
   "group_by": Schema.optionalKey(
     Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model", "size", "source"]))
   ),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageImages200 = UsageResponse
@@ -48450,15 +48209,15 @@ export type UsageModerationsParams = {
   readonly "page"?: string
 }
 export const UsageModerationsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "api_key_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "models": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model"]))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageModerations200 = UsageResponse
@@ -48479,12 +48238,12 @@ export type UsageVectorStoresParams = {
   readonly "page"?: string
 }
 export const UsageVectorStoresParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "group_by": Schema.optionalKey(Schema.Array(Schema.Literal("project_id"))),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageVectorStores200 = UsageResponse
@@ -48511,8 +48270,8 @@ export type UsageWebSearchCallsParams = {
   readonly "page"?: string
 }
 export const UsageWebSearchCallsParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Int),
   "bucket_width": Schema.optionalKey(Schema.Literals(["1m", "1h", "1d"])),
   "project_ids": Schema.optionalKey(Schema.Array(Schema.String)),
   "user_ids": Schema.optionalKey(Schema.Array(Schema.String)),
@@ -48522,7 +48281,7 @@ export const UsageWebSearchCallsParams = Schema.Struct({
   "group_by": Schema.optionalKey(
     Schema.Array(Schema.Literals(["project_id", "user_id", "api_key_id", "model", "context_level", "api_source"]))
   ),
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "page": Schema.optionalKey(Schema.String)
 })
 export type UsageWebSearchCalls200 = UsageResponse
@@ -48539,7 +48298,7 @@ export type ListUsersParams = {
   readonly "emails"?: ReadonlyArray<string>
 }
 export const ListUsersParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "after": Schema.optionalKey(Schema.String),
   "emails": Schema.optionalKey(Schema.Array(Schema.String))
 })
@@ -48588,9 +48347,8 @@ export type ListUserRoleAssignmentsParams = {
 }
 export const ListUserRoleAssignmentsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -48644,9 +48402,8 @@ export type ListProjectGroupRoleAssignmentsParams = {
 }
 export const ListProjectGroupRoleAssignmentsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -48700,9 +48457,8 @@ export type ListProjectRolesParams = {
 }
 export const ListProjectRolesParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -48766,9 +48522,8 @@ export type ListProjectUserRoleAssignmentsParams = {
 }
 export const ListProjectUserRoleAssignmentsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(1000).annotate({ "expected": "a value less than or equal to 1000" }))
   ),
   "after": Schema.optionalKey(Schema.String),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"]))
@@ -48886,7 +48641,7 @@ export type GetResponseParams = {
 export const GetResponseParams = Schema.Struct({
   "include": Schema.optionalKey(Schema.Array(IncludeEnum)),
   "stream": Schema.optionalKey(Schema.Boolean),
-  "starting_after": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "starting_after": Schema.optionalKey(Schema.Int),
   "include_obfuscation": Schema.optionalKey(Schema.Boolean)
 })
 export type GetResponse200 = Response
@@ -48922,7 +48677,7 @@ export type ListInputItemsParams = {
   readonly "include"?: ReadonlyArray<IncludeEnum>
 }
 export const ListInputItemsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "include": Schema.optionalKey(Schema.Array(IncludeEnum))
@@ -48969,7 +48724,7 @@ export type ListMessagesParams = {
   readonly "run_id"?: string
 }
 export const ListMessagesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String),
@@ -49006,7 +48761,7 @@ export type ListRunsParams = {
   readonly "before"?: string
 }
 export const ListRunsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String)
@@ -49053,7 +48808,7 @@ export type ListRunStepsParams = {
   readonly "include[]"?: ReadonlyArray<"step_details.tool_calls[*].file_search.results[*].content">
 }
 export const ListRunStepsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String),
@@ -49138,7 +48893,7 @@ export type ListVectorStoresParams = {
   readonly "before"?: string
 }
 export const ListVectorStoresParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String)
@@ -49225,7 +48980,7 @@ export type ListFilesInVectorStoreBatchParams = {
   readonly "filter"?: "in_progress" | "completed" | "failed" | "cancelled"
 }
 export const ListFilesInVectorStoreBatchParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String),
@@ -49247,7 +49002,7 @@ export type ListVectorStoreFilesParams = {
   readonly "filter"?: "in_progress" | "completed" | "failed" | "cancelled"
 }
 export const ListVectorStoreFilesParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "before": Schema.optionalKey(Schema.String),
@@ -49409,10 +49164,8 @@ export type OrganizationDecisionsusageParams = {
   readonly "batch"?: boolean | null
 }
 export const OrganizationDecisionsusageParams = Schema.Struct({
-  "start_time": Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })),
-  "end_time": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-  ),
+  "start_time": Schema.Int,
+  "end_time": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null])),
   "bucket_width": Schema.optionalKey(
     Schema.Union([
       Schema.Union([DecisionsUsageBucketWidth], { mode: "oneOf" }).annotate({
@@ -49422,9 +49175,7 @@ export const OrganizationDecisionsusageParams = Schema.Struct({
       Schema.Null
     ])
   ),
-  "limit": Schema.optionalKey(
-    Schema.Union([Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })), Schema.Null])
-  ),
+  "limit": Schema.optionalKey(Schema.Union([Schema.Int, Schema.Null])),
   "page": Schema.optionalKey(
     Schema.Union([
       Schema.String.annotate({
@@ -49501,9 +49252,8 @@ export const ListexternalstorageconfigurationsParams = Schema.Struct({
   ),
   "order": Schema.optionalKey(ExternalStorageOrder),
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   )
 })
 export type Listexternalstorageconfigurations200 = ExternalStorageListResource
@@ -49629,9 +49379,8 @@ export const Createcontentprovenancecheck503 = ErrorResponse
 export type ListVideosParams = { readonly "limit"?: number; readonly "order"?: OrderEnum; readonly "after"?: string }
 export const ListVideosParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(OrderEnum),
   "after": Schema.optionalKey(
@@ -49771,9 +49520,8 @@ export const Compactconversation503 = ErrorResponse
 export type ListSkillsParams = { readonly "limit"?: number; readonly "order"?: OrderEnum; readonly "after"?: string }
 export const ListSkillsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(OrderEnum),
   "after": Schema.optionalKey(
@@ -49833,9 +49581,8 @@ export type ListSkillVersionsParams = {
 }
 export const ListSkillVersionsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(OrderEnum),
   "after": Schema.optionalKey(Schema.String)
@@ -49912,9 +49659,8 @@ export type ListThreadItemsMethodParams = {
 }
 export const ListThreadItemsMethodParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(OrderEnum),
   "after": Schema.optionalKey(
@@ -49961,9 +49707,8 @@ export type ListThreadsMethodParams = {
 }
 export const ListThreadsMethodParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(0).annotate({ "expected": "a value greater than or equal to 0" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "order": Schema.optionalKey(OrderEnum),
   "after": Schema.optionalKey(
@@ -50093,9 +49838,8 @@ export const ListAgentEnvironmentFilesParams = Schema.Struct({
   ),
   "limit": Schema.optionalKey(
     Schema.Union([
-      Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-        Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-      ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" })),
+      Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+        .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" })),
       Schema.Null
     ]).annotate({ "format": "int64" })
   ),
@@ -51169,9 +50913,8 @@ export const DeleteVaultCredential503 = ErrorResponse_2
 export type ListWebhookEndpointsParams = { readonly "limit"?: number; readonly "after"?: string | null }
 export const ListWebhookEndpointsParams = Schema.Struct({
   "limit": Schema.optionalKey(
-    Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" })).check(
-      Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" })
-    ).check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
+    Schema.Int.check(Schema.isGreaterThanOrEqualTo(1).annotate({ "expected": "a value greater than or equal to 1" }))
+      .check(Schema.isLessThanOrEqualTo(100).annotate({ "expected": "a value less than or equal to 100" }))
   ),
   "after": Schema.optionalKey(Schema.Union([Schema.String, Schema.Null]))
 })
@@ -51257,7 +51000,7 @@ export type BetaGetResponseParams = {
 export const BetaGetResponseParams = Schema.Struct({
   "include": Schema.optionalKey(Schema.Array(BetaIncludeEnum)),
   "stream": Schema.optionalKey(Schema.Boolean),
-  "starting_after": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "starting_after": Schema.optionalKey(Schema.Int),
   "include_obfuscation": Schema.optionalKey(Schema.Boolean),
   "openai-beta": Schema.optionalKey(Schema.Array(Schema.Literal("responses_multi_agent=v1")))
 })
@@ -51317,7 +51060,7 @@ export type BetaListInputItemsParams = {
   readonly "openai-beta"?: ReadonlyArray<"responses_multi_agent=v1">
 }
 export const BetaListInputItemsParams = Schema.Struct({
-  "limit": Schema.optionalKey(Schema.Number.check(Schema.isInt().annotate({ "expected": "an integer" }))),
+  "limit": Schema.optionalKey(Schema.Int),
   "order": Schema.optionalKey(Schema.Literals(["asc", "desc"])),
   "after": Schema.optionalKey(Schema.String),
   "include": Schema.optionalKey(Schema.Array(BetaIncludeEnum)),
@@ -51366,12 +51109,14 @@ export type WithOptionalResponse<A, Config extends OperationConfig | undefined> 
   : Config extends { readonly includeResponse?: false | undefined } | undefined ? A
   : A | [A, HttpClientResponse.HttpClientResponse]
 
-export const make = (
-  httpClient: HttpClient.HttpClient,
+export const make = <E, R>(
+  httpClient: HttpClient.HttpClient.With<E, R>,
   options: {
-    readonly transformClient?: ((client: HttpClient.HttpClient) => Effect.Effect<HttpClient.HttpClient>) | undefined
+    readonly transformClient?:
+      | ((client: HttpClient.HttpClient.With<E, R>) => Effect.Effect<HttpClient.HttpClient.With<E, R>>)
+      | undefined
   } = {}
-): OpenAiClient => {
+): OpenAiClient<E, R> => {
   const unexpectedStatus = (response: HttpClientResponse.HttpClientResponse) =>
     Effect.flatMap(
       Effect.orElseSucceed(response.json, () => "Unexpected status code"),
@@ -51389,7 +51134,7 @@ export const make = (
   const withResponse = <Config extends OperationConfig>(config: Config | undefined) =>
   (
     f: (response: HttpClientResponse.HttpClientResponse) => Effect.Effect<any, any>
-  ): (request: HttpClientRequest.HttpClientRequest) => Effect.Effect<any, any> => {
+  ): (request: HttpClientRequest.HttpClientRequest) => Effect.Effect<any, any, R> => {
     const withOptionalResponse = (
       config?.includeResponse
         ? (response: HttpClientResponse.HttpClientResponse) => Effect.map(f(response), (a) => [a, response])
@@ -51451,8 +51196,8 @@ export const make = (
     request: HttpClientRequest.HttpClientRequest
   ): Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: Type },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | DecodingServices
   > =>
     executeStreamRequest(request).pipe(
       Effect.map((response) => response.stream),
@@ -51464,7 +51209,7 @@ export const make = (
     Effect.map(response.arrayBuffer, (buffer) => new Uint8Array(buffer))
   const binaryRequest = (
     request: HttpClientRequest.HttpClientRequest
-  ): Stream.Stream<Uint8Array, HttpClientError.HttpClientError> =>
+  ): Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R> =>
     executeStreamRequest(request).pipe(
       Effect.map((response) => response.stream),
       Stream.unwrap
@@ -58239,8 +57984,8 @@ export const make = (
   }
 }
 
-export interface OpenAiClient {
-  readonly httpClient: HttpClient.HttpClient
+export interface OpenAiClient<E = HttpClientError.HttpClientError, R = never> {
+  readonly httpClient: HttpClient.HttpClient.With<E, R>
   /**
    * Returns a list of assistants.
    */
@@ -58249,7 +57994,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAssistantsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAssistants200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListAssistants429", ListAssistants429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListAssistants429", ListAssistants429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58258,7 +58004,8 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAssistants200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListAssistants429", ListAssistants429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListAssistants429", ListAssistants429>,
+      R
     >
   }
   /**
@@ -58269,13 +58016,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateAssistantRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateAssistant200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateAssistant429", CreateAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateAssistant429", CreateAssistant429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateAssistantRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateAssistant200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateAssistant429", CreateAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateAssistant429", CreateAssistant429>,
+      R
     >
   }
   /**
@@ -58287,14 +58036,16 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetAssistant200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetAssistant429", GetAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetAssistant429", GetAssistant429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       assistantId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetAssistant200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetAssistant429", GetAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetAssistant429", GetAssistant429>,
+      R
     >
   }
   /**
@@ -58306,14 +58057,16 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyAssistantRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyAssistant200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyAssistant429", ModifyAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyAssistant429", ModifyAssistant429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       assistantId: string,
       options: { readonly payload: typeof ModifyAssistantRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyAssistant200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyAssistant429", ModifyAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyAssistant429", ModifyAssistant429>,
+      R
     >
   }
   /**
@@ -58325,14 +58078,16 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteAssistant200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteAssistant429", DeleteAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteAssistant429", DeleteAssistant429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       assistantId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteAssistant200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteAssistant429", DeleteAssistant429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteAssistant429", DeleteAssistant429>,
+      R
     >
   }
   /**
@@ -58345,25 +58100,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateSpeechRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSpeech400", CreateSpeech400>
       | OpenAiClientError<"CreateSpeech401", CreateSpeech401>
       | OpenAiClientError<"CreateSpeech429", CreateSpeech429>
       | OpenAiClientError<"CreateSpeech500", CreateSpeech500>
-      | OpenAiClientError<"CreateSpeech503", CreateSpeech503>
+      | OpenAiClientError<"CreateSpeech503", CreateSpeech503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateSpeechRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSpeech400", CreateSpeech400>
       | OpenAiClientError<"CreateSpeech401", CreateSpeech401>
       | OpenAiClientError<"CreateSpeech429", CreateSpeech429>
       | OpenAiClientError<"CreateSpeech500", CreateSpeech500>
-      | OpenAiClientError<"CreateSpeech503", CreateSpeech503>
+      | OpenAiClientError<"CreateSpeech503", CreateSpeech503>,
+      R
     >
   }
   /**
@@ -58375,8 +58134,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateSpeechRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateSpeech200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateSpeech200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateSpeech200Sse.DecodingServices
   >
   /**
    * Generates audio from the input text.
@@ -58385,7 +58144,7 @@ export interface OpenAiClient {
    */
   readonly "createSpeechStream": (
     options: { readonly payload: typeof CreateSpeechRequestJson.Encoded }
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Transcribes audio into the input language.
    *
@@ -58398,6 +58157,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateTranscriptionRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateTranscription200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateTranscription400", CreateTranscription400>
@@ -58406,7 +58166,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateTranscription429", CreateTranscription429>
       | OpenAiClientError<"CreateTranscription500", CreateTranscription500>
       | OpenAiClientError<"CreateTranscription502", CreateTranscription502>
-      | OpenAiClientError<"CreateTranscription503", CreateTranscription503>
+      | OpenAiClientError<"CreateTranscription503", CreateTranscription503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58415,6 +58176,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateTranscription200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateTranscription400", CreateTranscription400>
@@ -58423,7 +58185,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateTranscription429", CreateTranscription429>
       | OpenAiClientError<"CreateTranscription500", CreateTranscription500>
       | OpenAiClientError<"CreateTranscription502", CreateTranscription502>
-      | OpenAiClientError<"CreateTranscription503", CreateTranscription503>
+      | OpenAiClientError<"CreateTranscription503", CreateTranscription503>,
+      R
     >
   }
   /**
@@ -58437,8 +58200,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateTranscriptionRequestFormData.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateTranscription200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateTranscription200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateTranscription200Sse.DecodingServices
   >
   /**
    * Translates audio into English.
@@ -58448,6 +58211,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateTranslationRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateTranslation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateTranslation400", CreateTranslation400>
@@ -58456,7 +58220,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateTranslation429", CreateTranslation429>
       | OpenAiClientError<"CreateTranslation500", CreateTranslation500>
       | OpenAiClientError<"CreateTranslation502", CreateTranslation502>
-      | OpenAiClientError<"CreateTranslation503", CreateTranslation503>
+      | OpenAiClientError<"CreateTranslation503", CreateTranslation503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58465,6 +58230,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateTranslation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateTranslation400", CreateTranslation400>
@@ -58473,7 +58239,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateTranslation429", CreateTranslation429>
       | OpenAiClientError<"CreateTranslation500", CreateTranslation500>
       | OpenAiClientError<"CreateTranslation502", CreateTranslation502>
-      | OpenAiClientError<"CreateTranslation503", CreateTranslation503>
+      | OpenAiClientError<"CreateTranslation503", CreateTranslation503>,
+      R
     >
   }
   /**
@@ -58484,10 +58251,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVoiceConsentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVoiceConsents200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVoiceConsents400", ListVoiceConsents400>
-      | OpenAiClientError<"ListVoiceConsents404", ListVoiceConsents404>
+      | OpenAiClientError<"ListVoiceConsents404", ListVoiceConsents404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58496,10 +58265,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVoiceConsents200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVoiceConsents400", ListVoiceConsents400>
-      | OpenAiClientError<"ListVoiceConsents404", ListVoiceConsents404>
+      | OpenAiClientError<"ListVoiceConsents404", ListVoiceConsents404>,
+      R
     >
   }
   /**
@@ -58510,10 +58281,12 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVoiceConsentRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVoiceConsent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVoiceConsent400", CreateVoiceConsent400>
-      | OpenAiClientError<"CreateVoiceConsent404", CreateVoiceConsent404>
+      | OpenAiClientError<"CreateVoiceConsent404", CreateVoiceConsent404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58522,10 +58295,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVoiceConsent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVoiceConsent400", CreateVoiceConsent400>
-      | OpenAiClientError<"CreateVoiceConsent404", CreateVoiceConsent404>
+      | OpenAiClientError<"CreateVoiceConsent404", CreateVoiceConsent404>,
+      R
     >
   }
   /**
@@ -58537,20 +58312,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVoiceConsent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVoiceConsent400", GetVoiceConsent400>
-      | OpenAiClientError<"GetVoiceConsent404", GetVoiceConsent404>
+      | OpenAiClientError<"GetVoiceConsent404", GetVoiceConsent404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       consentId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVoiceConsent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVoiceConsent400", GetVoiceConsent400>
-      | OpenAiClientError<"GetVoiceConsent404", GetVoiceConsent404>
+      | OpenAiClientError<"GetVoiceConsent404", GetVoiceConsent404>,
+      R
     >
   }
   /**
@@ -58562,20 +58341,24 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateVoiceConsentRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVoiceConsent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVoiceConsent400", UpdateVoiceConsent400>
-      | OpenAiClientError<"UpdateVoiceConsent404", UpdateVoiceConsent404>
+      | OpenAiClientError<"UpdateVoiceConsent404", UpdateVoiceConsent404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       consentId: string,
       options: { readonly payload: typeof UpdateVoiceConsentRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVoiceConsent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVoiceConsent400", UpdateVoiceConsent400>
-      | OpenAiClientError<"UpdateVoiceConsent404", UpdateVoiceConsent404>
+      | OpenAiClientError<"UpdateVoiceConsent404", UpdateVoiceConsent404>,
+      R
     >
   }
   /**
@@ -58587,20 +58370,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVoiceConsent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVoiceConsent400", DeleteVoiceConsent400>
-      | OpenAiClientError<"DeleteVoiceConsent404", DeleteVoiceConsent404>
+      | OpenAiClientError<"DeleteVoiceConsent404", DeleteVoiceConsent404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       consentId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVoiceConsent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVoiceConsent400", DeleteVoiceConsent400>
-      | OpenAiClientError<"DeleteVoiceConsent404", DeleteVoiceConsent404>
+      | OpenAiClientError<"DeleteVoiceConsent404", DeleteVoiceConsent404>,
+      R
     >
   }
   /**
@@ -58615,21 +58402,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVoiceRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVoice200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVoice400", CreateVoice400>
       | OpenAiClientError<"CreateVoice404", CreateVoice404>
-      | OpenAiClientError<"CreateVoice500", CreateVoice500>
+      | OpenAiClientError<"CreateVoice500", CreateVoice500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateVoiceRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateVoice200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVoice400", CreateVoice400>
       | OpenAiClientError<"CreateVoice404", CreateVoice404>
-      | OpenAiClientError<"CreateVoice500", CreateVoice500>
+      | OpenAiClientError<"CreateVoice500", CreateVoice500>,
+      R
     >
   }
   /**
@@ -58640,11 +58431,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListBatchesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListBatches200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListBatches400", ListBatches400>
       | OpenAiClientError<"ListBatches404", ListBatches404>
-      | OpenAiClientError<"ListBatches429", ListBatches429>
+      | OpenAiClientError<"ListBatches429", ListBatches429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -58652,11 +58445,13 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListBatches200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListBatches400", ListBatches400>
       | OpenAiClientError<"ListBatches404", ListBatches404>
-      | OpenAiClientError<"ListBatches429", ListBatches429>
+      | OpenAiClientError<"ListBatches429", ListBatches429>,
+      R
     >
   }
   /**
@@ -58667,23 +58462,27 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateBatchRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateBatch400", CreateBatch400>
       | OpenAiClientError<"CreateBatch429", CreateBatch429>
       | OpenAiClientError<"CreateBatch500", CreateBatch500>
-      | OpenAiClientError<"CreateBatch503", CreateBatch503>
+      | OpenAiClientError<"CreateBatch503", CreateBatch503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateBatchRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateBatch400", CreateBatch400>
       | OpenAiClientError<"CreateBatch429", CreateBatch429>
       | OpenAiClientError<"CreateBatch500", CreateBatch500>
-      | OpenAiClientError<"CreateBatch503", CreateBatch503>
+      | OpenAiClientError<"CreateBatch503", CreateBatch503>,
+      R
     >
   }
   /**
@@ -58695,22 +58494,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveBatch400", RetrieveBatch400>
       | OpenAiClientError<"RetrieveBatch404", RetrieveBatch404>
-      | OpenAiClientError<"RetrieveBatch429", RetrieveBatch429>
+      | OpenAiClientError<"RetrieveBatch429", RetrieveBatch429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       batchId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveBatch400", RetrieveBatch400>
       | OpenAiClientError<"RetrieveBatch404", RetrieveBatch404>
-      | OpenAiClientError<"RetrieveBatch429", RetrieveBatch429>
+      | OpenAiClientError<"RetrieveBatch429", RetrieveBatch429>,
+      R
     >
   }
   /**
@@ -58722,24 +58525,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelBatch400", CancelBatch400>
       | OpenAiClientError<"CancelBatch404", CancelBatch404>
       | OpenAiClientError<"CancelBatch409", CancelBatch409>
-      | OpenAiClientError<"CancelBatch429", CancelBatch429>
+      | OpenAiClientError<"CancelBatch429", CancelBatch429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       batchId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelBatch400", CancelBatch400>
       | OpenAiClientError<"CancelBatch404", CancelBatch404>
       | OpenAiClientError<"CancelBatch409", CancelBatch409>
-      | OpenAiClientError<"CancelBatch429", CancelBatch429>
+      | OpenAiClientError<"CancelBatch429", CancelBatch429>,
+      R
     >
   }
   /**
@@ -58751,11 +58558,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListChatCompletionsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListChatCompletions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListChatCompletions400", ListChatCompletions400>
       | OpenAiClientError<"ListChatCompletions429", ListChatCompletions429>
-      | OpenAiClientError<"ListChatCompletions500", ListChatCompletions500>
+      | OpenAiClientError<"ListChatCompletions500", ListChatCompletions500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58764,11 +58573,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListChatCompletions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListChatCompletions400", ListChatCompletions400>
       | OpenAiClientError<"ListChatCompletions429", ListChatCompletions429>
-      | OpenAiClientError<"ListChatCompletions500", ListChatCompletions500>
+      | OpenAiClientError<"ListChatCompletions500", ListChatCompletions500>,
+      R
     >
   }
   /**
@@ -58796,6 +58607,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateChatCompletionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateChatCompletion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateChatCompletion400", CreateChatCompletion400>
@@ -58803,7 +58615,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateChatCompletion404", CreateChatCompletion404>
       | OpenAiClientError<"CreateChatCompletion429", CreateChatCompletion429>
       | OpenAiClientError<"CreateChatCompletion500", CreateChatCompletion500>
-      | OpenAiClientError<"CreateChatCompletion503", CreateChatCompletion503>
+      | OpenAiClientError<"CreateChatCompletion503", CreateChatCompletion503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -58812,6 +58625,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateChatCompletion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateChatCompletion400", CreateChatCompletion400>
@@ -58819,7 +58633,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateChatCompletion404", CreateChatCompletion404>
       | OpenAiClientError<"CreateChatCompletion429", CreateChatCompletion429>
       | OpenAiClientError<"CreateChatCompletion500", CreateChatCompletion500>
-      | OpenAiClientError<"CreateChatCompletion503", CreateChatCompletion503>
+      | OpenAiClientError<"CreateChatCompletion503", CreateChatCompletion503>,
+      R
     >
   }
   /**
@@ -58846,8 +58661,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateChatCompletionRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateChatCompletion200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateChatCompletion200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateChatCompletion200Sse.DecodingServices
   >
   /**
    * Get a stored chat completion. Only Chat Completions that have been created
@@ -58859,22 +58674,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetChatCompletion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetChatCompletion404", GetChatCompletion404>
       | OpenAiClientError<"GetChatCompletion429", GetChatCompletion429>
-      | OpenAiClientError<"GetChatCompletion500", GetChatCompletion500>
+      | OpenAiClientError<"GetChatCompletion500", GetChatCompletion500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       completionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetChatCompletion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetChatCompletion404", GetChatCompletion404>
       | OpenAiClientError<"GetChatCompletion429", GetChatCompletion429>
-      | OpenAiClientError<"GetChatCompletion500", GetChatCompletion500>
+      | OpenAiClientError<"GetChatCompletion500", GetChatCompletion500>,
+      R
     >
   }
   /**
@@ -58888,12 +58707,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateChatCompletionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateChatCompletion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateChatCompletion400", UpdateChatCompletion400>
       | OpenAiClientError<"UpdateChatCompletion404", UpdateChatCompletion404>
       | OpenAiClientError<"UpdateChatCompletion429", UpdateChatCompletion429>
-      | OpenAiClientError<"UpdateChatCompletion500", UpdateChatCompletion500>
+      | OpenAiClientError<"UpdateChatCompletion500", UpdateChatCompletion500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       completionId: string,
@@ -58903,12 +58724,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateChatCompletion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateChatCompletion400", UpdateChatCompletion400>
       | OpenAiClientError<"UpdateChatCompletion404", UpdateChatCompletion404>
       | OpenAiClientError<"UpdateChatCompletion429", UpdateChatCompletion429>
-      | OpenAiClientError<"UpdateChatCompletion500", UpdateChatCompletion500>
+      | OpenAiClientError<"UpdateChatCompletion500", UpdateChatCompletion500>,
+      R
     >
   }
   /**
@@ -58921,22 +58744,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteChatCompletion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteChatCompletion404", DeleteChatCompletion404>
       | OpenAiClientError<"DeleteChatCompletion429", DeleteChatCompletion429>
-      | OpenAiClientError<"DeleteChatCompletion500", DeleteChatCompletion500>
+      | OpenAiClientError<"DeleteChatCompletion500", DeleteChatCompletion500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       completionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteChatCompletion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteChatCompletion404", DeleteChatCompletion404>
       | OpenAiClientError<"DeleteChatCompletion429", DeleteChatCompletion429>
-      | OpenAiClientError<"DeleteChatCompletion500", DeleteChatCompletion500>
+      | OpenAiClientError<"DeleteChatCompletion500", DeleteChatCompletion500>,
+      R
     >
   }
   /**
@@ -58950,12 +58777,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetChatCompletionMessagesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetChatCompletionMessages200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetChatCompletionMessages400", GetChatCompletionMessages400>
       | OpenAiClientError<"GetChatCompletionMessages404", GetChatCompletionMessages404>
       | OpenAiClientError<"GetChatCompletionMessages429", GetChatCompletionMessages429>
-      | OpenAiClientError<"GetChatCompletionMessages500", GetChatCompletionMessages500>
+      | OpenAiClientError<"GetChatCompletionMessages500", GetChatCompletionMessages500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       completionId: string,
@@ -58965,12 +58794,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetChatCompletionMessages200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetChatCompletionMessages400", GetChatCompletionMessages400>
       | OpenAiClientError<"GetChatCompletionMessages404", GetChatCompletionMessages404>
       | OpenAiClientError<"GetChatCompletionMessages429", GetChatCompletionMessages429>
-      | OpenAiClientError<"GetChatCompletionMessages500", GetChatCompletionMessages500>
+      | OpenAiClientError<"GetChatCompletionMessages500", GetChatCompletionMessages500>,
+      R
     >
   }
   /**
@@ -58983,6 +58814,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateCompletionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateCompletion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateCompletion400", CreateCompletion400>
@@ -58990,12 +58822,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateCompletion404", CreateCompletion404>
       | OpenAiClientError<"CreateCompletion429", CreateCompletion429>
       | OpenAiClientError<"CreateCompletion500", CreateCompletion500>
-      | OpenAiClientError<"CreateCompletion503", CreateCompletion503>
+      | OpenAiClientError<"CreateCompletion503", CreateCompletion503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateCompletionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateCompletion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateCompletion400", CreateCompletion400>
@@ -59003,7 +58837,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateCompletion404", CreateCompletion404>
       | OpenAiClientError<"CreateCompletion429", CreateCompletion429>
       | OpenAiClientError<"CreateCompletion500", CreateCompletion500>
-      | OpenAiClientError<"CreateCompletion503", CreateCompletion503>
+      | OpenAiClientError<"CreateCompletion503", CreateCompletion503>,
+      R
     >
   }
   /**
@@ -59014,10 +58849,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListContainersParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListContainers200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListContainers404", ListContainers404>
-      | OpenAiClientError<"ListContainers429", ListContainers429>
+      | OpenAiClientError<"ListContainers429", ListContainers429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -59026,10 +58863,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListContainers200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListContainers404", ListContainers404>
-      | OpenAiClientError<"ListContainers429", ListContainers429>
+      | OpenAiClientError<"ListContainers429", ListContainers429>,
+      R
     >
   }
   /**
@@ -59040,19 +58879,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateContainerRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateContainer200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateContainer400", CreateContainer400>
-      | OpenAiClientError<"CreateContainer429", CreateContainer429>
+      | OpenAiClientError<"CreateContainer429", CreateContainer429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateContainerRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateContainer200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateContainer400", CreateContainer400>
-      | OpenAiClientError<"CreateContainer429", CreateContainer429>
+      | OpenAiClientError<"CreateContainer429", CreateContainer429>,
+      R
     >
   }
   /**
@@ -59064,20 +58907,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveContainer200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainer404", RetrieveContainer404>
-      | OpenAiClientError<"RetrieveContainer429", RetrieveContainer429>
+      | OpenAiClientError<"RetrieveContainer429", RetrieveContainer429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveContainer200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainer404", RetrieveContainer404>
-      | OpenAiClientError<"RetrieveContainer429", RetrieveContainer429>
+      | OpenAiClientError<"RetrieveContainer429", RetrieveContainer429>,
+      R
     >
   }
   /**
@@ -59089,20 +58936,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteContainer200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteContainer404", DeleteContainer404>
-      | OpenAiClientError<"DeleteContainer429", DeleteContainer429>
+      | OpenAiClientError<"DeleteContainer429", DeleteContainer429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteContainer200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteContainer404", DeleteContainer404>
-      | OpenAiClientError<"DeleteContainer429", DeleteContainer429>
+      | OpenAiClientError<"DeleteContainer429", DeleteContainer429>,
+      R
     >
   }
   /**
@@ -59114,10 +58965,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListContainerFilesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListContainerFiles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListContainerFiles404", ListContainerFiles404>
-      | OpenAiClientError<"ListContainerFiles429", ListContainerFiles429>
+      | OpenAiClientError<"ListContainerFiles429", ListContainerFiles429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
@@ -59127,10 +58980,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListContainerFiles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListContainerFiles404", ListContainerFiles404>
-      | OpenAiClientError<"ListContainerFiles429", ListContainerFiles429>
+      | OpenAiClientError<"ListContainerFiles429", ListContainerFiles429>,
+      R
     >
   }
   /**
@@ -59144,11 +58999,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateContainerFileRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateContainerFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateContainerFile400", CreateContainerFile400>
       | OpenAiClientError<"CreateContainerFile404", CreateContainerFile404>
-      | OpenAiClientError<"CreateContainerFile429", CreateContainerFile429>
+      | OpenAiClientError<"CreateContainerFile429", CreateContainerFile429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
@@ -59158,11 +59015,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateContainerFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateContainerFile400", CreateContainerFile400>
       | OpenAiClientError<"CreateContainerFile404", CreateContainerFile404>
-      | OpenAiClientError<"CreateContainerFile429", CreateContainerFile429>
+      | OpenAiClientError<"CreateContainerFile429", CreateContainerFile429>,
+      R
     >
   }
   /**
@@ -59175,10 +59034,12 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveContainerFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainerFile404", RetrieveContainerFile404>
-      | OpenAiClientError<"RetrieveContainerFile429", RetrieveContainerFile429>
+      | OpenAiClientError<"RetrieveContainerFile429", RetrieveContainerFile429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
@@ -59186,10 +59047,12 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveContainerFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainerFile404", RetrieveContainerFile404>
-      | OpenAiClientError<"RetrieveContainerFile429", RetrieveContainerFile429>
+      | OpenAiClientError<"RetrieveContainerFile429", RetrieveContainerFile429>,
+      R
     >
   }
   /**
@@ -59202,10 +59065,12 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteContainerFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteContainerFile404", DeleteContainerFile404>
-      | OpenAiClientError<"DeleteContainerFile429", DeleteContainerFile429>
+      | OpenAiClientError<"DeleteContainerFile429", DeleteContainerFile429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
@@ -59213,10 +59078,12 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteContainerFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteContainerFile404", DeleteContainerFile404>
-      | OpenAiClientError<"DeleteContainerFile429", DeleteContainerFile429>
+      | OpenAiClientError<"DeleteContainerFile429", DeleteContainerFile429>,
+      R
     >
   }
   /**
@@ -59229,10 +59096,12 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainerFileContent404", RetrieveContainerFileContent404>
-      | OpenAiClientError<"RetrieveContainerFileContent429", RetrieveContainerFileContent429>
+      | OpenAiClientError<"RetrieveContainerFileContent429", RetrieveContainerFileContent429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       containerId: string,
@@ -59240,10 +59109,12 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveContainerFileContent404", RetrieveContainerFileContent404>
-      | OpenAiClientError<"RetrieveContainerFileContent429", RetrieveContainerFileContent429>
+      | OpenAiClientError<"RetrieveContainerFileContent429", RetrieveContainerFileContent429>,
+      R
     >
   }
   /**
@@ -59252,7 +59123,7 @@ export interface OpenAiClient {
   readonly "RetrieveContainerFileContentStream": (
     containerId: string,
     fileId: string
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * List all items for a conversation with the given ID.
    */
@@ -59262,11 +59133,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListConversationItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListConversationItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListConversationItems400", ListConversationItems400>
       | OpenAiClientError<"ListConversationItems404", ListConversationItems404>
-      | OpenAiClientError<"ListConversationItems429", ListConversationItems429>
+      | OpenAiClientError<"ListConversationItems429", ListConversationItems429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
@@ -59276,11 +59149,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListConversationItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListConversationItems400", ListConversationItems400>
       | OpenAiClientError<"ListConversationItems404", ListConversationItems404>
-      | OpenAiClientError<"ListConversationItems429", ListConversationItems429>
+      | OpenAiClientError<"ListConversationItems429", ListConversationItems429>,
+      R
     >
   }
   /**
@@ -59296,12 +59171,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateConversationItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateConversationItems400", CreateConversationItems400>
       | OpenAiClientError<"CreateConversationItems404", CreateConversationItems404>
       | OpenAiClientError<"CreateConversationItems429", CreateConversationItems429>
-      | OpenAiClientError<"CreateConversationItems500", CreateConversationItems500>
+      | OpenAiClientError<"CreateConversationItems500", CreateConversationItems500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
@@ -59312,12 +59189,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateConversationItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateConversationItems400", CreateConversationItems400>
       | OpenAiClientError<"CreateConversationItems404", CreateConversationItems404>
       | OpenAiClientError<"CreateConversationItems429", CreateConversationItems429>
-      | OpenAiClientError<"CreateConversationItems500", CreateConversationItems500>
+      | OpenAiClientError<"CreateConversationItems500", CreateConversationItems500>,
+      R
     >
   }
   /**
@@ -59330,10 +59209,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetConversationItemParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetConversationItem200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetConversationItem404", GetConversationItem404>
-      | OpenAiClientError<"GetConversationItem429", GetConversationItem429>
+      | OpenAiClientError<"GetConversationItem429", GetConversationItem429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
@@ -59344,10 +59225,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetConversationItem200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetConversationItem404", GetConversationItem404>
-      | OpenAiClientError<"GetConversationItem429", GetConversationItem429>
+      | OpenAiClientError<"GetConversationItem429", GetConversationItem429>,
+      R
     >
   }
   /**
@@ -59360,12 +59243,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteConversationItem200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteConversationItem400", DeleteConversationItem400>
       | OpenAiClientError<"DeleteConversationItem404", DeleteConversationItem404>
       | OpenAiClientError<"DeleteConversationItem429", DeleteConversationItem429>
-      | OpenAiClientError<"DeleteConversationItem500", DeleteConversationItem500>
+      | OpenAiClientError<"DeleteConversationItem500", DeleteConversationItem500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
@@ -59373,12 +59258,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteConversationItem200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteConversationItem400", DeleteConversationItem400>
       | OpenAiClientError<"DeleteConversationItem404", DeleteConversationItem404>
       | OpenAiClientError<"DeleteConversationItem429", DeleteConversationItem429>
-      | OpenAiClientError<"DeleteConversationItem500", DeleteConversationItem500>
+      | OpenAiClientError<"DeleteConversationItem500", DeleteConversationItem500>,
+      R
     >
   }
   /**
@@ -59389,25 +59276,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateEmbeddingRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateEmbedding200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEmbedding400", CreateEmbedding400>
       | OpenAiClientError<"CreateEmbedding401", CreateEmbedding401>
       | OpenAiClientError<"CreateEmbedding429", CreateEmbedding429>
       | OpenAiClientError<"CreateEmbedding500", CreateEmbedding500>
-      | OpenAiClientError<"CreateEmbedding503", CreateEmbedding503>
+      | OpenAiClientError<"CreateEmbedding503", CreateEmbedding503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateEmbeddingRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateEmbedding200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEmbedding400", CreateEmbedding400>
       | OpenAiClientError<"CreateEmbedding401", CreateEmbedding401>
       | OpenAiClientError<"CreateEmbedding429", CreateEmbedding429>
       | OpenAiClientError<"CreateEmbedding500", CreateEmbedding500>
-      | OpenAiClientError<"CreateEmbedding503", CreateEmbedding503>
+      | OpenAiClientError<"CreateEmbedding503", CreateEmbedding503>,
+      R
     >
   }
   /**
@@ -59418,7 +59309,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListEvalsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListEvals200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListEvals429", ListEvals429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListEvals429", ListEvals429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -59426,7 +59318,8 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListEvals200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListEvals429", ListEvals429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListEvals429", ListEvals429>,
+      R
     >
   }
   /**
@@ -59439,19 +59332,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateEvalRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateEval201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEval400", CreateEval400>
-      | OpenAiClientError<"CreateEval429", CreateEval429>
+      | OpenAiClientError<"CreateEval429", CreateEval429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateEvalRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateEval201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEval400", CreateEval400>
-      | OpenAiClientError<"CreateEval429", CreateEval429>
+      | OpenAiClientError<"CreateEval429", CreateEval429>,
+      R
     >
   }
   /**
@@ -59463,20 +59360,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetEval200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEval404", GetEval404>
-      | OpenAiClientError<"GetEval429", GetEval429>
+      | OpenAiClientError<"GetEval429", GetEval429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetEval200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEval404", GetEval404>
-      | OpenAiClientError<"GetEval429", GetEval429>
+      | OpenAiClientError<"GetEval429", GetEval429>,
+      R
     >
   }
   /**
@@ -59488,22 +59389,26 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateEvalRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateEval200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateEval400", UpdateEval400>
       | OpenAiClientError<"UpdateEval404", UpdateEval404>
-      | OpenAiClientError<"UpdateEval429", UpdateEval429>
+      | OpenAiClientError<"UpdateEval429", UpdateEval429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
       options: { readonly payload: typeof UpdateEvalRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateEval200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateEval400", UpdateEval400>
       | OpenAiClientError<"UpdateEval404", UpdateEval404>
-      | OpenAiClientError<"UpdateEval429", UpdateEval429>
+      | OpenAiClientError<"UpdateEval429", UpdateEval429>,
+      R
     >
   }
   /**
@@ -59515,22 +59420,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteEval200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteEval400", DeleteEval400>
       | OpenAiClientError<"DeleteEval404", DeleteEval404>
-      | OpenAiClientError<"DeleteEval429", DeleteEval429>
+      | OpenAiClientError<"DeleteEval429", DeleteEval429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteEval200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteEval400", DeleteEval400>
       | OpenAiClientError<"DeleteEval404", DeleteEval404>
-      | OpenAiClientError<"DeleteEval429", DeleteEval429>
+      | OpenAiClientError<"DeleteEval429", DeleteEval429>,
+      R
     >
   }
   /**
@@ -59542,11 +59451,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetEvalRunsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRuns200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRuns400", GetEvalRuns400>
       | OpenAiClientError<"GetEvalRuns404", GetEvalRuns404>
-      | OpenAiClientError<"GetEvalRuns429", GetEvalRuns429>
+      | OpenAiClientError<"GetEvalRuns429", GetEvalRuns429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59555,11 +59466,13 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRuns200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRuns400", GetEvalRuns400>
       | OpenAiClientError<"GetEvalRuns404", GetEvalRuns404>
-      | OpenAiClientError<"GetEvalRuns429", GetEvalRuns429>
+      | OpenAiClientError<"GetEvalRuns429", GetEvalRuns429>,
+      R
     >
   }
   /**
@@ -59571,24 +59484,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateEvalRunRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateEvalRun201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEvalRun400", CreateEvalRun400>
       | OpenAiClientError<"CreateEvalRun404", CreateEvalRun404>
       | OpenAiClientError<"CreateEvalRun429", CreateEvalRun429>
-      | OpenAiClientError<"CreateEvalRun500", CreateEvalRun500>
+      | OpenAiClientError<"CreateEvalRun500", CreateEvalRun500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
       options: { readonly payload: typeof CreateEvalRunRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateEvalRun201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateEvalRun400", CreateEvalRun400>
       | OpenAiClientError<"CreateEvalRun404", CreateEvalRun404>
       | OpenAiClientError<"CreateEvalRun429", CreateEvalRun429>
-      | OpenAiClientError<"CreateEvalRun500", CreateEvalRun500>
+      | OpenAiClientError<"CreateEvalRun500", CreateEvalRun500>,
+      R
     >
   }
   /**
@@ -59601,11 +59518,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRun200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRun400", GetEvalRun400>
       | OpenAiClientError<"GetEvalRun404", GetEvalRun404>
-      | OpenAiClientError<"GetEvalRun429", GetEvalRun429>
+      | OpenAiClientError<"GetEvalRun429", GetEvalRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59613,11 +59532,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRun200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRun400", GetEvalRun400>
       | OpenAiClientError<"GetEvalRun404", GetEvalRun404>
-      | OpenAiClientError<"GetEvalRun429", GetEvalRun429>
+      | OpenAiClientError<"GetEvalRun429", GetEvalRun429>,
+      R
     >
   }
   /**
@@ -59630,11 +59551,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteEvalRun200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteEvalRun400", DeleteEvalRun400>
       | OpenAiClientError<"DeleteEvalRun404", DeleteEvalRun404>
-      | OpenAiClientError<"DeleteEvalRun429", DeleteEvalRun429>
+      | OpenAiClientError<"DeleteEvalRun429", DeleteEvalRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59642,11 +59565,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteEvalRun200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteEvalRun400", DeleteEvalRun400>
       | OpenAiClientError<"DeleteEvalRun404", DeleteEvalRun404>
-      | OpenAiClientError<"DeleteEvalRun429", DeleteEvalRun429>
+      | OpenAiClientError<"DeleteEvalRun429", DeleteEvalRun429>,
+      R
     >
   }
   /**
@@ -59659,7 +59584,8 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelEvalRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelEvalRun429", CancelEvalRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelEvalRun429", CancelEvalRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59667,7 +59593,8 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelEvalRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelEvalRun429", CancelEvalRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelEvalRun429", CancelEvalRun429>,
+      R
     >
   }
   /**
@@ -59680,11 +59607,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetEvalRunOutputItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRunOutputItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRunOutputItems400", GetEvalRunOutputItems400>
       | OpenAiClientError<"GetEvalRunOutputItems404", GetEvalRunOutputItems404>
-      | OpenAiClientError<"GetEvalRunOutputItems429", GetEvalRunOutputItems429>
+      | OpenAiClientError<"GetEvalRunOutputItems429", GetEvalRunOutputItems429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59695,11 +59624,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRunOutputItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRunOutputItems400", GetEvalRunOutputItems400>
       | OpenAiClientError<"GetEvalRunOutputItems404", GetEvalRunOutputItems404>
-      | OpenAiClientError<"GetEvalRunOutputItems429", GetEvalRunOutputItems429>
+      | OpenAiClientError<"GetEvalRunOutputItems429", GetEvalRunOutputItems429>,
+      R
     >
   }
   /**
@@ -59713,11 +59644,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRunOutputItem200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRunOutputItem400", GetEvalRunOutputItem400>
       | OpenAiClientError<"GetEvalRunOutputItem404", GetEvalRunOutputItem404>
-      | OpenAiClientError<"GetEvalRunOutputItem429", GetEvalRunOutputItem429>
+      | OpenAiClientError<"GetEvalRunOutputItem429", GetEvalRunOutputItem429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       evalId: string,
@@ -59726,11 +59659,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetEvalRunOutputItem200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetEvalRunOutputItem400", GetEvalRunOutputItem400>
       | OpenAiClientError<"GetEvalRunOutputItem404", GetEvalRunOutputItem404>
-      | OpenAiClientError<"GetEvalRunOutputItem429", GetEvalRunOutputItem429>
+      | OpenAiClientError<"GetEvalRunOutputItem429", GetEvalRunOutputItem429>,
+      R
     >
   }
   /**
@@ -59741,11 +59676,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListFilesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListFiles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFiles400", ListFiles400>
       | OpenAiClientError<"ListFiles404", ListFiles404>
-      | OpenAiClientError<"ListFiles429", ListFiles429>
+      | OpenAiClientError<"ListFiles429", ListFiles429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -59753,11 +59690,13 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFiles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFiles400", ListFiles400>
       | OpenAiClientError<"ListFiles404", ListFiles404>
-      | OpenAiClientError<"ListFiles429", ListFiles429>
+      | OpenAiClientError<"ListFiles429", ListFiles429>,
+      R
     >
   }
   /**
@@ -59792,21 +59731,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateFileRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFile400", CreateFile400>
       | OpenAiClientError<"CreateFile429", CreateFile429>
-      | OpenAiClientError<"CreateFile500", CreateFile500>
+      | OpenAiClientError<"CreateFile500", CreateFile500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateFileRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFile400", CreateFile400>
       | OpenAiClientError<"CreateFile429", CreateFile429>
-      | OpenAiClientError<"CreateFile500", CreateFile500>
+      | OpenAiClientError<"CreateFile500", CreateFile500>,
+      R
     >
   }
   /**
@@ -59818,20 +59761,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveFile404", RetrieveFile404>
-      | OpenAiClientError<"RetrieveFile429", RetrieveFile429>
+      | OpenAiClientError<"RetrieveFile429", RetrieveFile429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveFile404", RetrieveFile404>
-      | OpenAiClientError<"RetrieveFile429", RetrieveFile429>
+      | OpenAiClientError<"RetrieveFile429", RetrieveFile429>,
+      R
     >
   }
   /**
@@ -59843,20 +59790,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteFile404", DeleteFile404>
-      | OpenAiClientError<"DeleteFile429", DeleteFile429>
+      | OpenAiClientError<"DeleteFile429", DeleteFile429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteFile404", DeleteFile404>
-      | OpenAiClientError<"DeleteFile429", DeleteFile429>
+      | OpenAiClientError<"DeleteFile429", DeleteFile429>,
+      R
     >
   }
   /**
@@ -59868,30 +59819,34 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DownloadFile400", DownloadFile400>
       | OpenAiClientError<"DownloadFile404", DownloadFile404>
       | OpenAiClientError<"DownloadFile429", DownloadFile429>
-      | OpenAiClientError<"DownloadFile500", DownloadFile500>
+      | OpenAiClientError<"DownloadFile500", DownloadFile500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fileId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DownloadFile400", DownloadFile400>
       | OpenAiClientError<"DownloadFile404", DownloadFile404>
       | OpenAiClientError<"DownloadFile429", DownloadFile429>
-      | OpenAiClientError<"DownloadFile500", DownloadFile500>
+      | OpenAiClientError<"DownloadFile500", DownloadFile500>,
+      R
     >
   }
   /**
    * Returns a response containing the contents of the specified file.
    */
-  readonly "downloadFileStream": (fileId: string) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  readonly "downloadFileStream": (fileId: string) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Run a grader.
    */
@@ -59900,19 +59855,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof RunGraderRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RunGrader200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RunGrader400", RunGrader400>
-      | OpenAiClientError<"RunGrader429", RunGrader429>
+      | OpenAiClientError<"RunGrader429", RunGrader429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof RunGraderRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<RunGrader200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RunGrader400", RunGrader400>
-      | OpenAiClientError<"RunGrader429", RunGrader429>
+      | OpenAiClientError<"RunGrader429", RunGrader429>,
+      R
     >
   }
   /**
@@ -59923,19 +59882,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ValidateGraderRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ValidateGrader200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ValidateGrader400", ValidateGrader400>
-      | OpenAiClientError<"ValidateGrader429", ValidateGrader429>
+      | OpenAiClientError<"ValidateGrader429", ValidateGrader429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof ValidateGraderRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ValidateGrader200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ValidateGrader400", ValidateGrader400>
-      | OpenAiClientError<"ValidateGrader429", ValidateGrader429>
+      | OpenAiClientError<"ValidateGrader429", ValidateGrader429>,
+      R
     >
   }
   /**
@@ -59952,10 +59915,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningCheckpointPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningCheckpointPermissions400", ListFineTuningCheckpointPermissions400>
-      | OpenAiClientError<"ListFineTuningCheckpointPermissions429", ListFineTuningCheckpointPermissions429>
+      | OpenAiClientError<"ListFineTuningCheckpointPermissions429", ListFineTuningCheckpointPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTunedModelCheckpoint: string,
@@ -59965,10 +59930,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningCheckpointPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningCheckpointPermissions400", ListFineTuningCheckpointPermissions400>
-      | OpenAiClientError<"ListFineTuningCheckpointPermissions429", ListFineTuningCheckpointPermissions429>
+      | OpenAiClientError<"ListFineTuningCheckpointPermissions429", ListFineTuningCheckpointPermissions429>,
+      R
     >
   }
   /**
@@ -59985,11 +59952,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateFineTuningCheckpointPermission200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFineTuningCheckpointPermission400", CreateFineTuningCheckpointPermission400>
       | OpenAiClientError<"CreateFineTuningCheckpointPermission404", CreateFineTuningCheckpointPermission404>
-      | OpenAiClientError<"CreateFineTuningCheckpointPermission429", CreateFineTuningCheckpointPermission429>
+      | OpenAiClientError<"CreateFineTuningCheckpointPermission429", CreateFineTuningCheckpointPermission429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTunedModelCheckpoint: string,
@@ -59999,11 +59968,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateFineTuningCheckpointPermission200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFineTuningCheckpointPermission400", CreateFineTuningCheckpointPermission400>
       | OpenAiClientError<"CreateFineTuningCheckpointPermission404", CreateFineTuningCheckpointPermission404>
-      | OpenAiClientError<"CreateFineTuningCheckpointPermission429", CreateFineTuningCheckpointPermission429>
+      | OpenAiClientError<"CreateFineTuningCheckpointPermission429", CreateFineTuningCheckpointPermission429>,
+      R
     >
   }
   /**
@@ -60018,11 +59989,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteFineTuningCheckpointPermission200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteFineTuningCheckpointPermission400", DeleteFineTuningCheckpointPermission400>
       | OpenAiClientError<"DeleteFineTuningCheckpointPermission404", DeleteFineTuningCheckpointPermission404>
-      | OpenAiClientError<"DeleteFineTuningCheckpointPermission429", DeleteFineTuningCheckpointPermission429>
+      | OpenAiClientError<"DeleteFineTuningCheckpointPermission429", DeleteFineTuningCheckpointPermission429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTunedModelCheckpoint: string,
@@ -60030,11 +60003,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteFineTuningCheckpointPermission200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteFineTuningCheckpointPermission400", DeleteFineTuningCheckpointPermission400>
       | OpenAiClientError<"DeleteFineTuningCheckpointPermission404", DeleteFineTuningCheckpointPermission404>
-      | OpenAiClientError<"DeleteFineTuningCheckpointPermission429", DeleteFineTuningCheckpointPermission429>
+      | OpenAiClientError<"DeleteFineTuningCheckpointPermission429", DeleteFineTuningCheckpointPermission429>,
+      R
     >
   }
   /**
@@ -60048,10 +60023,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListPaginatedFineTuningJobs200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListPaginatedFineTuningJobs400", ListPaginatedFineTuningJobs400>
-      | OpenAiClientError<"ListPaginatedFineTuningJobs429", ListPaginatedFineTuningJobs429>
+      | OpenAiClientError<"ListPaginatedFineTuningJobs429", ListPaginatedFineTuningJobs429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60060,10 +60037,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListPaginatedFineTuningJobs200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListPaginatedFineTuningJobs400", ListPaginatedFineTuningJobs400>
-      | OpenAiClientError<"ListPaginatedFineTuningJobs429", ListPaginatedFineTuningJobs429>
+      | OpenAiClientError<"ListPaginatedFineTuningJobs429", ListPaginatedFineTuningJobs429>,
+      R
     >
   }
   /**
@@ -60078,19 +60057,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateFineTuningJobRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateFineTuningJob200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFineTuningJob400", CreateFineTuningJob400>
-      | OpenAiClientError<"CreateFineTuningJob429", CreateFineTuningJob429>
+      | OpenAiClientError<"CreateFineTuningJob429", CreateFineTuningJob429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateFineTuningJobRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateFineTuningJob200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateFineTuningJob400", CreateFineTuningJob400>
-      | OpenAiClientError<"CreateFineTuningJob429", CreateFineTuningJob429>
+      | OpenAiClientError<"CreateFineTuningJob429", CreateFineTuningJob429>,
+      R
     >
   }
   /**
@@ -60104,20 +60087,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveFineTuningJob200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveFineTuningJob404", RetrieveFineTuningJob404>
-      | OpenAiClientError<"RetrieveFineTuningJob429", RetrieveFineTuningJob429>
+      | OpenAiClientError<"RetrieveFineTuningJob429", RetrieveFineTuningJob429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveFineTuningJob200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveFineTuningJob404", RetrieveFineTuningJob404>
-      | OpenAiClientError<"RetrieveFineTuningJob429", RetrieveFineTuningJob429>
+      | OpenAiClientError<"RetrieveFineTuningJob429", RetrieveFineTuningJob429>,
+      R
     >
   }
   /**
@@ -60129,22 +60116,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelFineTuningJob200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelFineTuningJob400", CancelFineTuningJob400>
       | OpenAiClientError<"CancelFineTuningJob404", CancelFineTuningJob404>
-      | OpenAiClientError<"CancelFineTuningJob429", CancelFineTuningJob429>
+      | OpenAiClientError<"CancelFineTuningJob429", CancelFineTuningJob429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelFineTuningJob200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelFineTuningJob400", CancelFineTuningJob400>
       | OpenAiClientError<"CancelFineTuningJob404", CancelFineTuningJob404>
-      | OpenAiClientError<"CancelFineTuningJob429", CancelFineTuningJob429>
+      | OpenAiClientError<"CancelFineTuningJob429", CancelFineTuningJob429>,
+      R
     >
   }
   /**
@@ -60159,11 +60150,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningJobCheckpoints200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningJobCheckpoints400", ListFineTuningJobCheckpoints400>
       | OpenAiClientError<"ListFineTuningJobCheckpoints404", ListFineTuningJobCheckpoints404>
-      | OpenAiClientError<"ListFineTuningJobCheckpoints429", ListFineTuningJobCheckpoints429>
+      | OpenAiClientError<"ListFineTuningJobCheckpoints429", ListFineTuningJobCheckpoints429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
@@ -60173,11 +60166,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningJobCheckpoints200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningJobCheckpoints400", ListFineTuningJobCheckpoints400>
       | OpenAiClientError<"ListFineTuningJobCheckpoints404", ListFineTuningJobCheckpoints404>
-      | OpenAiClientError<"ListFineTuningJobCheckpoints429", ListFineTuningJobCheckpoints429>
+      | OpenAiClientError<"ListFineTuningJobCheckpoints429", ListFineTuningJobCheckpoints429>,
+      R
     >
   }
   /**
@@ -60189,11 +60184,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListFineTuningEventsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningEvents200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningEvents400", ListFineTuningEvents400>
       | OpenAiClientError<"ListFineTuningEvents404", ListFineTuningEvents404>
-      | OpenAiClientError<"ListFineTuningEvents429", ListFineTuningEvents429>
+      | OpenAiClientError<"ListFineTuningEvents429", ListFineTuningEvents429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
@@ -60203,11 +60200,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFineTuningEvents200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFineTuningEvents400", ListFineTuningEvents400>
       | OpenAiClientError<"ListFineTuningEvents404", ListFineTuningEvents404>
-      | OpenAiClientError<"ListFineTuningEvents429", ListFineTuningEvents429>
+      | OpenAiClientError<"ListFineTuningEvents429", ListFineTuningEvents429>,
+      R
     >
   }
   /**
@@ -60219,22 +60218,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<PauseFineTuningJob200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"PauseFineTuningJob400", PauseFineTuningJob400>
       | OpenAiClientError<"PauseFineTuningJob404", PauseFineTuningJob404>
-      | OpenAiClientError<"PauseFineTuningJob429", PauseFineTuningJob429>
+      | OpenAiClientError<"PauseFineTuningJob429", PauseFineTuningJob429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<PauseFineTuningJob200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"PauseFineTuningJob400", PauseFineTuningJob400>
       | OpenAiClientError<"PauseFineTuningJob404", PauseFineTuningJob404>
-      | OpenAiClientError<"PauseFineTuningJob429", PauseFineTuningJob429>
+      | OpenAiClientError<"PauseFineTuningJob429", PauseFineTuningJob429>,
+      R
     >
   }
   /**
@@ -60246,22 +60249,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ResumeFineTuningJob200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ResumeFineTuningJob400", ResumeFineTuningJob400>
       | OpenAiClientError<"ResumeFineTuningJob404", ResumeFineTuningJob404>
-      | OpenAiClientError<"ResumeFineTuningJob429", ResumeFineTuningJob429>
+      | OpenAiClientError<"ResumeFineTuningJob429", ResumeFineTuningJob429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       fineTuningJobId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ResumeFineTuningJob200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ResumeFineTuningJob400", ResumeFineTuningJob400>
       | OpenAiClientError<"ResumeFineTuningJob404", ResumeFineTuningJob404>
-      | OpenAiClientError<"ResumeFineTuningJob429", ResumeFineTuningJob429>
+      | OpenAiClientError<"ResumeFineTuningJob429", ResumeFineTuningJob429>,
+      R
     >
   }
   /**
@@ -60272,6 +60279,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateImageEditRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateImageEdit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImageEdit400", CreateImageEdit400>
@@ -60279,12 +60287,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateImageEdit410", CreateImageEdit410>
       | OpenAiClientError<"CreateImageEdit429", CreateImageEdit429>
       | OpenAiClientError<"CreateImageEdit500", CreateImageEdit500>
-      | OpenAiClientError<"CreateImageEdit503", CreateImageEdit503>
+      | OpenAiClientError<"CreateImageEdit503", CreateImageEdit503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateImageEditRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateImageEdit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImageEdit400", CreateImageEdit400>
@@ -60292,7 +60302,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateImageEdit410", CreateImageEdit410>
       | OpenAiClientError<"CreateImageEdit429", CreateImageEdit429>
       | OpenAiClientError<"CreateImageEdit500", CreateImageEdit500>
-      | OpenAiClientError<"CreateImageEdit503", CreateImageEdit503>
+      | OpenAiClientError<"CreateImageEdit503", CreateImageEdit503>,
+      R
     >
   }
   /**
@@ -60302,8 +60313,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateImageEditRequestFormData.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateImageEdit200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateImageEdit200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateImageEdit200Sse.DecodingServices
   >
   /**
    * Creates an image given a prompt using a GPT Image model. [Learn more](https://developers.openai.com/api/docs/guides/images-vision).
@@ -60313,6 +60324,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateImageRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateImage200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImage400", CreateImage400>
@@ -60320,12 +60332,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateImage410", CreateImage410>
       | OpenAiClientError<"CreateImage429", CreateImage429>
       | OpenAiClientError<"CreateImage500", CreateImage500>
-      | OpenAiClientError<"CreateImage503", CreateImage503>
+      | OpenAiClientError<"CreateImage503", CreateImage503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateImageRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateImage200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImage400", CreateImage400>
@@ -60333,7 +60347,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateImage410", CreateImage410>
       | OpenAiClientError<"CreateImage429", CreateImage429>
       | OpenAiClientError<"CreateImage500", CreateImage500>
-      | OpenAiClientError<"CreateImage503", CreateImage503>
+      | OpenAiClientError<"CreateImage503", CreateImage503>,
+      R
     >
   }
   /**
@@ -60343,8 +60358,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateImageRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateImage200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateImage200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateImage200Sse.DecodingServices
   >
   /**
    * This endpoint is retired and no longer available. Use the image edits endpoint with a GPT Image model and a prompt to create a variation of an image. The request and response schemas below describe the legacy contract.
@@ -60354,13 +60369,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateImageVariationRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateImageVariation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImageVariation400", CreateImageVariation400>
       | OpenAiClientError<"CreateImageVariation403", CreateImageVariation403>
       | OpenAiClientError<"CreateImageVariation410", CreateImageVariation410>
       | OpenAiClientError<"CreateImageVariation429", CreateImageVariation429>
-      | OpenAiClientError<"CreateImageVariation500", CreateImageVariation500>
+      | OpenAiClientError<"CreateImageVariation500", CreateImageVariation500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60369,13 +60386,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateImageVariation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateImageVariation400", CreateImageVariation400>
       | OpenAiClientError<"CreateImageVariation403", CreateImageVariation403>
       | OpenAiClientError<"CreateImageVariation410", CreateImageVariation410>
       | OpenAiClientError<"CreateImageVariation429", CreateImageVariation429>
-      | OpenAiClientError<"CreateImageVariation500", CreateImageVariation500>
+      | OpenAiClientError<"CreateImageVariation500", CreateImageVariation500>,
+      R
     >
   }
   /**
@@ -60403,25 +60422,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateLiveRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateLive201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateLive400", CreateLive400>
       | OpenAiClientError<"CreateLive413", CreateLive413>
       | OpenAiClientError<"CreateLive429", CreateLive429>
       | OpenAiClientError<"CreateLive503", CreateLive503>
-      | OpenAiClientError<"CreateLive504", CreateLive504>
+      | OpenAiClientError<"CreateLive504", CreateLive504>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateLiveRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateLive201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateLive400", CreateLive400>
       | OpenAiClientError<"CreateLive413", CreateLive413>
       | OpenAiClientError<"CreateLive429", CreateLive429>
       | OpenAiClientError<"CreateLive503", CreateLive503>
-      | OpenAiClientError<"CreateLive504", CreateLive504>
+      | OpenAiClientError<"CreateLive504", CreateLive504>,
+      R
     >
   }
   /**
@@ -60433,26 +60456,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AcceptLiveSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AcceptLiveSession400", AcceptLiveSession400>
       | OpenAiClientError<"AcceptLiveSession404", AcceptLiveSession404>
       | OpenAiClientError<"AcceptLiveSession409", AcceptLiveSession409>
       | OpenAiClientError<"AcceptLiveSession429", AcceptLiveSession429>
-      | OpenAiClientError<"AcceptLiveSession503", AcceptLiveSession503>
+      | OpenAiClientError<"AcceptLiveSession503", AcceptLiveSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly payload: typeof AcceptLiveSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AcceptLiveSession400", AcceptLiveSession400>
       | OpenAiClientError<"AcceptLiveSession404", AcceptLiveSession404>
       | OpenAiClientError<"AcceptLiveSession409", AcceptLiveSession409>
       | OpenAiClientError<"AcceptLiveSession429", AcceptLiveSession429>
-      | OpenAiClientError<"AcceptLiveSession503", AcceptLiveSession503>
+      | OpenAiClientError<"AcceptLiveSession503", AcceptLiveSession503>,
+      R
     >
   }
   /**
@@ -60464,24 +60491,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ForkLiveSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ForkLiveSession201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ForkLiveSession400", ForkLiveSession400>
       | OpenAiClientError<"ForkLiveSession413", ForkLiveSession413>
       | OpenAiClientError<"ForkLiveSession429", ForkLiveSession429>
-      | OpenAiClientError<"ForkLiveSession503", ForkLiveSession503>
+      | OpenAiClientError<"ForkLiveSession503", ForkLiveSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly payload: typeof ForkLiveSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ForkLiveSession201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ForkLiveSession400", ForkLiveSession400>
       | OpenAiClientError<"ForkLiveSession413", ForkLiveSession413>
       | OpenAiClientError<"ForkLiveSession429", ForkLiveSession429>
-      | OpenAiClientError<"ForkLiveSession503", ForkLiveSession503>
+      | OpenAiClientError<"ForkLiveSession503", ForkLiveSession503>,
+      R
     >
   }
   /**
@@ -60493,14 +60524,22 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"HangupLiveSession404", HangupLiveSession404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"HangupLiveSession404", HangupLiveSession404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"HangupLiveSession404", HangupLiveSession404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"HangupLiveSession404", HangupLiveSession404>,
+      R
     >
   }
   /**
@@ -60512,20 +60551,24 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ReferLiveSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ReferLiveSession400", ReferLiveSession400>
-      | OpenAiClientError<"ReferLiveSession404", ReferLiveSession404>
+      | OpenAiClientError<"ReferLiveSession404", ReferLiveSession404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly payload: typeof ReferLiveSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ReferLiveSession400", ReferLiveSession400>
-      | OpenAiClientError<"ReferLiveSession404", ReferLiveSession404>
+      | OpenAiClientError<"ReferLiveSession404", ReferLiveSession404>,
+      R
     >
   }
   /**
@@ -60537,22 +60580,26 @@ export interface OpenAiClient {
       options: { readonly payload: typeof RejectLiveSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RejectLiveSession400", RejectLiveSession400>
       | OpenAiClientError<"RejectLiveSession404", RejectLiveSession404>
-      | OpenAiClientError<"RejectLiveSession409", RejectLiveSession409>
+      | OpenAiClientError<"RejectLiveSession409", RejectLiveSession409>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly payload: typeof RejectLiveSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RejectLiveSession400", RejectLiveSession400>
       | OpenAiClientError<"RejectLiveSession404", RejectLiveSession404>
-      | OpenAiClientError<"RejectLiveSession409", RejectLiveSession409>
+      | OpenAiClientError<"RejectLiveSession409", RejectLiveSession409>,
+      R
     >
   }
   /**
@@ -60563,13 +60610,15 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListModels200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListModels403", ListModels403>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListModels403", ListModels403>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListModels200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListModels403", ListModels403>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListModels403", ListModels403>,
+      R
     >
   }
   /**
@@ -60581,20 +60630,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveModel200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveModel403", RetrieveModel403>
-      | OpenAiClientError<"RetrieveModel404", RetrieveModel404>
+      | OpenAiClientError<"RetrieveModel404", RetrieveModel404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       model: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveModel200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveModel403", RetrieveModel403>
-      | OpenAiClientError<"RetrieveModel404", RetrieveModel404>
+      | OpenAiClientError<"RetrieveModel404", RetrieveModel404>,
+      R
     >
   }
   /**
@@ -60606,20 +60659,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteModel200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteModel403", DeleteModel403>
-      | OpenAiClientError<"DeleteModel404", DeleteModel404>
+      | OpenAiClientError<"DeleteModel404", DeleteModel404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       model: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteModel200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteModel403", DeleteModel403>
-      | OpenAiClientError<"DeleteModel404", DeleteModel404>
+      | OpenAiClientError<"DeleteModel404", DeleteModel404>,
+      R
     >
   }
   /**
@@ -60631,25 +60688,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateModerationRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateModeration200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateModeration400", CreateModeration400>
       | OpenAiClientError<"CreateModeration403", CreateModeration403>
       | OpenAiClientError<"CreateModeration429", CreateModeration429>
       | OpenAiClientError<"CreateModeration500", CreateModeration500>
-      | OpenAiClientError<"CreateModeration503", CreateModeration503>
+      | OpenAiClientError<"CreateModeration503", CreateModeration503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateModerationRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateModeration200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateModeration400", CreateModeration400>
       | OpenAiClientError<"CreateModeration403", CreateModeration403>
       | OpenAiClientError<"CreateModeration429", CreateModeration429>
       | OpenAiClientError<"CreateModeration500", CreateModeration500>
-      | OpenAiClientError<"CreateModeration503", CreateModeration503>
+      | OpenAiClientError<"CreateModeration503", CreateModeration503>,
+      R
     >
   }
   /**
@@ -60660,10 +60721,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof AdminApiKeysListParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysList200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysList400", AdminApiKeysList400>
-      | OpenAiClientError<"AdminApiKeysList403", AdminApiKeysList403>
+      | OpenAiClientError<"AdminApiKeysList403", AdminApiKeysList403>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60672,10 +60735,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysList200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysList400", AdminApiKeysList400>
-      | OpenAiClientError<"AdminApiKeysList403", AdminApiKeysList403>
+      | OpenAiClientError<"AdminApiKeysList403", AdminApiKeysList403>,
+      R
     >
   }
   /**
@@ -60686,21 +60751,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AdminApiKeysCreateRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysCreate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysCreate400", AdminApiKeysCreate400>
       | OpenAiClientError<"AdminApiKeysCreate403", AdminApiKeysCreate403>
-      | OpenAiClientError<"AdminApiKeysCreate404", AdminApiKeysCreate404>
+      | OpenAiClientError<"AdminApiKeysCreate404", AdminApiKeysCreate404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof AdminApiKeysCreateRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysCreate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysCreate400", AdminApiKeysCreate400>
       | OpenAiClientError<"AdminApiKeysCreate403", AdminApiKeysCreate403>
-      | OpenAiClientError<"AdminApiKeysCreate404", AdminApiKeysCreate404>
+      | OpenAiClientError<"AdminApiKeysCreate404", AdminApiKeysCreate404>,
+      R
     >
   }
   /**
@@ -60712,20 +60781,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysGet200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysGet403", AdminApiKeysGet403>
-      | OpenAiClientError<"AdminApiKeysGet404", AdminApiKeysGet404>
+      | OpenAiClientError<"AdminApiKeysGet404", AdminApiKeysGet404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       keyId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysGet200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysGet403", AdminApiKeysGet403>
-      | OpenAiClientError<"AdminApiKeysGet404", AdminApiKeysGet404>
+      | OpenAiClientError<"AdminApiKeysGet404", AdminApiKeysGet404>,
+      R
     >
   }
   /**
@@ -60737,20 +60810,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysDelete200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysDelete403", AdminApiKeysDelete403>
-      | OpenAiClientError<"AdminApiKeysDelete404", AdminApiKeysDelete404>
+      | OpenAiClientError<"AdminApiKeysDelete404", AdminApiKeysDelete404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       keyId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<AdminApiKeysDelete200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AdminApiKeysDelete403", AdminApiKeysDelete403>
-      | OpenAiClientError<"AdminApiKeysDelete404", AdminApiKeysDelete404>
+      | OpenAiClientError<"AdminApiKeysDelete404", AdminApiKeysDelete404>,
+      R
     >
   }
   /**
@@ -60761,11 +60838,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAuditLogsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAuditLogs200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAuditLogs400", ListAuditLogs400>
       | OpenAiClientError<"ListAuditLogs404", ListAuditLogs404>
-      | OpenAiClientError<"ListAuditLogs429", ListAuditLogs429>
+      | OpenAiClientError<"ListAuditLogs429", ListAuditLogs429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60774,11 +60853,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAuditLogs200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAuditLogs400", ListAuditLogs400>
       | OpenAiClientError<"ListAuditLogs404", ListAuditLogs404>
-      | OpenAiClientError<"ListAuditLogs429", ListAuditLogs429>
+      | OpenAiClientError<"ListAuditLogs429", ListAuditLogs429>,
+      R
     >
   }
   /**
@@ -60792,11 +60873,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListOrganizationCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListOrganizationCertificates400", ListOrganizationCertificates400>
       | OpenAiClientError<"ListOrganizationCertificates403", ListOrganizationCertificates403>
-      | OpenAiClientError<"ListOrganizationCertificates429", ListOrganizationCertificates429>
+      | OpenAiClientError<"ListOrganizationCertificates429", ListOrganizationCertificates429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60805,11 +60888,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListOrganizationCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListOrganizationCertificates400", ListOrganizationCertificates400>
       | OpenAiClientError<"ListOrganizationCertificates403", ListOrganizationCertificates403>
-      | OpenAiClientError<"ListOrganizationCertificates429", ListOrganizationCertificates429>
+      | OpenAiClientError<"ListOrganizationCertificates429", ListOrganizationCertificates429>,
+      R
     >
   }
   /**
@@ -60822,21 +60907,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UploadCertificateRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UploadCertificate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UploadCertificate400", UploadCertificate400>
       | OpenAiClientError<"UploadCertificate403", UploadCertificate403>
-      | OpenAiClientError<"UploadCertificate429", UploadCertificate429>
+      | OpenAiClientError<"UploadCertificate429", UploadCertificate429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof UploadCertificateRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UploadCertificate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UploadCertificate400", UploadCertificate400>
       | OpenAiClientError<"UploadCertificate403", UploadCertificate403>
-      | OpenAiClientError<"UploadCertificate429", UploadCertificate429>
+      | OpenAiClientError<"UploadCertificate429", UploadCertificate429>,
+      R
     >
   }
   /**
@@ -60849,13 +60938,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ActivateOrganizationCertificatesRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ActivateOrganizationCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ActivateOrganizationCertificates400", ActivateOrganizationCertificates400>
       | OpenAiClientError<"ActivateOrganizationCertificates403", ActivateOrganizationCertificates403>
       | OpenAiClientError<"ActivateOrganizationCertificates404", ActivateOrganizationCertificates404>
       | OpenAiClientError<"ActivateOrganizationCertificates429", ActivateOrganizationCertificates429>
-      | OpenAiClientError<"ActivateOrganizationCertificates500", ActivateOrganizationCertificates500>
+      | OpenAiClientError<"ActivateOrganizationCertificates500", ActivateOrganizationCertificates500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60864,13 +60955,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ActivateOrganizationCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ActivateOrganizationCertificates400", ActivateOrganizationCertificates400>
       | OpenAiClientError<"ActivateOrganizationCertificates403", ActivateOrganizationCertificates403>
       | OpenAiClientError<"ActivateOrganizationCertificates404", ActivateOrganizationCertificates404>
       | OpenAiClientError<"ActivateOrganizationCertificates429", ActivateOrganizationCertificates429>
-      | OpenAiClientError<"ActivateOrganizationCertificates500", ActivateOrganizationCertificates500>
+      | OpenAiClientError<"ActivateOrganizationCertificates500", ActivateOrganizationCertificates500>,
+      R
     >
   }
   /**
@@ -60886,13 +60979,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeactivateOrganizationCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeactivateOrganizationCertificates400", DeactivateOrganizationCertificates400>
       | OpenAiClientError<"DeactivateOrganizationCertificates403", DeactivateOrganizationCertificates403>
       | OpenAiClientError<"DeactivateOrganizationCertificates404", DeactivateOrganizationCertificates404>
       | OpenAiClientError<"DeactivateOrganizationCertificates429", DeactivateOrganizationCertificates429>
-      | OpenAiClientError<"DeactivateOrganizationCertificates500", DeactivateOrganizationCertificates500>
+      | OpenAiClientError<"DeactivateOrganizationCertificates500", DeactivateOrganizationCertificates500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -60901,13 +60996,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeactivateOrganizationCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeactivateOrganizationCertificates400", DeactivateOrganizationCertificates400>
       | OpenAiClientError<"DeactivateOrganizationCertificates403", DeactivateOrganizationCertificates403>
       | OpenAiClientError<"DeactivateOrganizationCertificates404", DeactivateOrganizationCertificates404>
       | OpenAiClientError<"DeactivateOrganizationCertificates429", DeactivateOrganizationCertificates429>
-      | OpenAiClientError<"DeactivateOrganizationCertificates500", DeactivateOrganizationCertificates500>
+      | OpenAiClientError<"DeactivateOrganizationCertificates500", DeactivateOrganizationCertificates500>,
+      R
     >
   }
   /**
@@ -60921,12 +61018,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetCertificateParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetCertificate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetCertificate400", GetCertificate400>
       | OpenAiClientError<"GetCertificate403", GetCertificate403>
       | OpenAiClientError<"GetCertificate404", GetCertificate404>
-      | OpenAiClientError<"GetCertificate429", GetCertificate429>
+      | OpenAiClientError<"GetCertificate429", GetCertificate429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       certificateId: string,
@@ -60936,12 +61035,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetCertificate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetCertificate400", GetCertificate400>
       | OpenAiClientError<"GetCertificate403", GetCertificate403>
       | OpenAiClientError<"GetCertificate404", GetCertificate404>
-      | OpenAiClientError<"GetCertificate429", GetCertificate429>
+      | OpenAiClientError<"GetCertificate429", GetCertificate429>,
+      R
     >
   }
   /**
@@ -60953,26 +61054,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyCertificateRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyCertificate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyCertificate400", ModifyCertificate400>
       | OpenAiClientError<"ModifyCertificate403", ModifyCertificate403>
       | OpenAiClientError<"ModifyCertificate404", ModifyCertificate404>
       | OpenAiClientError<"ModifyCertificate429", ModifyCertificate429>
-      | OpenAiClientError<"ModifyCertificate500", ModifyCertificate500>
+      | OpenAiClientError<"ModifyCertificate500", ModifyCertificate500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       certificateId: string,
       options: { readonly payload: typeof ModifyCertificateRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyCertificate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyCertificate400", ModifyCertificate400>
       | OpenAiClientError<"ModifyCertificate403", ModifyCertificate403>
       | OpenAiClientError<"ModifyCertificate404", ModifyCertificate404>
       | OpenAiClientError<"ModifyCertificate429", ModifyCertificate429>
-      | OpenAiClientError<"ModifyCertificate500", ModifyCertificate500>
+      | OpenAiClientError<"ModifyCertificate500", ModifyCertificate500>,
+      R
     >
   }
   /**
@@ -60986,24 +61091,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteCertificate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteCertificate400", DeleteCertificate400>
       | OpenAiClientError<"DeleteCertificate403", DeleteCertificate403>
       | OpenAiClientError<"DeleteCertificate404", DeleteCertificate404>
-      | OpenAiClientError<"DeleteCertificate429", DeleteCertificate429>
+      | OpenAiClientError<"DeleteCertificate429", DeleteCertificate429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       certificateId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteCertificate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteCertificate400", DeleteCertificate400>
       | OpenAiClientError<"DeleteCertificate403", DeleteCertificate403>
       | OpenAiClientError<"DeleteCertificate404", DeleteCertificate404>
-      | OpenAiClientError<"DeleteCertificate429", DeleteCertificate429>
+      | OpenAiClientError<"DeleteCertificate429", DeleteCertificate429>,
+      R
     >
   }
   /**
@@ -61014,21 +61123,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageCostsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageCosts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCosts400", UsageCosts400>
       | OpenAiClientError<"UsageCosts403", UsageCosts403>
-      | OpenAiClientError<"UsageCosts429", UsageCosts429>
+      | OpenAiClientError<"UsageCosts429", UsageCosts429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageCostsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageCosts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCosts400", UsageCosts400>
       | OpenAiClientError<"UsageCosts403", UsageCosts403>
-      | OpenAiClientError<"UsageCosts429", UsageCosts429>
+      | OpenAiClientError<"UsageCosts429", UsageCosts429>,
+      R
     >
   }
   /**
@@ -61039,19 +61152,23 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveOrganizationDataRetention200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveOrganizationDataRetention403", RetrieveOrganizationDataRetention403>
-      | OpenAiClientError<"RetrieveOrganizationDataRetention404", RetrieveOrganizationDataRetention404>
+      | OpenAiClientError<"RetrieveOrganizationDataRetention404", RetrieveOrganizationDataRetention404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveOrganizationDataRetention200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveOrganizationDataRetention403", RetrieveOrganizationDataRetention403>
-      | OpenAiClientError<"RetrieveOrganizationDataRetention404", RetrieveOrganizationDataRetention404>
+      | OpenAiClientError<"RetrieveOrganizationDataRetention404", RetrieveOrganizationDataRetention404>,
+      R
     >
   }
   /**
@@ -61062,11 +61179,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateOrganizationDataRetentionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateOrganizationDataRetention200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateOrganizationDataRetention400", UpdateOrganizationDataRetention400>
       | OpenAiClientError<"UpdateOrganizationDataRetention403", UpdateOrganizationDataRetention403>
-      | OpenAiClientError<"UpdateOrganizationDataRetention404", UpdateOrganizationDataRetention404>
+      | OpenAiClientError<"UpdateOrganizationDataRetention404", UpdateOrganizationDataRetention404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -61075,11 +61194,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateOrganizationDataRetention200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateOrganizationDataRetention400", UpdateOrganizationDataRetention400>
       | OpenAiClientError<"UpdateOrganizationDataRetention403", UpdateOrganizationDataRetention403>
-      | OpenAiClientError<"UpdateOrganizationDataRetention404", UpdateOrganizationDataRetention404>
+      | OpenAiClientError<"UpdateOrganizationDataRetention404", UpdateOrganizationDataRetention404>,
+      R
     >
   }
   /**
@@ -61090,12 +61211,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListGroupsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListGroups200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroups400", ListGroups400>
       | OpenAiClientError<"ListGroups403", ListGroups403>
       | OpenAiClientError<"ListGroups404", ListGroups404>
-      | OpenAiClientError<"ListGroups429", ListGroups429>
+      | OpenAiClientError<"ListGroups429", ListGroups429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -61103,12 +61226,14 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListGroups200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroups400", ListGroups400>
       | OpenAiClientError<"ListGroups403", ListGroups403>
       | OpenAiClientError<"ListGroups404", ListGroups404>
-      | OpenAiClientError<"ListGroups429", ListGroups429>
+      | OpenAiClientError<"ListGroups429", ListGroups429>,
+      R
     >
   }
   /**
@@ -61119,6 +61244,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateGroupRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateGroup400", CreateGroup400>
@@ -61126,12 +61252,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateGroup404", CreateGroup404>
       | OpenAiClientError<"CreateGroup422", CreateGroup422>
       | OpenAiClientError<"CreateGroup429", CreateGroup429>
-      | OpenAiClientError<"CreateGroup500", CreateGroup500>
+      | OpenAiClientError<"CreateGroup500", CreateGroup500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateGroupRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateGroup400", CreateGroup400>
@@ -61139,7 +61267,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateGroup404", CreateGroup404>
       | OpenAiClientError<"CreateGroup422", CreateGroup422>
       | OpenAiClientError<"CreateGroup429", CreateGroup429>
-      | OpenAiClientError<"CreateGroup500", CreateGroup500>
+      | OpenAiClientError<"CreateGroup500", CreateGroup500>,
+      R
     >
   }
   /**
@@ -61151,26 +61280,30 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroup400", RetrieveGroup400>
       | OpenAiClientError<"RetrieveGroup403", RetrieveGroup403>
       | OpenAiClientError<"RetrieveGroup404", RetrieveGroup404>
       | OpenAiClientError<"RetrieveGroup429", RetrieveGroup429>
-      | OpenAiClientError<"RetrieveGroup500", RetrieveGroup500>
+      | OpenAiClientError<"RetrieveGroup500", RetrieveGroup500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroup400", RetrieveGroup400>
       | OpenAiClientError<"RetrieveGroup403", RetrieveGroup403>
       | OpenAiClientError<"RetrieveGroup404", RetrieveGroup404>
       | OpenAiClientError<"RetrieveGroup429", RetrieveGroup429>
-      | OpenAiClientError<"RetrieveGroup500", RetrieveGroup500>
+      | OpenAiClientError<"RetrieveGroup500", RetrieveGroup500>,
+      R
     >
   }
   /**
@@ -61182,26 +61315,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateGroupRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateGroup400", UpdateGroup400>
       | OpenAiClientError<"UpdateGroup403", UpdateGroup403>
       | OpenAiClientError<"UpdateGroup404", UpdateGroup404>
       | OpenAiClientError<"UpdateGroup429", UpdateGroup429>
-      | OpenAiClientError<"UpdateGroup500", UpdateGroup500>
+      | OpenAiClientError<"UpdateGroup500", UpdateGroup500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
       options: { readonly payload: typeof UpdateGroupRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateGroup400", UpdateGroup400>
       | OpenAiClientError<"UpdateGroup403", UpdateGroup403>
       | OpenAiClientError<"UpdateGroup404", UpdateGroup404>
       | OpenAiClientError<"UpdateGroup429", UpdateGroup429>
-      | OpenAiClientError<"UpdateGroup500", UpdateGroup500>
+      | OpenAiClientError<"UpdateGroup500", UpdateGroup500>,
+      R
     >
   }
   /**
@@ -61213,24 +61350,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteGroup400", DeleteGroup400>
       | OpenAiClientError<"DeleteGroup403", DeleteGroup403>
       | OpenAiClientError<"DeleteGroup404", DeleteGroup404>
-      | OpenAiClientError<"DeleteGroup429", DeleteGroup429>
+      | OpenAiClientError<"DeleteGroup429", DeleteGroup429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteGroup400", DeleteGroup400>
       | OpenAiClientError<"DeleteGroup403", DeleteGroup403>
       | OpenAiClientError<"DeleteGroup404", DeleteGroup404>
-      | OpenAiClientError<"DeleteGroup429", DeleteGroup429>
+      | OpenAiClientError<"DeleteGroup429", DeleteGroup429>,
+      R
     >
   }
   /**
@@ -61242,12 +61383,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListGroupRoleAssignmentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListGroupRoleAssignments200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroupRoleAssignments400", ListGroupRoleAssignments400>
       | OpenAiClientError<"ListGroupRoleAssignments403", ListGroupRoleAssignments403>
       | OpenAiClientError<"ListGroupRoleAssignments404", ListGroupRoleAssignments404>
-      | OpenAiClientError<"ListGroupRoleAssignments429", ListGroupRoleAssignments429>
+      | OpenAiClientError<"ListGroupRoleAssignments429", ListGroupRoleAssignments429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61257,12 +61400,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListGroupRoleAssignments200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroupRoleAssignments400", ListGroupRoleAssignments400>
       | OpenAiClientError<"ListGroupRoleAssignments403", ListGroupRoleAssignments403>
       | OpenAiClientError<"ListGroupRoleAssignments404", ListGroupRoleAssignments404>
-      | OpenAiClientError<"ListGroupRoleAssignments429", ListGroupRoleAssignments429>
+      | OpenAiClientError<"ListGroupRoleAssignments429", ListGroupRoleAssignments429>,
+      R
     >
   }
   /**
@@ -61274,24 +61419,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AssignGroupRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AssignGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignGroupRole400", AssignGroupRole400>
       | OpenAiClientError<"AssignGroupRole403", AssignGroupRole403>
       | OpenAiClientError<"AssignGroupRole404", AssignGroupRole404>
-      | OpenAiClientError<"AssignGroupRole429", AssignGroupRole429>
+      | OpenAiClientError<"AssignGroupRole429", AssignGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
       options: { readonly payload: typeof AssignGroupRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AssignGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignGroupRole400", AssignGroupRole400>
       | OpenAiClientError<"AssignGroupRole403", AssignGroupRole403>
       | OpenAiClientError<"AssignGroupRole404", AssignGroupRole404>
-      | OpenAiClientError<"AssignGroupRole429", AssignGroupRole429>
+      | OpenAiClientError<"AssignGroupRole429", AssignGroupRole429>,
+      R
     >
   }
   /**
@@ -61304,12 +61453,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroupRole400", RetrieveGroupRole400>
       | OpenAiClientError<"RetrieveGroupRole403", RetrieveGroupRole403>
       | OpenAiClientError<"RetrieveGroupRole404", RetrieveGroupRole404>
-      | OpenAiClientError<"RetrieveGroupRole429", RetrieveGroupRole429>
+      | OpenAiClientError<"RetrieveGroupRole429", RetrieveGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61317,12 +61468,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroupRole400", RetrieveGroupRole400>
       | OpenAiClientError<"RetrieveGroupRole403", RetrieveGroupRole403>
       | OpenAiClientError<"RetrieveGroupRole404", RetrieveGroupRole404>
-      | OpenAiClientError<"RetrieveGroupRole429", RetrieveGroupRole429>
+      | OpenAiClientError<"RetrieveGroupRole429", RetrieveGroupRole429>,
+      R
     >
   }
   /**
@@ -61335,12 +61488,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UnassignGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignGroupRole400", UnassignGroupRole400>
       | OpenAiClientError<"UnassignGroupRole403", UnassignGroupRole403>
       | OpenAiClientError<"UnassignGroupRole404", UnassignGroupRole404>
-      | OpenAiClientError<"UnassignGroupRole429", UnassignGroupRole429>
+      | OpenAiClientError<"UnassignGroupRole429", UnassignGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61348,12 +61503,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<UnassignGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignGroupRole400", UnassignGroupRole400>
       | OpenAiClientError<"UnassignGroupRole403", UnassignGroupRole403>
       | OpenAiClientError<"UnassignGroupRole404", UnassignGroupRole404>
-      | OpenAiClientError<"UnassignGroupRole429", UnassignGroupRole429>
+      | OpenAiClientError<"UnassignGroupRole429", UnassignGroupRole429>,
+      R
     >
   }
   /**
@@ -61365,13 +61522,15 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListGroupUsersParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListGroupUsers200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroupUsers400", ListGroupUsers400>
       | OpenAiClientError<"ListGroupUsers403", ListGroupUsers403>
       | OpenAiClientError<"ListGroupUsers404", ListGroupUsers404>
       | OpenAiClientError<"ListGroupUsers429", ListGroupUsers429>
-      | OpenAiClientError<"ListGroupUsers502", ListGroupUsers502>
+      | OpenAiClientError<"ListGroupUsers502", ListGroupUsers502>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61381,13 +61540,15 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListGroupUsers200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListGroupUsers400", ListGroupUsers400>
       | OpenAiClientError<"ListGroupUsers403", ListGroupUsers403>
       | OpenAiClientError<"ListGroupUsers404", ListGroupUsers404>
       | OpenAiClientError<"ListGroupUsers429", ListGroupUsers429>
-      | OpenAiClientError<"ListGroupUsers502", ListGroupUsers502>
+      | OpenAiClientError<"ListGroupUsers502", ListGroupUsers502>,
+      R
     >
   }
   /**
@@ -61399,26 +61560,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AddGroupUserRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AddGroupUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddGroupUser400", AddGroupUser400>
       | OpenAiClientError<"AddGroupUser403", AddGroupUser403>
       | OpenAiClientError<"AddGroupUser404", AddGroupUser404>
       | OpenAiClientError<"AddGroupUser409", AddGroupUser409>
-      | OpenAiClientError<"AddGroupUser429", AddGroupUser429>
+      | OpenAiClientError<"AddGroupUser429", AddGroupUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
       options: { readonly payload: typeof AddGroupUserRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AddGroupUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddGroupUser400", AddGroupUser400>
       | OpenAiClientError<"AddGroupUser403", AddGroupUser403>
       | OpenAiClientError<"AddGroupUser404", AddGroupUser404>
       | OpenAiClientError<"AddGroupUser409", AddGroupUser409>
-      | OpenAiClientError<"AddGroupUser429", AddGroupUser429>
+      | OpenAiClientError<"AddGroupUser429", AddGroupUser429>,
+      R
     >
   }
   /**
@@ -61431,12 +61596,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroupUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroupUser400", RetrieveGroupUser400>
       | OpenAiClientError<"RetrieveGroupUser403", RetrieveGroupUser403>
       | OpenAiClientError<"RetrieveGroupUser404", RetrieveGroupUser404>
-      | OpenAiClientError<"RetrieveGroupUser429", RetrieveGroupUser429>
+      | OpenAiClientError<"RetrieveGroupUser429", RetrieveGroupUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61444,12 +61611,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveGroupUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveGroupUser400", RetrieveGroupUser400>
       | OpenAiClientError<"RetrieveGroupUser403", RetrieveGroupUser403>
       | OpenAiClientError<"RetrieveGroupUser404", RetrieveGroupUser404>
-      | OpenAiClientError<"RetrieveGroupUser429", RetrieveGroupUser429>
+      | OpenAiClientError<"RetrieveGroupUser429", RetrieveGroupUser429>,
+      R
     >
   }
   /**
@@ -61462,13 +61631,15 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RemoveGroupUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RemoveGroupUser400", RemoveGroupUser400>
       | OpenAiClientError<"RemoveGroupUser403", RemoveGroupUser403>
       | OpenAiClientError<"RemoveGroupUser404", RemoveGroupUser404>
       | OpenAiClientError<"RemoveGroupUser409", RemoveGroupUser409>
-      | OpenAiClientError<"RemoveGroupUser429", RemoveGroupUser429>
+      | OpenAiClientError<"RemoveGroupUser429", RemoveGroupUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       groupId: string,
@@ -61476,13 +61647,15 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RemoveGroupUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RemoveGroupUser400", RemoveGroupUser400>
       | OpenAiClientError<"RemoveGroupUser403", RemoveGroupUser403>
       | OpenAiClientError<"RemoveGroupUser404", RemoveGroupUser404>
       | OpenAiClientError<"RemoveGroupUser409", RemoveGroupUser409>
-      | OpenAiClientError<"RemoveGroupUser429", RemoveGroupUser429>
+      | OpenAiClientError<"RemoveGroupUser429", RemoveGroupUser429>,
+      R
     >
   }
   /**
@@ -61493,12 +61666,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListInvitesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListInvites200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListInvites400", ListInvites400>
       | OpenAiClientError<"ListInvites403", ListInvites403>
       | OpenAiClientError<"ListInvites404", ListInvites404>
-      | OpenAiClientError<"ListInvites429", ListInvites429>
+      | OpenAiClientError<"ListInvites429", ListInvites429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -61506,12 +61681,14 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListInvites200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListInvites400", ListInvites400>
       | OpenAiClientError<"ListInvites403", ListInvites403>
       | OpenAiClientError<"ListInvites404", ListInvites404>
-      | OpenAiClientError<"ListInvites429", ListInvites429>
+      | OpenAiClientError<"ListInvites429", ListInvites429>,
+      R
     >
   }
   /**
@@ -61522,21 +61699,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof InviteUserRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<InviteUser200 | InviteUser201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"InviteUser400", InviteUser400>
       | OpenAiClientError<"InviteUser403", InviteUser403>
-      | OpenAiClientError<"InviteUser429", InviteUser429>
+      | OpenAiClientError<"InviteUser429", InviteUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof InviteUserRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<InviteUser200 | InviteUser201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"InviteUser400", InviteUser400>
       | OpenAiClientError<"InviteUser403", InviteUser403>
-      | OpenAiClientError<"InviteUser429", InviteUser429>
+      | OpenAiClientError<"InviteUser429", InviteUser429>,
+      R
     >
   }
   /**
@@ -61548,26 +61729,30 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveInvite200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveInvite400", RetrieveInvite400>
       | OpenAiClientError<"RetrieveInvite403", RetrieveInvite403>
       | OpenAiClientError<"RetrieveInvite404", RetrieveInvite404>
       | OpenAiClientError<"RetrieveInvite429", RetrieveInvite429>
-      | OpenAiClientError<"RetrieveInvite500", RetrieveInvite500>
+      | OpenAiClientError<"RetrieveInvite500", RetrieveInvite500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       inviteId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveInvite200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveInvite400", RetrieveInvite400>
       | OpenAiClientError<"RetrieveInvite403", RetrieveInvite403>
       | OpenAiClientError<"RetrieveInvite404", RetrieveInvite404>
       | OpenAiClientError<"RetrieveInvite429", RetrieveInvite429>
-      | OpenAiClientError<"RetrieveInvite500", RetrieveInvite500>
+      | OpenAiClientError<"RetrieveInvite500", RetrieveInvite500>,
+      R
     >
   }
   /**
@@ -61579,24 +61764,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteInvite200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteInvite400", DeleteInvite400>
       | OpenAiClientError<"DeleteInvite403", DeleteInvite403>
       | OpenAiClientError<"DeleteInvite404", DeleteInvite404>
-      | OpenAiClientError<"DeleteInvite429", DeleteInvite429>
+      | OpenAiClientError<"DeleteInvite429", DeleteInvite429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       inviteId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteInvite200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteInvite400", DeleteInvite400>
       | OpenAiClientError<"DeleteInvite403", DeleteInvite403>
       | OpenAiClientError<"DeleteInvite404", DeleteInvite404>
-      | OpenAiClientError<"DeleteInvite429", DeleteInvite429>
+      | OpenAiClientError<"DeleteInvite429", DeleteInvite429>,
+      R
     >
   }
   /**
@@ -61607,12 +61796,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjects200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjects400", ListProjects400>
       | OpenAiClientError<"ListProjects403", ListProjects403>
       | OpenAiClientError<"ListProjects404", ListProjects404>
-      | OpenAiClientError<"ListProjects429", ListProjects429>
+      | OpenAiClientError<"ListProjects429", ListProjects429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -61620,12 +61811,14 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjects200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjects400", ListProjects400>
       | OpenAiClientError<"ListProjects403", ListProjects403>
       | OpenAiClientError<"ListProjects404", ListProjects404>
-      | OpenAiClientError<"ListProjects429", ListProjects429>
+      | OpenAiClientError<"ListProjects429", ListProjects429>,
+      R
     >
   }
   /**
@@ -61636,21 +61829,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateProjectRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateProject200 | CreateProject201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProject400", CreateProject400>
       | OpenAiClientError<"CreateProject403", CreateProject403>
-      | OpenAiClientError<"CreateProject429", CreateProject429>
+      | OpenAiClientError<"CreateProject429", CreateProject429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateProjectRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateProject200 | CreateProject201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProject400", CreateProject400>
       | OpenAiClientError<"CreateProject403", CreateProject403>
-      | OpenAiClientError<"CreateProject429", CreateProject429>
+      | OpenAiClientError<"CreateProject429", CreateProject429>,
+      R
     >
   }
   /**
@@ -61662,22 +61859,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProject200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProject403", RetrieveProject403>
       | OpenAiClientError<"RetrieveProject404", RetrieveProject404>
-      | OpenAiClientError<"RetrieveProject429", RetrieveProject429>
+      | OpenAiClientError<"RetrieveProject429", RetrieveProject429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProject200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProject403", RetrieveProject403>
       | OpenAiClientError<"RetrieveProject404", RetrieveProject404>
-      | OpenAiClientError<"RetrieveProject429", RetrieveProject429>
+      | OpenAiClientError<"RetrieveProject429", RetrieveProject429>,
+      R
     >
   }
   /**
@@ -61689,24 +61890,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyProjectRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyProject200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyProject400", ModifyProject400>
       | OpenAiClientError<"ModifyProject403", ModifyProject403>
       | OpenAiClientError<"ModifyProject404", ModifyProject404>
-      | OpenAiClientError<"ModifyProject429", ModifyProject429>
+      | OpenAiClientError<"ModifyProject429", ModifyProject429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly payload: typeof ModifyProjectRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyProject200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyProject400", ModifyProject400>
       | OpenAiClientError<"ModifyProject403", ModifyProject403>
       | OpenAiClientError<"ModifyProject404", ModifyProject404>
-      | OpenAiClientError<"ModifyProject429", ModifyProject429>
+      | OpenAiClientError<"ModifyProject429", ModifyProject429>,
+      R
     >
   }
   /**
@@ -61718,12 +61923,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectApiKeysParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectApiKeys200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectApiKeys400", ListProjectApiKeys400>
       | OpenAiClientError<"ListProjectApiKeys403", ListProjectApiKeys403>
       | OpenAiClientError<"ListProjectApiKeys404", ListProjectApiKeys404>
-      | OpenAiClientError<"ListProjectApiKeys429", ListProjectApiKeys429>
+      | OpenAiClientError<"ListProjectApiKeys429", ListProjectApiKeys429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61733,12 +61940,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectApiKeys200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectApiKeys400", ListProjectApiKeys400>
       | OpenAiClientError<"ListProjectApiKeys403", ListProjectApiKeys403>
       | OpenAiClientError<"ListProjectApiKeys404", ListProjectApiKeys404>
-      | OpenAiClientError<"ListProjectApiKeys429", ListProjectApiKeys429>
+      | OpenAiClientError<"ListProjectApiKeys429", ListProjectApiKeys429>,
+      R
     >
   }
   /**
@@ -61751,12 +61960,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectApiKey200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectApiKey400", RetrieveProjectApiKey400>
       | OpenAiClientError<"RetrieveProjectApiKey403", RetrieveProjectApiKey403>
       | OpenAiClientError<"RetrieveProjectApiKey404", RetrieveProjectApiKey404>
-      | OpenAiClientError<"RetrieveProjectApiKey429", RetrieveProjectApiKey429>
+      | OpenAiClientError<"RetrieveProjectApiKey429", RetrieveProjectApiKey429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61764,12 +61975,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectApiKey200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectApiKey400", RetrieveProjectApiKey400>
       | OpenAiClientError<"RetrieveProjectApiKey403", RetrieveProjectApiKey403>
       | OpenAiClientError<"RetrieveProjectApiKey404", RetrieveProjectApiKey404>
-      | OpenAiClientError<"RetrieveProjectApiKey429", RetrieveProjectApiKey429>
+      | OpenAiClientError<"RetrieveProjectApiKey429", RetrieveProjectApiKey429>,
+      R
     >
   }
   /**
@@ -61785,12 +61998,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectApiKey200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectApiKey400", DeleteProjectApiKey400>
       | OpenAiClientError<"DeleteProjectApiKey403", DeleteProjectApiKey403>
       | OpenAiClientError<"DeleteProjectApiKey404", DeleteProjectApiKey404>
-      | OpenAiClientError<"DeleteProjectApiKey429", DeleteProjectApiKey429>
+      | OpenAiClientError<"DeleteProjectApiKey429", DeleteProjectApiKey429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61798,12 +62013,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectApiKey200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectApiKey400", DeleteProjectApiKey400>
       | OpenAiClientError<"DeleteProjectApiKey403", DeleteProjectApiKey403>
       | OpenAiClientError<"DeleteProjectApiKey404", DeleteProjectApiKey404>
-      | OpenAiClientError<"DeleteProjectApiKey429", DeleteProjectApiKey429>
+      | OpenAiClientError<"DeleteProjectApiKey429", DeleteProjectApiKey429>,
+      R
     >
   }
   /**
@@ -61815,24 +62032,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ArchiveProject200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ArchiveProject400", ArchiveProject400>
       | OpenAiClientError<"ArchiveProject403", ArchiveProject403>
       | OpenAiClientError<"ArchiveProject404", ArchiveProject404>
-      | OpenAiClientError<"ArchiveProject429", ArchiveProject429>
+      | OpenAiClientError<"ArchiveProject429", ArchiveProject429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ArchiveProject200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ArchiveProject400", ArchiveProject400>
       | OpenAiClientError<"ArchiveProject403", ArchiveProject403>
       | OpenAiClientError<"ArchiveProject404", ArchiveProject404>
-      | OpenAiClientError<"ArchiveProject429", ArchiveProject429>
+      | OpenAiClientError<"ArchiveProject429", ArchiveProject429>,
+      R
     >
   }
   /**
@@ -61844,11 +62065,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectCertificatesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectCertificates400", ListProjectCertificates400>
       | OpenAiClientError<"ListProjectCertificates403", ListProjectCertificates403>
-      | OpenAiClientError<"ListProjectCertificates429", ListProjectCertificates429>
+      | OpenAiClientError<"ListProjectCertificates429", ListProjectCertificates429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61858,11 +62081,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectCertificates400", ListProjectCertificates400>
       | OpenAiClientError<"ListProjectCertificates403", ListProjectCertificates403>
-      | OpenAiClientError<"ListProjectCertificates429", ListProjectCertificates429>
+      | OpenAiClientError<"ListProjectCertificates429", ListProjectCertificates429>,
+      R
     >
   }
   /**
@@ -61876,13 +62101,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ActivateProjectCertificatesRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ActivateProjectCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ActivateProjectCertificates400", ActivateProjectCertificates400>
       | OpenAiClientError<"ActivateProjectCertificates403", ActivateProjectCertificates403>
       | OpenAiClientError<"ActivateProjectCertificates404", ActivateProjectCertificates404>
       | OpenAiClientError<"ActivateProjectCertificates429", ActivateProjectCertificates429>
-      | OpenAiClientError<"ActivateProjectCertificates500", ActivateProjectCertificates500>
+      | OpenAiClientError<"ActivateProjectCertificates500", ActivateProjectCertificates500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61892,13 +62119,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ActivateProjectCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ActivateProjectCertificates400", ActivateProjectCertificates400>
       | OpenAiClientError<"ActivateProjectCertificates403", ActivateProjectCertificates403>
       | OpenAiClientError<"ActivateProjectCertificates404", ActivateProjectCertificates404>
       | OpenAiClientError<"ActivateProjectCertificates429", ActivateProjectCertificates429>
-      | OpenAiClientError<"ActivateProjectCertificates500", ActivateProjectCertificates500>
+      | OpenAiClientError<"ActivateProjectCertificates500", ActivateProjectCertificates500>,
+      R
     >
   }
   /**
@@ -61911,13 +62140,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof DeactivateProjectCertificatesRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeactivateProjectCertificates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeactivateProjectCertificates400", DeactivateProjectCertificates400>
       | OpenAiClientError<"DeactivateProjectCertificates403", DeactivateProjectCertificates403>
       | OpenAiClientError<"DeactivateProjectCertificates404", DeactivateProjectCertificates404>
       | OpenAiClientError<"DeactivateProjectCertificates429", DeactivateProjectCertificates429>
-      | OpenAiClientError<"DeactivateProjectCertificates500", DeactivateProjectCertificates500>
+      | OpenAiClientError<"DeactivateProjectCertificates500", DeactivateProjectCertificates500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61927,13 +62158,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<DeactivateProjectCertificates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeactivateProjectCertificates400", DeactivateProjectCertificates400>
       | OpenAiClientError<"DeactivateProjectCertificates403", DeactivateProjectCertificates403>
       | OpenAiClientError<"DeactivateProjectCertificates404", DeactivateProjectCertificates404>
       | OpenAiClientError<"DeactivateProjectCertificates429", DeactivateProjectCertificates429>
-      | OpenAiClientError<"DeactivateProjectCertificates500", DeactivateProjectCertificates500>
+      | OpenAiClientError<"DeactivateProjectCertificates500", DeactivateProjectCertificates500>,
+      R
     >
   }
   /**
@@ -61945,22 +62178,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectDataRetention200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectDataRetention400", RetrieveProjectDataRetention400>
       | OpenAiClientError<"RetrieveProjectDataRetention403", RetrieveProjectDataRetention403>
-      | OpenAiClientError<"RetrieveProjectDataRetention404", RetrieveProjectDataRetention404>
+      | OpenAiClientError<"RetrieveProjectDataRetention404", RetrieveProjectDataRetention404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectDataRetention200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectDataRetention400", RetrieveProjectDataRetention400>
       | OpenAiClientError<"RetrieveProjectDataRetention403", RetrieveProjectDataRetention403>
-      | OpenAiClientError<"RetrieveProjectDataRetention404", RetrieveProjectDataRetention404>
+      | OpenAiClientError<"RetrieveProjectDataRetention404", RetrieveProjectDataRetention404>,
+      R
     >
   }
   /**
@@ -61972,11 +62209,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectDataRetentionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectDataRetention200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectDataRetention400", UpdateProjectDataRetention400>
       | OpenAiClientError<"UpdateProjectDataRetention403", UpdateProjectDataRetention403>
-      | OpenAiClientError<"UpdateProjectDataRetention404", UpdateProjectDataRetention404>
+      | OpenAiClientError<"UpdateProjectDataRetention404", UpdateProjectDataRetention404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -61986,11 +62225,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectDataRetention200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectDataRetention400", UpdateProjectDataRetention400>
       | OpenAiClientError<"UpdateProjectDataRetention403", UpdateProjectDataRetention403>
-      | OpenAiClientError<"UpdateProjectDataRetention404", UpdateProjectDataRetention404>
+      | OpenAiClientError<"UpdateProjectDataRetention404", UpdateProjectDataRetention404>,
+      R
     >
   }
   /**
@@ -62002,12 +62243,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectGroupsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectGroups200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectGroups400", ListProjectGroups400>
       | OpenAiClientError<"ListProjectGroups403", ListProjectGroups403>
       | OpenAiClientError<"ListProjectGroups404", ListProjectGroups404>
-      | OpenAiClientError<"ListProjectGroups429", ListProjectGroups429>
+      | OpenAiClientError<"ListProjectGroups429", ListProjectGroups429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62017,12 +62260,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectGroups200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectGroups400", ListProjectGroups400>
       | OpenAiClientError<"ListProjectGroups403", ListProjectGroups403>
       | OpenAiClientError<"ListProjectGroups404", ListProjectGroups404>
-      | OpenAiClientError<"ListProjectGroups429", ListProjectGroups429>
+      | OpenAiClientError<"ListProjectGroups429", ListProjectGroups429>,
+      R
     >
   }
   /**
@@ -62034,26 +62279,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AddProjectGroupRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AddProjectGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddProjectGroup400", AddProjectGroup400>
       | OpenAiClientError<"AddProjectGroup403", AddProjectGroup403>
       | OpenAiClientError<"AddProjectGroup404", AddProjectGroup404>
       | OpenAiClientError<"AddProjectGroup429", AddProjectGroup429>
-      | OpenAiClientError<"AddProjectGroup500", AddProjectGroup500>
+      | OpenAiClientError<"AddProjectGroup500", AddProjectGroup500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly payload: typeof AddProjectGroupRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AddProjectGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddProjectGroup400", AddProjectGroup400>
       | OpenAiClientError<"AddProjectGroup403", AddProjectGroup403>
       | OpenAiClientError<"AddProjectGroup404", AddProjectGroup404>
       | OpenAiClientError<"AddProjectGroup429", AddProjectGroup429>
-      | OpenAiClientError<"AddProjectGroup500", AddProjectGroup500>
+      | OpenAiClientError<"AddProjectGroup500", AddProjectGroup500>,
+      R
     >
   }
   /**
@@ -62066,12 +62315,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof RetrieveProjectGroupParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectGroup400", RetrieveProjectGroup400>
       | OpenAiClientError<"RetrieveProjectGroup403", RetrieveProjectGroup403>
       | OpenAiClientError<"RetrieveProjectGroup404", RetrieveProjectGroup404>
-      | OpenAiClientError<"RetrieveProjectGroup429", RetrieveProjectGroup429>
+      | OpenAiClientError<"RetrieveProjectGroup429", RetrieveProjectGroup429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62082,12 +62333,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectGroup400", RetrieveProjectGroup400>
       | OpenAiClientError<"RetrieveProjectGroup403", RetrieveProjectGroup403>
       | OpenAiClientError<"RetrieveProjectGroup404", RetrieveProjectGroup404>
-      | OpenAiClientError<"RetrieveProjectGroup429", RetrieveProjectGroup429>
+      | OpenAiClientError<"RetrieveProjectGroup429", RetrieveProjectGroup429>,
+      R
     >
   }
   /**
@@ -62100,12 +62353,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RemoveProjectGroup200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RemoveProjectGroup400", RemoveProjectGroup400>
       | OpenAiClientError<"RemoveProjectGroup403", RemoveProjectGroup403>
       | OpenAiClientError<"RemoveProjectGroup404", RemoveProjectGroup404>
-      | OpenAiClientError<"RemoveProjectGroup429", RemoveProjectGroup429>
+      | OpenAiClientError<"RemoveProjectGroup429", RemoveProjectGroup429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62113,12 +62368,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RemoveProjectGroup200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RemoveProjectGroup400", RemoveProjectGroup400>
       | OpenAiClientError<"RemoveProjectGroup403", RemoveProjectGroup403>
       | OpenAiClientError<"RemoveProjectGroup404", RemoveProjectGroup404>
-      | OpenAiClientError<"RemoveProjectGroup429", RemoveProjectGroup429>
+      | OpenAiClientError<"RemoveProjectGroup429", RemoveProjectGroup429>,
+      R
     >
   }
   /**
@@ -62130,24 +62387,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectHostedToolPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions400", RetrieveProjectHostedToolPermissions400>
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions403", RetrieveProjectHostedToolPermissions403>
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions404", RetrieveProjectHostedToolPermissions404>
-      | OpenAiClientError<"RetrieveProjectHostedToolPermissions429", RetrieveProjectHostedToolPermissions429>
+      | OpenAiClientError<"RetrieveProjectHostedToolPermissions429", RetrieveProjectHostedToolPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectHostedToolPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions400", RetrieveProjectHostedToolPermissions400>
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions403", RetrieveProjectHostedToolPermissions403>
       | OpenAiClientError<"RetrieveProjectHostedToolPermissions404", RetrieveProjectHostedToolPermissions404>
-      | OpenAiClientError<"RetrieveProjectHostedToolPermissions429", RetrieveProjectHostedToolPermissions429>
+      | OpenAiClientError<"RetrieveProjectHostedToolPermissions429", RetrieveProjectHostedToolPermissions429>,
+      R
     >
   }
   /**
@@ -62162,13 +62423,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectHostedToolPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectHostedToolPermissions400", UpdateProjectHostedToolPermissions400>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions403", UpdateProjectHostedToolPermissions403>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions404", UpdateProjectHostedToolPermissions404>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions409", UpdateProjectHostedToolPermissions409>
-      | OpenAiClientError<"UpdateProjectHostedToolPermissions429", UpdateProjectHostedToolPermissions429>
+      | OpenAiClientError<"UpdateProjectHostedToolPermissions429", UpdateProjectHostedToolPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62178,13 +62441,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectHostedToolPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectHostedToolPermissions400", UpdateProjectHostedToolPermissions400>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions403", UpdateProjectHostedToolPermissions403>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions404", UpdateProjectHostedToolPermissions404>
       | OpenAiClientError<"UpdateProjectHostedToolPermissions409", UpdateProjectHostedToolPermissions409>
-      | OpenAiClientError<"UpdateProjectHostedToolPermissions429", UpdateProjectHostedToolPermissions429>
+      | OpenAiClientError<"UpdateProjectHostedToolPermissions429", UpdateProjectHostedToolPermissions429>,
+      R
     >
   }
   /**
@@ -62196,24 +62461,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectModelPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectModelPermissions400", RetrieveProjectModelPermissions400>
       | OpenAiClientError<"RetrieveProjectModelPermissions403", RetrieveProjectModelPermissions403>
       | OpenAiClientError<"RetrieveProjectModelPermissions404", RetrieveProjectModelPermissions404>
-      | OpenAiClientError<"RetrieveProjectModelPermissions429", RetrieveProjectModelPermissions429>
+      | OpenAiClientError<"RetrieveProjectModelPermissions429", RetrieveProjectModelPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectModelPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectModelPermissions400", RetrieveProjectModelPermissions400>
       | OpenAiClientError<"RetrieveProjectModelPermissions403", RetrieveProjectModelPermissions403>
       | OpenAiClientError<"RetrieveProjectModelPermissions404", RetrieveProjectModelPermissions404>
-      | OpenAiClientError<"RetrieveProjectModelPermissions429", RetrieveProjectModelPermissions429>
+      | OpenAiClientError<"RetrieveProjectModelPermissions429", RetrieveProjectModelPermissions429>,
+      R
     >
   }
   /**
@@ -62225,12 +62494,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectModelPermissionsRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectModelPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectModelPermissions400", UpdateProjectModelPermissions400>
       | OpenAiClientError<"UpdateProjectModelPermissions403", UpdateProjectModelPermissions403>
       | OpenAiClientError<"UpdateProjectModelPermissions404", UpdateProjectModelPermissions404>
-      | OpenAiClientError<"UpdateProjectModelPermissions429", UpdateProjectModelPermissions429>
+      | OpenAiClientError<"UpdateProjectModelPermissions429", UpdateProjectModelPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62240,12 +62511,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectModelPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectModelPermissions400", UpdateProjectModelPermissions400>
       | OpenAiClientError<"UpdateProjectModelPermissions403", UpdateProjectModelPermissions403>
       | OpenAiClientError<"UpdateProjectModelPermissions404", UpdateProjectModelPermissions404>
-      | OpenAiClientError<"UpdateProjectModelPermissions429", UpdateProjectModelPermissions429>
+      | OpenAiClientError<"UpdateProjectModelPermissions429", UpdateProjectModelPermissions429>,
+      R
     >
   }
   /**
@@ -62257,24 +62530,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectModelPermissions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectModelPermissions400", DeleteProjectModelPermissions400>
       | OpenAiClientError<"DeleteProjectModelPermissions403", DeleteProjectModelPermissions403>
       | OpenAiClientError<"DeleteProjectModelPermissions404", DeleteProjectModelPermissions404>
-      | OpenAiClientError<"DeleteProjectModelPermissions429", DeleteProjectModelPermissions429>
+      | OpenAiClientError<"DeleteProjectModelPermissions429", DeleteProjectModelPermissions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectModelPermissions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectModelPermissions400", DeleteProjectModelPermissions400>
       | OpenAiClientError<"DeleteProjectModelPermissions403", DeleteProjectModelPermissions403>
       | OpenAiClientError<"DeleteProjectModelPermissions404", DeleteProjectModelPermissions404>
-      | OpenAiClientError<"DeleteProjectModelPermissions429", DeleteProjectModelPermissions429>
+      | OpenAiClientError<"DeleteProjectModelPermissions429", DeleteProjectModelPermissions429>,
+      R
     >
   }
   /**
@@ -62286,11 +62563,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectRateLimitsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectRateLimits200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectRateLimits400", ListProjectRateLimits400>
       | OpenAiClientError<"ListProjectRateLimits403", ListProjectRateLimits403>
-      | OpenAiClientError<"ListProjectRateLimits404", ListProjectRateLimits404>
+      | OpenAiClientError<"ListProjectRateLimits404", ListProjectRateLimits404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62300,11 +62579,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectRateLimits200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectRateLimits400", ListProjectRateLimits400>
       | OpenAiClientError<"ListProjectRateLimits403", ListProjectRateLimits403>
-      | OpenAiClientError<"ListProjectRateLimits404", ListProjectRateLimits404>
+      | OpenAiClientError<"ListProjectRateLimits404", ListProjectRateLimits404>,
+      R
     >
   }
   /**
@@ -62317,11 +62598,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectRateLimitsRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectRateLimits200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectRateLimits400", UpdateProjectRateLimits400>
       | OpenAiClientError<"UpdateProjectRateLimits403", UpdateProjectRateLimits403>
-      | OpenAiClientError<"UpdateProjectRateLimits404", UpdateProjectRateLimits404>
+      | OpenAiClientError<"UpdateProjectRateLimits404", UpdateProjectRateLimits404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62332,11 +62615,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectRateLimits200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectRateLimits400", UpdateProjectRateLimits400>
       | OpenAiClientError<"UpdateProjectRateLimits403", UpdateProjectRateLimits403>
-      | OpenAiClientError<"UpdateProjectRateLimits404", UpdateProjectRateLimits404>
+      | OpenAiClientError<"UpdateProjectRateLimits404", UpdateProjectRateLimits404>,
+      R
     >
   }
   /**
@@ -62351,12 +62636,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectServiceAccounts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectServiceAccounts400", ListProjectServiceAccounts400>
       | OpenAiClientError<"ListProjectServiceAccounts403", ListProjectServiceAccounts403>
       | OpenAiClientError<"ListProjectServiceAccounts404", ListProjectServiceAccounts404>
-      | OpenAiClientError<"ListProjectServiceAccounts429", ListProjectServiceAccounts429>
+      | OpenAiClientError<"ListProjectServiceAccounts429", ListProjectServiceAccounts429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62366,12 +62653,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectServiceAccounts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectServiceAccounts400", ListProjectServiceAccounts400>
       | OpenAiClientError<"ListProjectServiceAccounts403", ListProjectServiceAccounts403>
       | OpenAiClientError<"ListProjectServiceAccounts404", ListProjectServiceAccounts404>
-      | OpenAiClientError<"ListProjectServiceAccounts429", ListProjectServiceAccounts429>
+      | OpenAiClientError<"ListProjectServiceAccounts429", ListProjectServiceAccounts429>,
+      R
     >
   }
   /**
@@ -62383,12 +62672,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateProjectServiceAccountRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectServiceAccount200 | CreateProjectServiceAccount201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectServiceAccount400", CreateProjectServiceAccount400>
       | OpenAiClientError<"CreateProjectServiceAccount403", CreateProjectServiceAccount403>
       | OpenAiClientError<"CreateProjectServiceAccount404", CreateProjectServiceAccount404>
-      | OpenAiClientError<"CreateProjectServiceAccount429", CreateProjectServiceAccount429>
+      | OpenAiClientError<"CreateProjectServiceAccount429", CreateProjectServiceAccount429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62398,12 +62689,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectServiceAccount200 | CreateProjectServiceAccount201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectServiceAccount400", CreateProjectServiceAccount400>
       | OpenAiClientError<"CreateProjectServiceAccount403", CreateProjectServiceAccount403>
       | OpenAiClientError<"CreateProjectServiceAccount404", CreateProjectServiceAccount404>
-      | OpenAiClientError<"CreateProjectServiceAccount429", CreateProjectServiceAccount429>
+      | OpenAiClientError<"CreateProjectServiceAccount429", CreateProjectServiceAccount429>,
+      R
     >
   }
   /**
@@ -62416,12 +62709,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectServiceAccount200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectServiceAccount400", RetrieveProjectServiceAccount400>
       | OpenAiClientError<"RetrieveProjectServiceAccount403", RetrieveProjectServiceAccount403>
       | OpenAiClientError<"RetrieveProjectServiceAccount404", RetrieveProjectServiceAccount404>
-      | OpenAiClientError<"RetrieveProjectServiceAccount429", RetrieveProjectServiceAccount429>
+      | OpenAiClientError<"RetrieveProjectServiceAccount429", RetrieveProjectServiceAccount429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62429,12 +62724,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectServiceAccount200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectServiceAccount400", RetrieveProjectServiceAccount400>
       | OpenAiClientError<"RetrieveProjectServiceAccount403", RetrieveProjectServiceAccount403>
       | OpenAiClientError<"RetrieveProjectServiceAccount404", RetrieveProjectServiceAccount404>
-      | OpenAiClientError<"RetrieveProjectServiceAccount429", RetrieveProjectServiceAccount429>
+      | OpenAiClientError<"RetrieveProjectServiceAccount429", RetrieveProjectServiceAccount429>,
+      R
     >
   }
   /**
@@ -62447,12 +62744,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectServiceAccountRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectServiceAccount200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectServiceAccount400", UpdateProjectServiceAccount400>
       | OpenAiClientError<"UpdateProjectServiceAccount403", UpdateProjectServiceAccount403>
       | OpenAiClientError<"UpdateProjectServiceAccount404", UpdateProjectServiceAccount404>
-      | OpenAiClientError<"UpdateProjectServiceAccount429", UpdateProjectServiceAccount429>
+      | OpenAiClientError<"UpdateProjectServiceAccount429", UpdateProjectServiceAccount429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62463,12 +62762,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectServiceAccount200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectServiceAccount400", UpdateProjectServiceAccount400>
       | OpenAiClientError<"UpdateProjectServiceAccount403", UpdateProjectServiceAccount403>
       | OpenAiClientError<"UpdateProjectServiceAccount404", UpdateProjectServiceAccount404>
-      | OpenAiClientError<"UpdateProjectServiceAccount429", UpdateProjectServiceAccount429>
+      | OpenAiClientError<"UpdateProjectServiceAccount429", UpdateProjectServiceAccount429>,
+      R
     >
   }
   /**
@@ -62484,12 +62785,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectServiceAccount200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectServiceAccount400", DeleteProjectServiceAccount400>
       | OpenAiClientError<"DeleteProjectServiceAccount403", DeleteProjectServiceAccount403>
       | OpenAiClientError<"DeleteProjectServiceAccount404", DeleteProjectServiceAccount404>
-      | OpenAiClientError<"DeleteProjectServiceAccount429", DeleteProjectServiceAccount429>
+      | OpenAiClientError<"DeleteProjectServiceAccount429", DeleteProjectServiceAccount429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62497,12 +62800,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectServiceAccount200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectServiceAccount400", DeleteProjectServiceAccount400>
       | OpenAiClientError<"DeleteProjectServiceAccount403", DeleteProjectServiceAccount403>
       | OpenAiClientError<"DeleteProjectServiceAccount404", DeleteProjectServiceAccount404>
-      | OpenAiClientError<"DeleteProjectServiceAccount429", DeleteProjectServiceAccount429>
+      | OpenAiClientError<"DeleteProjectServiceAccount429", DeleteProjectServiceAccount429>,
+      R
     >
   }
   /**
@@ -62514,11 +62819,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectSpendAlertsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectSpendAlerts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectSpendAlerts400", ListProjectSpendAlerts400>
       | OpenAiClientError<"ListProjectSpendAlerts403", ListProjectSpendAlerts403>
-      | OpenAiClientError<"ListProjectSpendAlerts404", ListProjectSpendAlerts404>
+      | OpenAiClientError<"ListProjectSpendAlerts404", ListProjectSpendAlerts404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62528,11 +62835,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectSpendAlerts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectSpendAlerts400", ListProjectSpendAlerts400>
       | OpenAiClientError<"ListProjectSpendAlerts403", ListProjectSpendAlerts403>
-      | OpenAiClientError<"ListProjectSpendAlerts404", ListProjectSpendAlerts404>
+      | OpenAiClientError<"ListProjectSpendAlerts404", ListProjectSpendAlerts404>,
+      R
     >
   }
   /**
@@ -62544,11 +62853,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateProjectSpendAlertRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectSpendAlert400", CreateProjectSpendAlert400>
       | OpenAiClientError<"CreateProjectSpendAlert403", CreateProjectSpendAlert403>
-      | OpenAiClientError<"CreateProjectSpendAlert404", CreateProjectSpendAlert404>
+      | OpenAiClientError<"CreateProjectSpendAlert404", CreateProjectSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62558,11 +62869,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectSpendAlert400", CreateProjectSpendAlert400>
       | OpenAiClientError<"CreateProjectSpendAlert403", CreateProjectSpendAlert403>
-      | OpenAiClientError<"CreateProjectSpendAlert404", CreateProjectSpendAlert404>
+      | OpenAiClientError<"CreateProjectSpendAlert404", CreateProjectSpendAlert404>,
+      R
     >
   }
   /**
@@ -62575,11 +62888,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectSpendAlert400", RetrieveProjectSpendAlert400>
       | OpenAiClientError<"RetrieveProjectSpendAlert403", RetrieveProjectSpendAlert403>
-      | OpenAiClientError<"RetrieveProjectSpendAlert404", RetrieveProjectSpendAlert404>
+      | OpenAiClientError<"RetrieveProjectSpendAlert404", RetrieveProjectSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62587,11 +62902,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectSpendAlert400", RetrieveProjectSpendAlert400>
       | OpenAiClientError<"RetrieveProjectSpendAlert403", RetrieveProjectSpendAlert403>
-      | OpenAiClientError<"RetrieveProjectSpendAlert404", RetrieveProjectSpendAlert404>
+      | OpenAiClientError<"RetrieveProjectSpendAlert404", RetrieveProjectSpendAlert404>,
+      R
     >
   }
   /**
@@ -62604,11 +62921,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectSpendAlertRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectSpendAlert400", UpdateProjectSpendAlert400>
       | OpenAiClientError<"UpdateProjectSpendAlert403", UpdateProjectSpendAlert403>
-      | OpenAiClientError<"UpdateProjectSpendAlert404", UpdateProjectSpendAlert404>
+      | OpenAiClientError<"UpdateProjectSpendAlert404", UpdateProjectSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62619,11 +62938,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectSpendAlert400", UpdateProjectSpendAlert400>
       | OpenAiClientError<"UpdateProjectSpendAlert403", UpdateProjectSpendAlert403>
-      | OpenAiClientError<"UpdateProjectSpendAlert404", UpdateProjectSpendAlert404>
+      | OpenAiClientError<"UpdateProjectSpendAlert404", UpdateProjectSpendAlert404>,
+      R
     >
   }
   /**
@@ -62636,11 +62957,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectSpendAlert400", DeleteProjectSpendAlert400>
       | OpenAiClientError<"DeleteProjectSpendAlert403", DeleteProjectSpendAlert403>
-      | OpenAiClientError<"DeleteProjectSpendAlert404", DeleteProjectSpendAlert404>
+      | OpenAiClientError<"DeleteProjectSpendAlert404", DeleteProjectSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62648,11 +62971,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectSpendAlert400", DeleteProjectSpendAlert400>
       | OpenAiClientError<"DeleteProjectSpendAlert403", DeleteProjectSpendAlert403>
-      | OpenAiClientError<"DeleteProjectSpendAlert404", DeleteProjectSpendAlert404>
+      | OpenAiClientError<"DeleteProjectSpendAlert404", DeleteProjectSpendAlert404>,
+      R
     >
   }
   /**
@@ -62664,12 +62989,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectUsersParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectUsers200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectUsers400", ListProjectUsers400>
       | OpenAiClientError<"ListProjectUsers403", ListProjectUsers403>
       | OpenAiClientError<"ListProjectUsers404", ListProjectUsers404>
-      | OpenAiClientError<"ListProjectUsers429", ListProjectUsers429>
+      | OpenAiClientError<"ListProjectUsers429", ListProjectUsers429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62679,12 +63006,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectUsers200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectUsers400", ListProjectUsers400>
       | OpenAiClientError<"ListProjectUsers403", ListProjectUsers403>
       | OpenAiClientError<"ListProjectUsers404", ListProjectUsers404>
-      | OpenAiClientError<"ListProjectUsers429", ListProjectUsers429>
+      | OpenAiClientError<"ListProjectUsers429", ListProjectUsers429>,
+      R
     >
   }
   /**
@@ -62696,26 +63025,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateProjectUserRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectUser200 | CreateProjectUser201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectUser400", CreateProjectUser400>
       | OpenAiClientError<"CreateProjectUser403", CreateProjectUser403>
       | OpenAiClientError<"CreateProjectUser404", CreateProjectUser404>
       | OpenAiClientError<"CreateProjectUser409", CreateProjectUser409>
-      | OpenAiClientError<"CreateProjectUser429", CreateProjectUser429>
+      | OpenAiClientError<"CreateProjectUser429", CreateProjectUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly payload: typeof CreateProjectUserRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectUser200 | CreateProjectUser201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectUser400", CreateProjectUser400>
       | OpenAiClientError<"CreateProjectUser403", CreateProjectUser403>
       | OpenAiClientError<"CreateProjectUser404", CreateProjectUser404>
       | OpenAiClientError<"CreateProjectUser409", CreateProjectUser409>
-      | OpenAiClientError<"CreateProjectUser429", CreateProjectUser429>
+      | OpenAiClientError<"CreateProjectUser429", CreateProjectUser429>,
+      R
     >
   }
   /**
@@ -62728,12 +63061,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectUser400", RetrieveProjectUser400>
       | OpenAiClientError<"RetrieveProjectUser403", RetrieveProjectUser403>
       | OpenAiClientError<"RetrieveProjectUser404", RetrieveProjectUser404>
-      | OpenAiClientError<"RetrieveProjectUser429", RetrieveProjectUser429>
+      | OpenAiClientError<"RetrieveProjectUser429", RetrieveProjectUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62741,12 +63076,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectUser400", RetrieveProjectUser400>
       | OpenAiClientError<"RetrieveProjectUser403", RetrieveProjectUser403>
       | OpenAiClientError<"RetrieveProjectUser404", RetrieveProjectUser404>
-      | OpenAiClientError<"RetrieveProjectUser429", RetrieveProjectUser429>
+      | OpenAiClientError<"RetrieveProjectUser429", RetrieveProjectUser429>,
+      R
     >
   }
   /**
@@ -62759,12 +63096,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyProjectUserRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyProjectUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyProjectUser400", ModifyProjectUser400>
       | OpenAiClientError<"ModifyProjectUser403", ModifyProjectUser403>
       | OpenAiClientError<"ModifyProjectUser404", ModifyProjectUser404>
-      | OpenAiClientError<"ModifyProjectUser429", ModifyProjectUser429>
+      | OpenAiClientError<"ModifyProjectUser429", ModifyProjectUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62772,12 +63111,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyProjectUserRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyProjectUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyProjectUser400", ModifyProjectUser400>
       | OpenAiClientError<"ModifyProjectUser403", ModifyProjectUser403>
       | OpenAiClientError<"ModifyProjectUser404", ModifyProjectUser404>
-      | OpenAiClientError<"ModifyProjectUser429", ModifyProjectUser429>
+      | OpenAiClientError<"ModifyProjectUser429", ModifyProjectUser429>,
+      R
     >
   }
   /**
@@ -62793,12 +63134,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectUser400", DeleteProjectUser400>
       | OpenAiClientError<"DeleteProjectUser403", DeleteProjectUser403>
       | OpenAiClientError<"DeleteProjectUser404", DeleteProjectUser404>
-      | OpenAiClientError<"DeleteProjectUser429", DeleteProjectUser429>
+      | OpenAiClientError<"DeleteProjectUser429", DeleteProjectUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -62806,12 +63149,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectUser400", DeleteProjectUser400>
       | OpenAiClientError<"DeleteProjectUser403", DeleteProjectUser403>
       | OpenAiClientError<"DeleteProjectUser404", DeleteProjectUser404>
-      | OpenAiClientError<"DeleteProjectUser429", DeleteProjectUser429>
+      | OpenAiClientError<"DeleteProjectUser429", DeleteProjectUser429>,
+      R
     >
   }
   /**
@@ -62822,12 +63167,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListRolesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListRoles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListRoles400", ListRoles400>
       | OpenAiClientError<"ListRoles403", ListRoles403>
       | OpenAiClientError<"ListRoles404", ListRoles404>
-      | OpenAiClientError<"ListRoles429", ListRoles429>
+      | OpenAiClientError<"ListRoles429", ListRoles429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -62835,12 +63182,14 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListRoles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListRoles400", ListRoles400>
       | OpenAiClientError<"ListRoles403", ListRoles403>
       | OpenAiClientError<"ListRoles404", ListRoles404>
-      | OpenAiClientError<"ListRoles429", ListRoles429>
+      | OpenAiClientError<"ListRoles429", ListRoles429>,
+      R
     >
   }
   /**
@@ -62851,23 +63200,27 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRole400", CreateRole400>
       | OpenAiClientError<"CreateRole403", CreateRole403>
       | OpenAiClientError<"CreateRole404", CreateRole404>
-      | OpenAiClientError<"CreateRole429", CreateRole429>
+      | OpenAiClientError<"CreateRole429", CreateRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRole400", CreateRole400>
       | OpenAiClientError<"CreateRole403", CreateRole403>
       | OpenAiClientError<"CreateRole404", CreateRole404>
-      | OpenAiClientError<"CreateRole429", CreateRole429>
+      | OpenAiClientError<"CreateRole429", CreateRole429>,
+      R
     >
   }
   /**
@@ -62879,22 +63232,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveRole403", RetrieveRole403>
       | OpenAiClientError<"RetrieveRole404", RetrieveRole404>
-      | OpenAiClientError<"RetrieveRole429", RetrieveRole429>
+      | OpenAiClientError<"RetrieveRole429", RetrieveRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       roleId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveRole403", RetrieveRole403>
       | OpenAiClientError<"RetrieveRole404", RetrieveRole404>
-      | OpenAiClientError<"RetrieveRole429", RetrieveRole429>
+      | OpenAiClientError<"RetrieveRole429", RetrieveRole429>,
+      R
     >
   }
   /**
@@ -62906,24 +63263,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateRole400", UpdateRole400>
       | OpenAiClientError<"UpdateRole403", UpdateRole403>
       | OpenAiClientError<"UpdateRole404", UpdateRole404>
-      | OpenAiClientError<"UpdateRole429", UpdateRole429>
+      | OpenAiClientError<"UpdateRole429", UpdateRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       roleId: string,
       options: { readonly payload: typeof UpdateRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateRole400", UpdateRole400>
       | OpenAiClientError<"UpdateRole403", UpdateRole403>
       | OpenAiClientError<"UpdateRole404", UpdateRole404>
-      | OpenAiClientError<"UpdateRole429", UpdateRole429>
+      | OpenAiClientError<"UpdateRole429", UpdateRole429>,
+      R
     >
   }
   /**
@@ -62935,24 +63296,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteRole400", DeleteRole400>
       | OpenAiClientError<"DeleteRole403", DeleteRole403>
       | OpenAiClientError<"DeleteRole404", DeleteRole404>
-      | OpenAiClientError<"DeleteRole429", DeleteRole429>
+      | OpenAiClientError<"DeleteRole429", DeleteRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       roleId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteRole400", DeleteRole400>
       | OpenAiClientError<"DeleteRole403", DeleteRole403>
       | OpenAiClientError<"DeleteRole404", DeleteRole404>
-      | OpenAiClientError<"DeleteRole429", DeleteRole429>
+      | OpenAiClientError<"DeleteRole429", DeleteRole429>,
+      R
     >
   }
   /**
@@ -62966,11 +63331,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListOrganizationSpendAlerts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListOrganizationSpendAlerts400", ListOrganizationSpendAlerts400>
       | OpenAiClientError<"ListOrganizationSpendAlerts403", ListOrganizationSpendAlerts403>
-      | OpenAiClientError<"ListOrganizationSpendAlerts404", ListOrganizationSpendAlerts404>
+      | OpenAiClientError<"ListOrganizationSpendAlerts404", ListOrganizationSpendAlerts404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -62979,11 +63346,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListOrganizationSpendAlerts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListOrganizationSpendAlerts400", ListOrganizationSpendAlerts400>
       | OpenAiClientError<"ListOrganizationSpendAlerts403", ListOrganizationSpendAlerts403>
-      | OpenAiClientError<"ListOrganizationSpendAlerts404", ListOrganizationSpendAlerts404>
+      | OpenAiClientError<"ListOrganizationSpendAlerts404", ListOrganizationSpendAlerts404>,
+      R
     >
   }
   /**
@@ -62994,10 +63363,12 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateOrganizationSpendAlertRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateOrganizationSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateOrganizationSpendAlert400", CreateOrganizationSpendAlert400>
-      | OpenAiClientError<"CreateOrganizationSpendAlert403", CreateOrganizationSpendAlert403>
+      | OpenAiClientError<"CreateOrganizationSpendAlert403", CreateOrganizationSpendAlert403>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -63006,10 +63377,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateOrganizationSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateOrganizationSpendAlert400", CreateOrganizationSpendAlert400>
-      | OpenAiClientError<"CreateOrganizationSpendAlert403", CreateOrganizationSpendAlert403>
+      | OpenAiClientError<"CreateOrganizationSpendAlert403", CreateOrganizationSpendAlert403>,
+      R
     >
   }
   /**
@@ -63021,20 +63394,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveOrganizationSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveOrganizationSpendAlert403", RetrieveOrganizationSpendAlert403>
-      | OpenAiClientError<"RetrieveOrganizationSpendAlert404", RetrieveOrganizationSpendAlert404>
+      | OpenAiClientError<"RetrieveOrganizationSpendAlert404", RetrieveOrganizationSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       alertId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveOrganizationSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveOrganizationSpendAlert403", RetrieveOrganizationSpendAlert403>
-      | OpenAiClientError<"RetrieveOrganizationSpendAlert404", RetrieveOrganizationSpendAlert404>
+      | OpenAiClientError<"RetrieveOrganizationSpendAlert404", RetrieveOrganizationSpendAlert404>,
+      R
     >
   }
   /**
@@ -63046,11 +63423,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateOrganizationSpendAlertRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateOrganizationSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateOrganizationSpendAlert400", UpdateOrganizationSpendAlert400>
       | OpenAiClientError<"UpdateOrganizationSpendAlert403", UpdateOrganizationSpendAlert403>
-      | OpenAiClientError<"UpdateOrganizationSpendAlert404", UpdateOrganizationSpendAlert404>
+      | OpenAiClientError<"UpdateOrganizationSpendAlert404", UpdateOrganizationSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       alertId: string,
@@ -63060,11 +63439,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateOrganizationSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateOrganizationSpendAlert400", UpdateOrganizationSpendAlert400>
       | OpenAiClientError<"UpdateOrganizationSpendAlert403", UpdateOrganizationSpendAlert403>
-      | OpenAiClientError<"UpdateOrganizationSpendAlert404", UpdateOrganizationSpendAlert404>
+      | OpenAiClientError<"UpdateOrganizationSpendAlert404", UpdateOrganizationSpendAlert404>,
+      R
     >
   }
   /**
@@ -63076,20 +63457,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteOrganizationSpendAlert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteOrganizationSpendAlert403", DeleteOrganizationSpendAlert403>
-      | OpenAiClientError<"DeleteOrganizationSpendAlert404", DeleteOrganizationSpendAlert404>
+      | OpenAiClientError<"DeleteOrganizationSpendAlert404", DeleteOrganizationSpendAlert404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       alertId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteOrganizationSpendAlert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteOrganizationSpendAlert403", DeleteOrganizationSpendAlert403>
-      | OpenAiClientError<"DeleteOrganizationSpendAlert404", DeleteOrganizationSpendAlert404>
+      | OpenAiClientError<"DeleteOrganizationSpendAlert404", DeleteOrganizationSpendAlert404>,
+      R
     >
   }
   /**
@@ -63100,21 +63485,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageAudioSpeechesParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageAudioSpeeches200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageAudioSpeeches400", UsageAudioSpeeches400>
       | OpenAiClientError<"UsageAudioSpeeches403", UsageAudioSpeeches403>
-      | OpenAiClientError<"UsageAudioSpeeches429", UsageAudioSpeeches429>
+      | OpenAiClientError<"UsageAudioSpeeches429", UsageAudioSpeeches429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageAudioSpeechesParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageAudioSpeeches200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageAudioSpeeches400", UsageAudioSpeeches400>
       | OpenAiClientError<"UsageAudioSpeeches403", UsageAudioSpeeches403>
-      | OpenAiClientError<"UsageAudioSpeeches429", UsageAudioSpeeches429>
+      | OpenAiClientError<"UsageAudioSpeeches429", UsageAudioSpeeches429>,
+      R
     >
   }
   /**
@@ -63125,21 +63514,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageAudioTranscriptionsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageAudioTranscriptions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageAudioTranscriptions400", UsageAudioTranscriptions400>
       | OpenAiClientError<"UsageAudioTranscriptions403", UsageAudioTranscriptions403>
-      | OpenAiClientError<"UsageAudioTranscriptions429", UsageAudioTranscriptions429>
+      | OpenAiClientError<"UsageAudioTranscriptions429", UsageAudioTranscriptions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageAudioTranscriptionsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageAudioTranscriptions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageAudioTranscriptions400", UsageAudioTranscriptions400>
       | OpenAiClientError<"UsageAudioTranscriptions403", UsageAudioTranscriptions403>
-      | OpenAiClientError<"UsageAudioTranscriptions429", UsageAudioTranscriptions429>
+      | OpenAiClientError<"UsageAudioTranscriptions429", UsageAudioTranscriptions429>,
+      R
     >
   }
   /**
@@ -63150,11 +63543,13 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageCodeInterpreterSessionsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageCodeInterpreterSessions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCodeInterpreterSessions400", UsageCodeInterpreterSessions400>
       | OpenAiClientError<"UsageCodeInterpreterSessions403", UsageCodeInterpreterSessions403>
-      | OpenAiClientError<"UsageCodeInterpreterSessions429", UsageCodeInterpreterSessions429>
+      | OpenAiClientError<"UsageCodeInterpreterSessions429", UsageCodeInterpreterSessions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -63163,11 +63558,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UsageCodeInterpreterSessions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCodeInterpreterSessions400", UsageCodeInterpreterSessions400>
       | OpenAiClientError<"UsageCodeInterpreterSessions403", UsageCodeInterpreterSessions403>
-      | OpenAiClientError<"UsageCodeInterpreterSessions429", UsageCodeInterpreterSessions429>
+      | OpenAiClientError<"UsageCodeInterpreterSessions429", UsageCodeInterpreterSessions429>,
+      R
     >
   }
   /**
@@ -63178,21 +63575,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageCompletionsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageCompletions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCompletions400", UsageCompletions400>
       | OpenAiClientError<"UsageCompletions403", UsageCompletions403>
-      | OpenAiClientError<"UsageCompletions429", UsageCompletions429>
+      | OpenAiClientError<"UsageCompletions429", UsageCompletions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageCompletionsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageCompletions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageCompletions400", UsageCompletions400>
       | OpenAiClientError<"UsageCompletions403", UsageCompletions403>
-      | OpenAiClientError<"UsageCompletions429", UsageCompletions429>
+      | OpenAiClientError<"UsageCompletions429", UsageCompletions429>,
+      R
     >
   }
   /**
@@ -63203,21 +63604,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageEmbeddingsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageEmbeddings200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageEmbeddings400", UsageEmbeddings400>
       | OpenAiClientError<"UsageEmbeddings403", UsageEmbeddings403>
-      | OpenAiClientError<"UsageEmbeddings429", UsageEmbeddings429>
+      | OpenAiClientError<"UsageEmbeddings429", UsageEmbeddings429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageEmbeddingsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageEmbeddings200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageEmbeddings400", UsageEmbeddings400>
       | OpenAiClientError<"UsageEmbeddings403", UsageEmbeddings403>
-      | OpenAiClientError<"UsageEmbeddings429", UsageEmbeddings429>
+      | OpenAiClientError<"UsageEmbeddings429", UsageEmbeddings429>,
+      R
     >
   }
   /**
@@ -63228,21 +63633,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageFileSearchCallsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageFileSearchCalls200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageFileSearchCalls400", UsageFileSearchCalls400>
       | OpenAiClientError<"UsageFileSearchCalls403", UsageFileSearchCalls403>
-      | OpenAiClientError<"UsageFileSearchCalls429", UsageFileSearchCalls429>
+      | OpenAiClientError<"UsageFileSearchCalls429", UsageFileSearchCalls429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageFileSearchCallsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageFileSearchCalls200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageFileSearchCalls400", UsageFileSearchCalls400>
       | OpenAiClientError<"UsageFileSearchCalls403", UsageFileSearchCalls403>
-      | OpenAiClientError<"UsageFileSearchCalls429", UsageFileSearchCalls429>
+      | OpenAiClientError<"UsageFileSearchCalls429", UsageFileSearchCalls429>,
+      R
     >
   }
   /**
@@ -63253,21 +63662,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageImagesParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageImages200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageImages400", UsageImages400>
       | OpenAiClientError<"UsageImages403", UsageImages403>
-      | OpenAiClientError<"UsageImages429", UsageImages429>
+      | OpenAiClientError<"UsageImages429", UsageImages429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageImagesParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageImages200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageImages400", UsageImages400>
       | OpenAiClientError<"UsageImages403", UsageImages403>
-      | OpenAiClientError<"UsageImages429", UsageImages429>
+      | OpenAiClientError<"UsageImages429", UsageImages429>,
+      R
     >
   }
   /**
@@ -63278,21 +63691,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageModerationsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageModerations200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageModerations400", UsageModerations400>
       | OpenAiClientError<"UsageModerations403", UsageModerations403>
-      | OpenAiClientError<"UsageModerations429", UsageModerations429>
+      | OpenAiClientError<"UsageModerations429", UsageModerations429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageModerationsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageModerations200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageModerations400", UsageModerations400>
       | OpenAiClientError<"UsageModerations403", UsageModerations403>
-      | OpenAiClientError<"UsageModerations429", UsageModerations429>
+      | OpenAiClientError<"UsageModerations429", UsageModerations429>,
+      R
     >
   }
   /**
@@ -63303,21 +63720,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageVectorStoresParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageVectorStores200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageVectorStores400", UsageVectorStores400>
       | OpenAiClientError<"UsageVectorStores403", UsageVectorStores403>
-      | OpenAiClientError<"UsageVectorStores429", UsageVectorStores429>
+      | OpenAiClientError<"UsageVectorStores429", UsageVectorStores429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageVectorStoresParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageVectorStores200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageVectorStores400", UsageVectorStores400>
       | OpenAiClientError<"UsageVectorStores403", UsageVectorStores403>
-      | OpenAiClientError<"UsageVectorStores429", UsageVectorStores429>
+      | OpenAiClientError<"UsageVectorStores429", UsageVectorStores429>,
+      R
     >
   }
   /**
@@ -63328,21 +63749,25 @@ export interface OpenAiClient {
       options: { readonly params: typeof UsageWebSearchCallsParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UsageWebSearchCalls200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageWebSearchCalls400", UsageWebSearchCalls400>
       | OpenAiClientError<"UsageWebSearchCalls403", UsageWebSearchCalls403>
-      | OpenAiClientError<"UsageWebSearchCalls429", UsageWebSearchCalls429>
+      | OpenAiClientError<"UsageWebSearchCalls429", UsageWebSearchCalls429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly params: typeof UsageWebSearchCallsParams.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UsageWebSearchCalls200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UsageWebSearchCalls400", UsageWebSearchCalls400>
       | OpenAiClientError<"UsageWebSearchCalls403", UsageWebSearchCalls403>
-      | OpenAiClientError<"UsageWebSearchCalls429", UsageWebSearchCalls429>
+      | OpenAiClientError<"UsageWebSearchCalls429", UsageWebSearchCalls429>,
+      R
     >
   }
   /**
@@ -63353,11 +63778,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListUsersParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListUsers200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListUsers400", ListUsers400>
       | OpenAiClientError<"ListUsers403", ListUsers403>
-      | OpenAiClientError<"ListUsers429", ListUsers429>
+      | OpenAiClientError<"ListUsers429", ListUsers429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -63365,11 +63792,13 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListUsers200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListUsers400", ListUsers400>
       | OpenAiClientError<"ListUsers403", ListUsers403>
-      | OpenAiClientError<"ListUsers429", ListUsers429>
+      | OpenAiClientError<"ListUsers429", ListUsers429>,
+      R
     >
   }
   /**
@@ -63381,22 +63810,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveUser403", RetrieveUser403>
       | OpenAiClientError<"RetrieveUser404", RetrieveUser404>
-      | OpenAiClientError<"RetrieveUser429", RetrieveUser429>
+      | OpenAiClientError<"RetrieveUser429", RetrieveUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveUser403", RetrieveUser403>
       | OpenAiClientError<"RetrieveUser404", RetrieveUser404>
-      | OpenAiClientError<"RetrieveUser429", RetrieveUser429>
+      | OpenAiClientError<"RetrieveUser429", RetrieveUser429>,
+      R
     >
   }
   /**
@@ -63408,24 +63841,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyUserRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyUser400", ModifyUser400>
       | OpenAiClientError<"ModifyUser403", ModifyUser403>
       | OpenAiClientError<"ModifyUser404", ModifyUser404>
-      | OpenAiClientError<"ModifyUser429", ModifyUser429>
+      | OpenAiClientError<"ModifyUser429", ModifyUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
       options: { readonly payload: typeof ModifyUserRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyUser400", ModifyUser400>
       | OpenAiClientError<"ModifyUser403", ModifyUser403>
       | OpenAiClientError<"ModifyUser404", ModifyUser404>
-      | OpenAiClientError<"ModifyUser429", ModifyUser429>
+      | OpenAiClientError<"ModifyUser429", ModifyUser429>,
+      R
     >
   }
   /**
@@ -63437,24 +63874,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteUser200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteUser400", DeleteUser400>
       | OpenAiClientError<"DeleteUser403", DeleteUser403>
       | OpenAiClientError<"DeleteUser404", DeleteUser404>
-      | OpenAiClientError<"DeleteUser429", DeleteUser429>
+      | OpenAiClientError<"DeleteUser429", DeleteUser429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteUser200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteUser400", DeleteUser400>
       | OpenAiClientError<"DeleteUser403", DeleteUser403>
       | OpenAiClientError<"DeleteUser404", DeleteUser404>
-      | OpenAiClientError<"DeleteUser429", DeleteUser429>
+      | OpenAiClientError<"DeleteUser429", DeleteUser429>,
+      R
     >
   }
   /**
@@ -63466,12 +63907,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListUserRoleAssignmentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListUserRoleAssignments200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListUserRoleAssignments400", ListUserRoleAssignments400>
       | OpenAiClientError<"ListUserRoleAssignments403", ListUserRoleAssignments403>
       | OpenAiClientError<"ListUserRoleAssignments404", ListUserRoleAssignments404>
-      | OpenAiClientError<"ListUserRoleAssignments429", ListUserRoleAssignments429>
+      | OpenAiClientError<"ListUserRoleAssignments429", ListUserRoleAssignments429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
@@ -63481,12 +63924,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListUserRoleAssignments200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListUserRoleAssignments400", ListUserRoleAssignments400>
       | OpenAiClientError<"ListUserRoleAssignments403", ListUserRoleAssignments403>
       | OpenAiClientError<"ListUserRoleAssignments404", ListUserRoleAssignments404>
-      | OpenAiClientError<"ListUserRoleAssignments429", ListUserRoleAssignments429>
+      | OpenAiClientError<"ListUserRoleAssignments429", ListUserRoleAssignments429>,
+      R
     >
   }
   /**
@@ -63498,24 +63943,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AssignUserRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AssignUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignUserRole400", AssignUserRole400>
       | OpenAiClientError<"AssignUserRole403", AssignUserRole403>
       | OpenAiClientError<"AssignUserRole404", AssignUserRole404>
-      | OpenAiClientError<"AssignUserRole429", AssignUserRole429>
+      | OpenAiClientError<"AssignUserRole429", AssignUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
       options: { readonly payload: typeof AssignUserRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AssignUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignUserRole400", AssignUserRole400>
       | OpenAiClientError<"AssignUserRole403", AssignUserRole403>
       | OpenAiClientError<"AssignUserRole404", AssignUserRole404>
-      | OpenAiClientError<"AssignUserRole429", AssignUserRole429>
+      | OpenAiClientError<"AssignUserRole429", AssignUserRole429>,
+      R
     >
   }
   /**
@@ -63528,12 +63977,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveUserRole400", RetrieveUserRole400>
       | OpenAiClientError<"RetrieveUserRole403", RetrieveUserRole403>
       | OpenAiClientError<"RetrieveUserRole404", RetrieveUserRole404>
-      | OpenAiClientError<"RetrieveUserRole429", RetrieveUserRole429>
+      | OpenAiClientError<"RetrieveUserRole429", RetrieveUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
@@ -63541,12 +63992,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveUserRole400", RetrieveUserRole400>
       | OpenAiClientError<"RetrieveUserRole403", RetrieveUserRole403>
       | OpenAiClientError<"RetrieveUserRole404", RetrieveUserRole404>
-      | OpenAiClientError<"RetrieveUserRole429", RetrieveUserRole429>
+      | OpenAiClientError<"RetrieveUserRole429", RetrieveUserRole429>,
+      R
     >
   }
   /**
@@ -63559,12 +64012,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UnassignUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignUserRole400", UnassignUserRole400>
       | OpenAiClientError<"UnassignUserRole403", UnassignUserRole403>
       | OpenAiClientError<"UnassignUserRole404", UnassignUserRole404>
-      | OpenAiClientError<"UnassignUserRole429", UnassignUserRole429>
+      | OpenAiClientError<"UnassignUserRole429", UnassignUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       userId: string,
@@ -63572,12 +64027,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<UnassignUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignUserRole400", UnassignUserRole400>
       | OpenAiClientError<"UnassignUserRole403", UnassignUserRole403>
       | OpenAiClientError<"UnassignUserRole404", UnassignUserRole404>
-      | OpenAiClientError<"UnassignUserRole429", UnassignUserRole429>
+      | OpenAiClientError<"UnassignUserRole429", UnassignUserRole429>,
+      R
     >
   }
   /**
@@ -63593,12 +64050,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectGroupRoleAssignments200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectGroupRoleAssignments400", ListProjectGroupRoleAssignments400>
       | OpenAiClientError<"ListProjectGroupRoleAssignments403", ListProjectGroupRoleAssignments403>
       | OpenAiClientError<"ListProjectGroupRoleAssignments404", ListProjectGroupRoleAssignments404>
-      | OpenAiClientError<"ListProjectGroupRoleAssignments429", ListProjectGroupRoleAssignments429>
+      | OpenAiClientError<"ListProjectGroupRoleAssignments429", ListProjectGroupRoleAssignments429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63609,12 +64068,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectGroupRoleAssignments200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectGroupRoleAssignments400", ListProjectGroupRoleAssignments400>
       | OpenAiClientError<"ListProjectGroupRoleAssignments403", ListProjectGroupRoleAssignments403>
       | OpenAiClientError<"ListProjectGroupRoleAssignments404", ListProjectGroupRoleAssignments404>
-      | OpenAiClientError<"ListProjectGroupRoleAssignments429", ListProjectGroupRoleAssignments429>
+      | OpenAiClientError<"ListProjectGroupRoleAssignments429", ListProjectGroupRoleAssignments429>,
+      R
     >
   }
   /**
@@ -63627,12 +64088,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AssignProjectGroupRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AssignProjectGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignProjectGroupRole400", AssignProjectGroupRole400>
       | OpenAiClientError<"AssignProjectGroupRole403", AssignProjectGroupRole403>
       | OpenAiClientError<"AssignProjectGroupRole404", AssignProjectGroupRole404>
-      | OpenAiClientError<"AssignProjectGroupRole429", AssignProjectGroupRole429>
+      | OpenAiClientError<"AssignProjectGroupRole429", AssignProjectGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63643,12 +64106,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<AssignProjectGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignProjectGroupRole400", AssignProjectGroupRole400>
       | OpenAiClientError<"AssignProjectGroupRole403", AssignProjectGroupRole403>
       | OpenAiClientError<"AssignProjectGroupRole404", AssignProjectGroupRole404>
-      | OpenAiClientError<"AssignProjectGroupRole429", AssignProjectGroupRole429>
+      | OpenAiClientError<"AssignProjectGroupRole429", AssignProjectGroupRole429>,
+      R
     >
   }
   /**
@@ -63662,12 +64127,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectGroupRole400", RetrieveProjectGroupRole400>
       | OpenAiClientError<"RetrieveProjectGroupRole403", RetrieveProjectGroupRole403>
       | OpenAiClientError<"RetrieveProjectGroupRole404", RetrieveProjectGroupRole404>
-      | OpenAiClientError<"RetrieveProjectGroupRole429", RetrieveProjectGroupRole429>
+      | OpenAiClientError<"RetrieveProjectGroupRole429", RetrieveProjectGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63676,12 +64143,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectGroupRole400", RetrieveProjectGroupRole400>
       | OpenAiClientError<"RetrieveProjectGroupRole403", RetrieveProjectGroupRole403>
       | OpenAiClientError<"RetrieveProjectGroupRole404", RetrieveProjectGroupRole404>
-      | OpenAiClientError<"RetrieveProjectGroupRole429", RetrieveProjectGroupRole429>
+      | OpenAiClientError<"RetrieveProjectGroupRole429", RetrieveProjectGroupRole429>,
+      R
     >
   }
   /**
@@ -63695,12 +64164,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UnassignProjectGroupRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignProjectGroupRole400", UnassignProjectGroupRole400>
       | OpenAiClientError<"UnassignProjectGroupRole403", UnassignProjectGroupRole403>
       | OpenAiClientError<"UnassignProjectGroupRole404", UnassignProjectGroupRole404>
-      | OpenAiClientError<"UnassignProjectGroupRole429", UnassignProjectGroupRole429>
+      | OpenAiClientError<"UnassignProjectGroupRole429", UnassignProjectGroupRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63709,12 +64180,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<UnassignProjectGroupRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignProjectGroupRole400", UnassignProjectGroupRole400>
       | OpenAiClientError<"UnassignProjectGroupRole403", UnassignProjectGroupRole403>
       | OpenAiClientError<"UnassignProjectGroupRole404", UnassignProjectGroupRole404>
-      | OpenAiClientError<"UnassignProjectGroupRole429", UnassignProjectGroupRole429>
+      | OpenAiClientError<"UnassignProjectGroupRole429", UnassignProjectGroupRole429>,
+      R
     >
   }
   /**
@@ -63726,12 +64199,14 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListProjectRolesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectRoles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectRoles400", ListProjectRoles400>
       | OpenAiClientError<"ListProjectRoles403", ListProjectRoles403>
       | OpenAiClientError<"ListProjectRoles404", ListProjectRoles404>
-      | OpenAiClientError<"ListProjectRoles429", ListProjectRoles429>
+      | OpenAiClientError<"ListProjectRoles429", ListProjectRoles429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63741,12 +64216,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectRoles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectRoles400", ListProjectRoles400>
       | OpenAiClientError<"ListProjectRoles403", ListProjectRoles403>
       | OpenAiClientError<"ListProjectRoles404", ListProjectRoles404>
-      | OpenAiClientError<"ListProjectRoles429", ListProjectRoles429>
+      | OpenAiClientError<"ListProjectRoles429", ListProjectRoles429>,
+      R
     >
   }
   /**
@@ -63758,24 +64235,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateProjectRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectRole400", CreateProjectRole400>
       | OpenAiClientError<"CreateProjectRole403", CreateProjectRole403>
       | OpenAiClientError<"CreateProjectRole404", CreateProjectRole404>
-      | OpenAiClientError<"CreateProjectRole429", CreateProjectRole429>
+      | OpenAiClientError<"CreateProjectRole429", CreateProjectRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly payload: typeof CreateProjectRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateProjectRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateProjectRole400", CreateProjectRole400>
       | OpenAiClientError<"CreateProjectRole403", CreateProjectRole403>
       | OpenAiClientError<"CreateProjectRole404", CreateProjectRole404>
-      | OpenAiClientError<"CreateProjectRole429", CreateProjectRole429>
+      | OpenAiClientError<"CreateProjectRole429", CreateProjectRole429>,
+      R
     >
   }
   /**
@@ -63788,11 +64269,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectRole403", RetrieveProjectRole403>
       | OpenAiClientError<"RetrieveProjectRole404", RetrieveProjectRole404>
-      | OpenAiClientError<"RetrieveProjectRole429", RetrieveProjectRole429>
+      | OpenAiClientError<"RetrieveProjectRole429", RetrieveProjectRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63800,11 +64283,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectRole403", RetrieveProjectRole403>
       | OpenAiClientError<"RetrieveProjectRole404", RetrieveProjectRole404>
-      | OpenAiClientError<"RetrieveProjectRole429", RetrieveProjectRole429>
+      | OpenAiClientError<"RetrieveProjectRole429", RetrieveProjectRole429>,
+      R
     >
   }
   /**
@@ -63817,12 +64302,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectRole400", UpdateProjectRole400>
       | OpenAiClientError<"UpdateProjectRole403", UpdateProjectRole403>
       | OpenAiClientError<"UpdateProjectRole404", UpdateProjectRole404>
-      | OpenAiClientError<"UpdateProjectRole429", UpdateProjectRole429>
+      | OpenAiClientError<"UpdateProjectRole429", UpdateProjectRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63830,12 +64317,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateProjectRoleRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateProjectRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateProjectRole400", UpdateProjectRole400>
       | OpenAiClientError<"UpdateProjectRole403", UpdateProjectRole403>
       | OpenAiClientError<"UpdateProjectRole404", UpdateProjectRole404>
-      | OpenAiClientError<"UpdateProjectRole429", UpdateProjectRole429>
+      | OpenAiClientError<"UpdateProjectRole429", UpdateProjectRole429>,
+      R
     >
   }
   /**
@@ -63848,12 +64337,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectRole400", DeleteProjectRole400>
       | OpenAiClientError<"DeleteProjectRole403", DeleteProjectRole403>
       | OpenAiClientError<"DeleteProjectRole404", DeleteProjectRole404>
-      | OpenAiClientError<"DeleteProjectRole429", DeleteProjectRole429>
+      | OpenAiClientError<"DeleteProjectRole429", DeleteProjectRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63861,12 +64352,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteProjectRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteProjectRole400", DeleteProjectRole400>
       | OpenAiClientError<"DeleteProjectRole403", DeleteProjectRole403>
       | OpenAiClientError<"DeleteProjectRole404", DeleteProjectRole404>
-      | OpenAiClientError<"DeleteProjectRole429", DeleteProjectRole429>
+      | OpenAiClientError<"DeleteProjectRole429", DeleteProjectRole429>,
+      R
     >
   }
   /**
@@ -63882,12 +64375,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListProjectUserRoleAssignments200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectUserRoleAssignments400", ListProjectUserRoleAssignments400>
       | OpenAiClientError<"ListProjectUserRoleAssignments403", ListProjectUserRoleAssignments403>
       | OpenAiClientError<"ListProjectUserRoleAssignments404", ListProjectUserRoleAssignments404>
-      | OpenAiClientError<"ListProjectUserRoleAssignments429", ListProjectUserRoleAssignments429>
+      | OpenAiClientError<"ListProjectUserRoleAssignments429", ListProjectUserRoleAssignments429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63898,12 +64393,14 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListProjectUserRoleAssignments200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListProjectUserRoleAssignments400", ListProjectUserRoleAssignments400>
       | OpenAiClientError<"ListProjectUserRoleAssignments403", ListProjectUserRoleAssignments403>
       | OpenAiClientError<"ListProjectUserRoleAssignments404", ListProjectUserRoleAssignments404>
-      | OpenAiClientError<"ListProjectUserRoleAssignments429", ListProjectUserRoleAssignments429>
+      | OpenAiClientError<"ListProjectUserRoleAssignments429", ListProjectUserRoleAssignments429>,
+      R
     >
   }
   /**
@@ -63916,12 +64413,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AssignProjectUserRoleRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AssignProjectUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignProjectUserRole400", AssignProjectUserRole400>
       | OpenAiClientError<"AssignProjectUserRole403", AssignProjectUserRole403>
       | OpenAiClientError<"AssignProjectUserRole404", AssignProjectUserRole404>
-      | OpenAiClientError<"AssignProjectUserRole429", AssignProjectUserRole429>
+      | OpenAiClientError<"AssignProjectUserRole429", AssignProjectUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63932,12 +64431,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<AssignProjectUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AssignProjectUserRole400", AssignProjectUserRole400>
       | OpenAiClientError<"AssignProjectUserRole403", AssignProjectUserRole403>
       | OpenAiClientError<"AssignProjectUserRole404", AssignProjectUserRole404>
-      | OpenAiClientError<"AssignProjectUserRole429", AssignProjectUserRole429>
+      | OpenAiClientError<"AssignProjectUserRole429", AssignProjectUserRole429>,
+      R
     >
   }
   /**
@@ -63951,12 +64452,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectUserRole400", RetrieveProjectUserRole400>
       | OpenAiClientError<"RetrieveProjectUserRole403", RetrieveProjectUserRole403>
       | OpenAiClientError<"RetrieveProjectUserRole404", RetrieveProjectUserRole404>
-      | OpenAiClientError<"RetrieveProjectUserRole429", RetrieveProjectUserRole429>
+      | OpenAiClientError<"RetrieveProjectUserRole429", RetrieveProjectUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63965,12 +64468,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveProjectUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveProjectUserRole400", RetrieveProjectUserRole400>
       | OpenAiClientError<"RetrieveProjectUserRole403", RetrieveProjectUserRole403>
       | OpenAiClientError<"RetrieveProjectUserRole404", RetrieveProjectUserRole404>
-      | OpenAiClientError<"RetrieveProjectUserRole429", RetrieveProjectUserRole429>
+      | OpenAiClientError<"RetrieveProjectUserRole429", RetrieveProjectUserRole429>,
+      R
     >
   }
   /**
@@ -63984,12 +64489,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UnassignProjectUserRole200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignProjectUserRole400", UnassignProjectUserRole400>
       | OpenAiClientError<"UnassignProjectUserRole403", UnassignProjectUserRole403>
       | OpenAiClientError<"UnassignProjectUserRole404", UnassignProjectUserRole404>
-      | OpenAiClientError<"UnassignProjectUserRole429", UnassignProjectUserRole429>
+      | OpenAiClientError<"UnassignProjectUserRole429", UnassignProjectUserRole429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -63998,12 +64505,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<UnassignProjectUserRole200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UnassignProjectUserRole400", UnassignProjectUserRole400>
       | OpenAiClientError<"UnassignProjectUserRole403", UnassignProjectUserRole403>
       | OpenAiClientError<"UnassignProjectUserRole404", UnassignProjectUserRole404>
-      | OpenAiClientError<"UnassignProjectUserRole429", UnassignProjectUserRole429>
+      | OpenAiClientError<"UnassignProjectUserRole429", UnassignProjectUserRole429>,
+      R
     >
   }
   /**
@@ -64013,13 +64522,17 @@ export interface OpenAiClient {
   readonly "createRealtimeCall": {
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateRealtimeCallRequestFormData.Encoded; readonly config: Config }
-    ): Effect.Effect<WithOptionalResponse<void, Config>, HttpClientError.HttpClientError | SchemaError>
+    ): Effect.Effect<WithOptionalResponse<void, Config>, E | HttpClientError.HttpClientError | SchemaError, R>
     <Config extends OperationConfig | undefined = undefined>(
       options: {
         readonly payload: typeof CreateRealtimeCallRequestFormData.Encoded
         readonly config?: Config | undefined
       }
-    ): Effect.Effect<WithOptionalResponse<void, Config | undefined>, HttpClientError.HttpClientError | SchemaError>
+    ): Effect.Effect<
+      WithOptionalResponse<void, Config | undefined>,
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
+    >
   }
   /**
    * Accept an incoming SIP call and configure the realtime session that will
@@ -64031,20 +64544,24 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AcceptRealtimeCallRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AcceptRealtimeCall404", AcceptRealtimeCall404>
-      | OpenAiClientError<"AcceptRealtimeCall409", AcceptRealtimeCall409>
+      | OpenAiClientError<"AcceptRealtimeCall409", AcceptRealtimeCall409>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       callId: string,
       options: { readonly payload: typeof AcceptRealtimeCallRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AcceptRealtimeCall404", AcceptRealtimeCall404>
-      | OpenAiClientError<"AcceptRealtimeCall409", AcceptRealtimeCall409>
+      | OpenAiClientError<"AcceptRealtimeCall409", AcceptRealtimeCall409>,
+      R
     >
   }
   /**
@@ -64057,14 +64574,22 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"HangupRealtimeCall404", HangupRealtimeCall404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"HangupRealtimeCall404", HangupRealtimeCall404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       callId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"HangupRealtimeCall404", HangupRealtimeCall404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"HangupRealtimeCall404", HangupRealtimeCall404>,
+      R
     >
   }
   /**
@@ -64076,14 +64601,22 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ReferRealtimeCallRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ReferRealtimeCall404", ReferRealtimeCall404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"ReferRealtimeCall404", ReferRealtimeCall404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       callId: string,
       options: { readonly payload: typeof ReferRealtimeCallRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ReferRealtimeCall404", ReferRealtimeCall404>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"ReferRealtimeCall404", ReferRealtimeCall404>,
+      R
     >
   }
   /**
@@ -64095,20 +64628,24 @@ export interface OpenAiClient {
       options: { readonly payload: typeof RejectRealtimeCallRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RejectRealtimeCall404", RejectRealtimeCall404>
-      | OpenAiClientError<"RejectRealtimeCall409", RejectRealtimeCall409>
+      | OpenAiClientError<"RejectRealtimeCall409", RejectRealtimeCall409>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       callId: string,
       options: { readonly payload: typeof RejectRealtimeCallRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RejectRealtimeCall404", RejectRealtimeCall404>
-      | OpenAiClientError<"RejectRealtimeCall409", RejectRealtimeCall409>
+      | OpenAiClientError<"RejectRealtimeCall409", RejectRealtimeCall409>,
+      R
     >
   }
   /**
@@ -64131,11 +64668,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateRealtimeClientSecretRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeClientSecret200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRealtimeClientSecret400", CreateRealtimeClientSecret400>
       | OpenAiClientError<"CreateRealtimeClientSecret404", CreateRealtimeClientSecret404>
-      | OpenAiClientError<"CreateRealtimeClientSecret500", CreateRealtimeClientSecret500>
+      | OpenAiClientError<"CreateRealtimeClientSecret500", CreateRealtimeClientSecret500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -64144,11 +64683,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeClientSecret200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRealtimeClientSecret400", CreateRealtimeClientSecret400>
       | OpenAiClientError<"CreateRealtimeClientSecret404", CreateRealtimeClientSecret404>
-      | OpenAiClientError<"CreateRealtimeClientSecret500", CreateRealtimeClientSecret500>
+      | OpenAiClientError<"CreateRealtimeClientSecret500", CreateRealtimeClientSecret500>,
+      R
     >
   }
   /**
@@ -64167,7 +64708,8 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateRealtimeSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeSession200, Config>,
-      HttpClientError.HttpClientError | SchemaError
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -64176,7 +64718,8 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeSession200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
     >
   }
   /**
@@ -64198,7 +64741,8 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeTranscriptionSession200, Config>,
-      HttpClientError.HttpClientError | SchemaError
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -64207,7 +64751,8 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeTranscriptionSession200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
     >
   }
   /**
@@ -64229,11 +64774,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeTranslationClientSecret200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRealtimeTranslationClientSecret400", CreateRealtimeTranslationClientSecret400>
       | OpenAiClientError<"CreateRealtimeTranslationClientSecret404", CreateRealtimeTranslationClientSecret404>
-      | OpenAiClientError<"CreateRealtimeTranslationClientSecret500", CreateRealtimeTranslationClientSecret500>
+      | OpenAiClientError<"CreateRealtimeTranslationClientSecret500", CreateRealtimeTranslationClientSecret500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -64242,11 +64789,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRealtimeTranslationClientSecret200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateRealtimeTranslationClientSecret400", CreateRealtimeTranslationClientSecret400>
       | OpenAiClientError<"CreateRealtimeTranslationClientSecret404", CreateRealtimeTranslationClientSecret404>
-      | OpenAiClientError<"CreateRealtimeTranslationClientSecret500", CreateRealtimeTranslationClientSecret500>
+      | OpenAiClientError<"CreateRealtimeTranslationClientSecret500", CreateRealtimeTranslationClientSecret500>,
+      R
     >
   }
   /**
@@ -64263,23 +64812,27 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateResponseRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateResponse400", CreateResponse400>
       | OpenAiClientError<"CreateResponse404", CreateResponse404>
       | OpenAiClientError<"CreateResponse429", CreateResponse429>
-      | OpenAiClientError<"CreateResponse503", CreateResponse503>
+      | OpenAiClientError<"CreateResponse503", CreateResponse503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateResponseRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateResponse400", CreateResponse400>
       | OpenAiClientError<"CreateResponse404", CreateResponse404>
       | OpenAiClientError<"CreateResponse429", CreateResponse429>
-      | OpenAiClientError<"CreateResponse503", CreateResponse503>
+      | OpenAiClientError<"CreateResponse503", CreateResponse503>,
+      R
     >
   }
   /**
@@ -64295,8 +64848,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateResponseRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateResponse200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateResponse200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateResponse200Sse.DecodingServices
   >
   /**
    * Retrieves a model response with the given ID.
@@ -64307,10 +64860,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetResponseParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetResponse404", GetResponse404>
-      | OpenAiClientError<"GetResponse429", GetResponse429>
+      | OpenAiClientError<"GetResponse429", GetResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -64319,10 +64874,12 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetResponse404", GetResponse404>
-      | OpenAiClientError<"GetResponse429", GetResponse429>
+      | OpenAiClientError<"GetResponse429", GetResponse429>,
+      R
     >
   }
   /**
@@ -64334,20 +64891,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteResponse404", DeleteResponse404>
-      | OpenAiClientError<"DeleteResponse429", DeleteResponse429>
+      | OpenAiClientError<"DeleteResponse429", DeleteResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteResponse404", DeleteResponse404>
-      | OpenAiClientError<"DeleteResponse429", DeleteResponse429>
+      | OpenAiClientError<"DeleteResponse429", DeleteResponse429>,
+      R
     >
   }
   /**
@@ -64361,20 +64922,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelResponse404", CancelResponse404>
-      | OpenAiClientError<"CancelResponse429", CancelResponse429>
+      | OpenAiClientError<"CancelResponse429", CancelResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelResponse404", CancelResponse404>
-      | OpenAiClientError<"CancelResponse429", CancelResponse429>
+      | OpenAiClientError<"CancelResponse429", CancelResponse429>,
+      R
     >
   }
   /**
@@ -64386,10 +64951,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListInputItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListInputItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListInputItems404", ListInputItems404>
-      | OpenAiClientError<"ListInputItems429", ListInputItems429>
+      | OpenAiClientError<"ListInputItems429", ListInputItems429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -64399,10 +64966,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListInputItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListInputItems404", ListInputItems404>
-      | OpenAiClientError<"ListInputItems429", ListInputItems429>
+      | OpenAiClientError<"ListInputItems429", ListInputItems429>,
+      R
     >
   }
   /**
@@ -64413,13 +64982,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateThreadRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateThread200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThread429", CreateThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThread429", CreateThread429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateThreadRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateThread200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThread429", CreateThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThread429", CreateThread429>,
+      R
     >
   }
   /**
@@ -64430,13 +65001,21 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateThreadAndRunRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateThreadAndRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThreadAndRun429", CreateThreadAndRun429>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"CreateThreadAndRun429", CreateThreadAndRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateThreadAndRunRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateThreadAndRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateThreadAndRun429", CreateThreadAndRun429>
+      | E
+      | HttpClientError.HttpClientError
+      | SchemaError
+      | OpenAiClientError<"CreateThreadAndRun429", CreateThreadAndRun429>,
+      R
     >
   }
   /**
@@ -64446,8 +65025,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateThreadAndRunRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateThreadAndRun200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateThreadAndRun200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateThreadAndRun200Sse.DecodingServices
   >
   /**
    * Retrieves a thread.
@@ -64458,14 +65037,16 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetThread200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetThread429", GetThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetThread429", GetThread429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetThread200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetThread429", GetThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetThread429", GetThread429>,
+      R
     >
   }
   /**
@@ -64477,14 +65058,16 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyThreadRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyThread200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyThread429", ModifyThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyThread429", ModifyThread429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly payload: typeof ModifyThreadRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyThread200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyThread429", ModifyThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyThread429", ModifyThread429>,
+      R
     >
   }
   /**
@@ -64496,14 +65079,16 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteThread200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteThread429", DeleteThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteThread429", DeleteThread429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteThread200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteThread429", DeleteThread429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteThread429", DeleteThread429>,
+      R
     >
   }
   /**
@@ -64515,7 +65100,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListMessagesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListMessages200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListMessages429", ListMessages429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListMessages429", ListMessages429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64524,7 +65110,8 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListMessages200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListMessages429", ListMessages429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListMessages429", ListMessages429>,
+      R
     >
   }
   /**
@@ -64536,14 +65123,16 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateMessageRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateMessage200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateMessage429", CreateMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateMessage429", CreateMessage429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly payload: typeof CreateMessageRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateMessage200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateMessage429", CreateMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateMessage429", CreateMessage429>,
+      R
     >
   }
   /**
@@ -64556,7 +65145,8 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetMessage200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetMessage429", GetMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetMessage429", GetMessage429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64564,7 +65154,8 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetMessage200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetMessage429", GetMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetMessage429", GetMessage429>,
+      R
     >
   }
   /**
@@ -64577,7 +65168,8 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyMessageRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyMessage200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyMessage429", ModifyMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyMessage429", ModifyMessage429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64585,7 +65177,8 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyMessageRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyMessage200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyMessage429", ModifyMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyMessage429", ModifyMessage429>,
+      R
     >
   }
   /**
@@ -64598,7 +65191,8 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteMessage200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteMessage429", DeleteMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteMessage429", DeleteMessage429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64606,7 +65200,8 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteMessage200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteMessage429", DeleteMessage429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"DeleteMessage429", DeleteMessage429>,
+      R
     >
   }
   /**
@@ -64618,7 +65213,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListRunsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListRuns200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRuns429", ListRuns429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRuns429", ListRuns429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64627,7 +65223,8 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListRuns200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRuns429", ListRuns429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRuns429", ListRuns429>,
+      R
     >
   }
   /**
@@ -64643,7 +65240,8 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateRun429", CreateRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateRun429", CreateRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64654,7 +65252,8 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateRun429", CreateRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CreateRun429", CreateRun429>,
+      R
     >
   }
   /**
@@ -64668,8 +65267,8 @@ export interface OpenAiClient {
     }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateRun200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateRun200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateRun200Sse.DecodingServices
   >
   /**
    * Retrieves a run.
@@ -64681,7 +65280,8 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRun429", GetRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRun429", GetRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64689,7 +65289,8 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRun429", GetRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRun429", GetRun429>,
+      R
     >
   }
   /**
@@ -64702,7 +65303,8 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyRunRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyRun429", ModifyRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyRun429", ModifyRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64710,7 +65312,8 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyRunRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyRun429", ModifyRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ModifyRun429", ModifyRun429>,
+      R
     >
   }
   /**
@@ -64723,7 +65326,8 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelRun200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelRun429", CancelRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelRun429", CancelRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64731,7 +65335,8 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelRun200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelRun429", CancelRun429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"CancelRun429", CancelRun429>,
+      R
     >
   }
   /**
@@ -64744,7 +65349,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListRunStepsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListRunSteps200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRunSteps429", ListRunSteps429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRunSteps429", ListRunSteps429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64754,7 +65360,8 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListRunSteps200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRunSteps429", ListRunSteps429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"ListRunSteps429", ListRunSteps429>,
+      R
     >
   }
   /**
@@ -64768,7 +65375,8 @@ export interface OpenAiClient {
       options: { readonly params?: typeof GetRunStepParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetRunStep200, Config>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRunStep429", GetRunStep429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRunStep429", GetRunStep429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64779,7 +65387,8 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetRunStep200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRunStep429", GetRunStep429>
+      E | HttpClientError.HttpClientError | SchemaError | OpenAiClientError<"GetRunStep429", GetRunStep429>,
+      R
     >
   }
   /**
@@ -64792,9 +65401,11 @@ export interface OpenAiClient {
       options: { readonly payload: typeof SubmitToolOuputsToRunRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<SubmitToolOuputsToRun200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"SubmitToolOuputsToRun429", SubmitToolOuputsToRun429>
+      | OpenAiClientError<"SubmitToolOuputsToRun429", SubmitToolOuputsToRun429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -64805,9 +65416,11 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<SubmitToolOuputsToRun200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"SubmitToolOuputsToRun429", SubmitToolOuputsToRun429>
+      | OpenAiClientError<"SubmitToolOuputsToRun429", SubmitToolOuputsToRun429>,
+      R
     >
   }
   /**
@@ -64819,8 +65432,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof SubmitToolOuputsToRunRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: SubmitToolOuputsToRun200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof SubmitToolOuputsToRun200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof SubmitToolOuputsToRun200Sse.DecodingServices
   >
   /**
    * Creates an intermediate [Upload](https://developers.openai.com/api/reference/resources/uploads) object
@@ -64848,19 +65461,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateUploadRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateUpload200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateUpload400", CreateUpload400>
-      | OpenAiClientError<"CreateUpload429", CreateUpload429>
+      | OpenAiClientError<"CreateUpload429", CreateUpload429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateUploadRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateUpload200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateUpload400", CreateUpload400>
-      | OpenAiClientError<"CreateUpload429", CreateUpload429>
+      | OpenAiClientError<"CreateUpload429", CreateUpload429>,
+      R
     >
   }
   /**
@@ -64874,24 +65491,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelUpload200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelUpload400", CancelUpload400>
       | OpenAiClientError<"CancelUpload404", CancelUpload404>
       | OpenAiClientError<"CancelUpload410", CancelUpload410>
-      | OpenAiClientError<"CancelUpload429", CancelUpload429>
+      | OpenAiClientError<"CancelUpload429", CancelUpload429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       uploadId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelUpload200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelUpload400", CancelUpload400>
       | OpenAiClientError<"CancelUpload404", CancelUpload404>
       | OpenAiClientError<"CancelUpload410", CancelUpload410>
-      | OpenAiClientError<"CancelUpload429", CancelUpload429>
+      | OpenAiClientError<"CancelUpload429", CancelUpload429>,
+      R
     >
   }
   /**
@@ -64910,26 +65531,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CompleteUploadRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CompleteUpload200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CompleteUpload400", CompleteUpload400>
       | OpenAiClientError<"CompleteUpload404", CompleteUpload404>
       | OpenAiClientError<"CompleteUpload410", CompleteUpload410>
       | OpenAiClientError<"CompleteUpload429", CompleteUpload429>
-      | OpenAiClientError<"CompleteUpload500", CompleteUpload500>
+      | OpenAiClientError<"CompleteUpload500", CompleteUpload500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       uploadId: string,
       options: { readonly payload: typeof CompleteUploadRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CompleteUpload200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CompleteUpload400", CompleteUpload400>
       | OpenAiClientError<"CompleteUpload404", CompleteUpload404>
       | OpenAiClientError<"CompleteUpload410", CompleteUpload410>
       | OpenAiClientError<"CompleteUpload429", CompleteUpload429>
-      | OpenAiClientError<"CompleteUpload500", CompleteUpload500>
+      | OpenAiClientError<"CompleteUpload500", CompleteUpload500>,
+      R
     >
   }
   /**
@@ -64945,26 +65570,30 @@ export interface OpenAiClient {
       options: { readonly payload: typeof AddUploadPartRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<AddUploadPart200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddUploadPart400", AddUploadPart400>
       | OpenAiClientError<"AddUploadPart404", AddUploadPart404>
       | OpenAiClientError<"AddUploadPart410", AddUploadPart410>
       | OpenAiClientError<"AddUploadPart429", AddUploadPart429>
-      | OpenAiClientError<"AddUploadPart500", AddUploadPart500>
+      | OpenAiClientError<"AddUploadPart500", AddUploadPart500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       uploadId: string,
       options: { readonly payload: typeof AddUploadPartRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<AddUploadPart200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"AddUploadPart400", AddUploadPart400>
       | OpenAiClientError<"AddUploadPart404", AddUploadPart404>
       | OpenAiClientError<"AddUploadPart410", AddUploadPart410>
       | OpenAiClientError<"AddUploadPart429", AddUploadPart429>
-      | OpenAiClientError<"AddUploadPart500", AddUploadPart500>
+      | OpenAiClientError<"AddUploadPart500", AddUploadPart500>,
+      R
     >
   }
   /**
@@ -64975,10 +65604,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVectorStoresParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVectorStores200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVectorStores429", ListVectorStores429>
-      | OpenAiClientError<"ListVectorStores503", ListVectorStores503>
+      | OpenAiClientError<"ListVectorStores503", ListVectorStores503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -64987,10 +65618,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVectorStores200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVectorStores429", ListVectorStores429>
-      | OpenAiClientError<"ListVectorStores503", ListVectorStores503>
+      | OpenAiClientError<"ListVectorStores503", ListVectorStores503>,
+      R
     >
   }
   /**
@@ -65001,21 +65634,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVectorStoreRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStore200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStore400", CreateVectorStore400>
       | OpenAiClientError<"CreateVectorStore404", CreateVectorStore404>
-      | OpenAiClientError<"CreateVectorStore429", CreateVectorStore429>
+      | OpenAiClientError<"CreateVectorStore429", CreateVectorStore429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateVectorStoreRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStore200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStore400", CreateVectorStore400>
       | OpenAiClientError<"CreateVectorStore404", CreateVectorStore404>
-      | OpenAiClientError<"CreateVectorStore429", CreateVectorStore429>
+      | OpenAiClientError<"CreateVectorStore429", CreateVectorStore429>,
+      R
     >
   }
   /**
@@ -65027,20 +65664,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStore200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStore404", GetVectorStore404>
-      | OpenAiClientError<"GetVectorStore429", GetVectorStore429>
+      | OpenAiClientError<"GetVectorStore429", GetVectorStore429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStore200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStore404", GetVectorStore404>
-      | OpenAiClientError<"GetVectorStore429", GetVectorStore429>
+      | OpenAiClientError<"GetVectorStore429", GetVectorStore429>,
+      R
     >
   }
   /**
@@ -65052,24 +65693,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof ModifyVectorStoreRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ModifyVectorStore200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyVectorStore400", ModifyVectorStore400>
       | OpenAiClientError<"ModifyVectorStore403", ModifyVectorStore403>
       | OpenAiClientError<"ModifyVectorStore404", ModifyVectorStore404>
-      | OpenAiClientError<"ModifyVectorStore429", ModifyVectorStore429>
+      | OpenAiClientError<"ModifyVectorStore429", ModifyVectorStore429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
       options: { readonly payload: typeof ModifyVectorStoreRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<ModifyVectorStore200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ModifyVectorStore400", ModifyVectorStore400>
       | OpenAiClientError<"ModifyVectorStore403", ModifyVectorStore403>
       | OpenAiClientError<"ModifyVectorStore404", ModifyVectorStore404>
-      | OpenAiClientError<"ModifyVectorStore429", ModifyVectorStore429>
+      | OpenAiClientError<"ModifyVectorStore429", ModifyVectorStore429>,
+      R
     >
   }
   /**
@@ -65081,22 +65726,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVectorStore200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVectorStore404", DeleteVectorStore404>
       | OpenAiClientError<"DeleteVectorStore409", DeleteVectorStore409>
-      | OpenAiClientError<"DeleteVectorStore429", DeleteVectorStore429>
+      | OpenAiClientError<"DeleteVectorStore429", DeleteVectorStore429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVectorStore200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVectorStore404", DeleteVectorStore404>
       | OpenAiClientError<"DeleteVectorStore409", DeleteVectorStore409>
-      | OpenAiClientError<"DeleteVectorStore429", DeleteVectorStore429>
+      | OpenAiClientError<"DeleteVectorStore429", DeleteVectorStore429>,
+      R
     >
   }
   /**
@@ -65108,13 +65757,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVectorStoreFileBatchRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStoreFileBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStoreFileBatch400", CreateVectorStoreFileBatch400>
       | OpenAiClientError<"CreateVectorStoreFileBatch404", CreateVectorStoreFileBatch404>
       | OpenAiClientError<"CreateVectorStoreFileBatch409", CreateVectorStoreFileBatch409>
       | OpenAiClientError<"CreateVectorStoreFileBatch429", CreateVectorStoreFileBatch429>
-      | OpenAiClientError<"CreateVectorStoreFileBatch500", CreateVectorStoreFileBatch500>
+      | OpenAiClientError<"CreateVectorStoreFileBatch500", CreateVectorStoreFileBatch500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65124,13 +65775,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStoreFileBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStoreFileBatch400", CreateVectorStoreFileBatch400>
       | OpenAiClientError<"CreateVectorStoreFileBatch404", CreateVectorStoreFileBatch404>
       | OpenAiClientError<"CreateVectorStoreFileBatch409", CreateVectorStoreFileBatch409>
       | OpenAiClientError<"CreateVectorStoreFileBatch429", CreateVectorStoreFileBatch429>
-      | OpenAiClientError<"CreateVectorStoreFileBatch500", CreateVectorStoreFileBatch500>
+      | OpenAiClientError<"CreateVectorStoreFileBatch500", CreateVectorStoreFileBatch500>,
+      R
     >
   }
   /**
@@ -65143,11 +65796,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStoreFileBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStoreFileBatch400", GetVectorStoreFileBatch400>
       | OpenAiClientError<"GetVectorStoreFileBatch404", GetVectorStoreFileBatch404>
-      | OpenAiClientError<"GetVectorStoreFileBatch429", GetVectorStoreFileBatch429>
+      | OpenAiClientError<"GetVectorStoreFileBatch429", GetVectorStoreFileBatch429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65155,11 +65810,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStoreFileBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStoreFileBatch400", GetVectorStoreFileBatch400>
       | OpenAiClientError<"GetVectorStoreFileBatch404", GetVectorStoreFileBatch404>
-      | OpenAiClientError<"GetVectorStoreFileBatch429", GetVectorStoreFileBatch429>
+      | OpenAiClientError<"GetVectorStoreFileBatch429", GetVectorStoreFileBatch429>,
+      R
     >
   }
   /**
@@ -65172,12 +65829,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelVectorStoreFileBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelVectorStoreFileBatch400", CancelVectorStoreFileBatch400>
       | OpenAiClientError<"CancelVectorStoreFileBatch404", CancelVectorStoreFileBatch404>
       | OpenAiClientError<"CancelVectorStoreFileBatch409", CancelVectorStoreFileBatch409>
-      | OpenAiClientError<"CancelVectorStoreFileBatch429", CancelVectorStoreFileBatch429>
+      | OpenAiClientError<"CancelVectorStoreFileBatch429", CancelVectorStoreFileBatch429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65185,12 +65844,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelVectorStoreFileBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelVectorStoreFileBatch400", CancelVectorStoreFileBatch400>
       | OpenAiClientError<"CancelVectorStoreFileBatch404", CancelVectorStoreFileBatch404>
       | OpenAiClientError<"CancelVectorStoreFileBatch409", CancelVectorStoreFileBatch409>
-      | OpenAiClientError<"CancelVectorStoreFileBatch429", CancelVectorStoreFileBatch429>
+      | OpenAiClientError<"CancelVectorStoreFileBatch429", CancelVectorStoreFileBatch429>,
+      R
     >
   }
   /**
@@ -65206,11 +65867,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListFilesInVectorStoreBatch200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFilesInVectorStoreBatch400", ListFilesInVectorStoreBatch400>
       | OpenAiClientError<"ListFilesInVectorStoreBatch404", ListFilesInVectorStoreBatch404>
-      | OpenAiClientError<"ListFilesInVectorStoreBatch429", ListFilesInVectorStoreBatch429>
+      | OpenAiClientError<"ListFilesInVectorStoreBatch429", ListFilesInVectorStoreBatch429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65221,11 +65884,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListFilesInVectorStoreBatch200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListFilesInVectorStoreBatch400", ListFilesInVectorStoreBatch400>
       | OpenAiClientError<"ListFilesInVectorStoreBatch404", ListFilesInVectorStoreBatch404>
-      | OpenAiClientError<"ListFilesInVectorStoreBatch429", ListFilesInVectorStoreBatch429>
+      | OpenAiClientError<"ListFilesInVectorStoreBatch429", ListFilesInVectorStoreBatch429>,
+      R
     >
   }
   /**
@@ -65237,11 +65902,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVectorStoreFilesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVectorStoreFiles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVectorStoreFiles400", ListVectorStoreFiles400>
       | OpenAiClientError<"ListVectorStoreFiles404", ListVectorStoreFiles404>
-      | OpenAiClientError<"ListVectorStoreFiles429", ListVectorStoreFiles429>
+      | OpenAiClientError<"ListVectorStoreFiles429", ListVectorStoreFiles429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65251,11 +65918,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVectorStoreFiles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVectorStoreFiles400", ListVectorStoreFiles400>
       | OpenAiClientError<"ListVectorStoreFiles404", ListVectorStoreFiles404>
-      | OpenAiClientError<"ListVectorStoreFiles429", ListVectorStoreFiles429>
+      | OpenAiClientError<"ListVectorStoreFiles429", ListVectorStoreFiles429>,
+      R
     >
   }
   /**
@@ -65267,13 +65936,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVectorStoreFileRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStoreFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStoreFile400", CreateVectorStoreFile400>
       | OpenAiClientError<"CreateVectorStoreFile404", CreateVectorStoreFile404>
       | OpenAiClientError<"CreateVectorStoreFile409", CreateVectorStoreFile409>
       | OpenAiClientError<"CreateVectorStoreFile429", CreateVectorStoreFile429>
-      | OpenAiClientError<"CreateVectorStoreFile500", CreateVectorStoreFile500>
+      | OpenAiClientError<"CreateVectorStoreFile500", CreateVectorStoreFile500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65283,13 +65954,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVectorStoreFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVectorStoreFile400", CreateVectorStoreFile400>
       | OpenAiClientError<"CreateVectorStoreFile404", CreateVectorStoreFile404>
       | OpenAiClientError<"CreateVectorStoreFile409", CreateVectorStoreFile409>
       | OpenAiClientError<"CreateVectorStoreFile429", CreateVectorStoreFile429>
-      | OpenAiClientError<"CreateVectorStoreFile500", CreateVectorStoreFile500>
+      | OpenAiClientError<"CreateVectorStoreFile500", CreateVectorStoreFile500>,
+      R
     >
   }
   /**
@@ -65302,11 +65975,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStoreFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStoreFile404", GetVectorStoreFile404>
       | OpenAiClientError<"GetVectorStoreFile429", GetVectorStoreFile429>
-      | OpenAiClientError<"GetVectorStoreFile500", GetVectorStoreFile500>
+      | OpenAiClientError<"GetVectorStoreFile500", GetVectorStoreFile500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65314,11 +65989,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVectorStoreFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVectorStoreFile404", GetVectorStoreFile404>
       | OpenAiClientError<"GetVectorStoreFile429", GetVectorStoreFile429>
-      | OpenAiClientError<"GetVectorStoreFile500", GetVectorStoreFile500>
+      | OpenAiClientError<"GetVectorStoreFile500", GetVectorStoreFile500>,
+      R
     >
   }
   /**
@@ -65331,13 +66008,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateVectorStoreFileAttributesRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVectorStoreFileAttributes200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVectorStoreFileAttributes400", UpdateVectorStoreFileAttributes400>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes404", UpdateVectorStoreFileAttributes404>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes409", UpdateVectorStoreFileAttributes409>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes429", UpdateVectorStoreFileAttributes429>
-      | OpenAiClientError<"UpdateVectorStoreFileAttributes500", UpdateVectorStoreFileAttributes500>
+      | OpenAiClientError<"UpdateVectorStoreFileAttributes500", UpdateVectorStoreFileAttributes500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65348,13 +66027,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVectorStoreFileAttributes200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVectorStoreFileAttributes400", UpdateVectorStoreFileAttributes400>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes404", UpdateVectorStoreFileAttributes404>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes409", UpdateVectorStoreFileAttributes409>
       | OpenAiClientError<"UpdateVectorStoreFileAttributes429", UpdateVectorStoreFileAttributes429>
-      | OpenAiClientError<"UpdateVectorStoreFileAttributes500", UpdateVectorStoreFileAttributes500>
+      | OpenAiClientError<"UpdateVectorStoreFileAttributes500", UpdateVectorStoreFileAttributes500>,
+      R
     >
   }
   /**
@@ -65367,13 +66048,15 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVectorStoreFile200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVectorStoreFile400", DeleteVectorStoreFile400>
       | OpenAiClientError<"DeleteVectorStoreFile404", DeleteVectorStoreFile404>
       | OpenAiClientError<"DeleteVectorStoreFile409", DeleteVectorStoreFile409>
       | OpenAiClientError<"DeleteVectorStoreFile429", DeleteVectorStoreFile429>
-      | OpenAiClientError<"DeleteVectorStoreFile500", DeleteVectorStoreFile500>
+      | OpenAiClientError<"DeleteVectorStoreFile500", DeleteVectorStoreFile500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65381,13 +66064,15 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVectorStoreFile200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVectorStoreFile400", DeleteVectorStoreFile400>
       | OpenAiClientError<"DeleteVectorStoreFile404", DeleteVectorStoreFile404>
       | OpenAiClientError<"DeleteVectorStoreFile409", DeleteVectorStoreFile409>
       | OpenAiClientError<"DeleteVectorStoreFile429", DeleteVectorStoreFile429>
-      | OpenAiClientError<"DeleteVectorStoreFile500", DeleteVectorStoreFile500>
+      | OpenAiClientError<"DeleteVectorStoreFile500", DeleteVectorStoreFile500>,
+      R
     >
   }
   /**
@@ -65400,12 +66085,14 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVectorStoreFileContent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVectorStoreFileContent400", RetrieveVectorStoreFileContent400>
       | OpenAiClientError<"RetrieveVectorStoreFileContent404", RetrieveVectorStoreFileContent404>
       | OpenAiClientError<"RetrieveVectorStoreFileContent429", RetrieveVectorStoreFileContent429>
-      | OpenAiClientError<"RetrieveVectorStoreFileContent500", RetrieveVectorStoreFileContent500>
+      | OpenAiClientError<"RetrieveVectorStoreFileContent500", RetrieveVectorStoreFileContent500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
@@ -65413,12 +66100,14 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVectorStoreFileContent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVectorStoreFileContent400", RetrieveVectorStoreFileContent400>
       | OpenAiClientError<"RetrieveVectorStoreFileContent404", RetrieveVectorStoreFileContent404>
       | OpenAiClientError<"RetrieveVectorStoreFileContent429", RetrieveVectorStoreFileContent429>
-      | OpenAiClientError<"RetrieveVectorStoreFileContent500", RetrieveVectorStoreFileContent500>
+      | OpenAiClientError<"RetrieveVectorStoreFileContent500", RetrieveVectorStoreFileContent500>,
+      R
     >
   }
   /**
@@ -65430,22 +66119,26 @@ export interface OpenAiClient {
       options: { readonly payload: typeof SearchVectorStoreRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<SearchVectorStore200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"SearchVectorStore400", SearchVectorStore400>
       | OpenAiClientError<"SearchVectorStore404", SearchVectorStore404>
-      | OpenAiClientError<"SearchVectorStore429", SearchVectorStore429>
+      | OpenAiClientError<"SearchVectorStore429", SearchVectorStore429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vectorStoreId: string,
       options: { readonly payload: typeof SearchVectorStoreRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<SearchVectorStore200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"SearchVectorStore400", SearchVectorStore400>
       | OpenAiClientError<"SearchVectorStore404", SearchVectorStore404>
-      | OpenAiClientError<"SearchVectorStore429", SearchVectorStore429>
+      | OpenAiClientError<"SearchVectorStore429", SearchVectorStore429>,
+      R
     >
   }
   /**
@@ -65456,21 +66149,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateConversationRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateConversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateConversation400", CreateConversation400>
       | OpenAiClientError<"CreateConversation429", CreateConversation429>
-      | OpenAiClientError<"CreateConversation500", CreateConversation500>
+      | OpenAiClientError<"CreateConversation500", CreateConversation500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateConversationRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateConversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateConversation400", CreateConversation400>
       | OpenAiClientError<"CreateConversation429", CreateConversation429>
-      | OpenAiClientError<"CreateConversation500", CreateConversation500>
+      | OpenAiClientError<"CreateConversation500", CreateConversation500>,
+      R
     >
   }
   /**
@@ -65482,20 +66179,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetConversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetConversation404", GetConversation404>
-      | OpenAiClientError<"GetConversation429", GetConversation429>
+      | OpenAiClientError<"GetConversation429", GetConversation429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetConversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetConversation404", GetConversation404>
-      | OpenAiClientError<"GetConversation429", GetConversation429>
+      | OpenAiClientError<"GetConversation429", GetConversation429>,
+      R
     >
   }
   /**
@@ -65507,24 +66208,28 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateConversationRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateConversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateConversation400", UpdateConversation400>
       | OpenAiClientError<"UpdateConversation404", UpdateConversation404>
       | OpenAiClientError<"UpdateConversation429", UpdateConversation429>
-      | OpenAiClientError<"UpdateConversation500", UpdateConversation500>
+      | OpenAiClientError<"UpdateConversation500", UpdateConversation500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
       options: { readonly payload: typeof UpdateConversationRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateConversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateConversation400", UpdateConversation400>
       | OpenAiClientError<"UpdateConversation404", UpdateConversation404>
       | OpenAiClientError<"UpdateConversation429", UpdateConversation429>
-      | OpenAiClientError<"UpdateConversation500", UpdateConversation500>
+      | OpenAiClientError<"UpdateConversation500", UpdateConversation500>,
+      R
     >
   }
   /**
@@ -65536,20 +66241,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteConversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteConversation404", DeleteConversation404>
-      | OpenAiClientError<"DeleteConversation429", DeleteConversation429>
+      | OpenAiClientError<"DeleteConversation429", DeleteConversation429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       conversationId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteConversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteConversation404", DeleteConversation404>
-      | OpenAiClientError<"DeleteConversation429", DeleteConversation429>
+      | OpenAiClientError<"DeleteConversation429", DeleteConversation429>,
+      R
     >
   }
   /**
@@ -65561,26 +66270,30 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getsafetycase200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getsafetycase400", Getsafetycase400>
       | OpenAiClientError<"Getsafetycase404", Getsafetycase404>
       | OpenAiClientError<"Getsafetycase429", Getsafetycase429>
       | OpenAiClientError<"Getsafetycase500", Getsafetycase500>
-      | OpenAiClientError<"Getsafetycase503", Getsafetycase503>
+      | OpenAiClientError<"Getsafetycase503", Getsafetycase503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       id: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Getsafetycase200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getsafetycase400", Getsafetycase400>
       | OpenAiClientError<"Getsafetycase404", Getsafetycase404>
       | OpenAiClientError<"Getsafetycase429", Getsafetycase429>
       | OpenAiClientError<"Getsafetycase500", Getsafetycase500>
-      | OpenAiClientError<"Getsafetycase503", Getsafetycase503>
+      | OpenAiClientError<"Getsafetycase503", Getsafetycase503>,
+      R
     >
   }
   /**
@@ -65592,24 +66305,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getprojectsafetyalert200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getprojectsafetyalert400", Getprojectsafetyalert400>
       | OpenAiClientError<"Getprojectsafetyalert404", Getprojectsafetyalert404>
       | OpenAiClientError<"Getprojectsafetyalert429", Getprojectsafetyalert429>
-      | OpenAiClientError<"Getprojectsafetyalert503", Getprojectsafetyalert503>
+      | OpenAiClientError<"Getprojectsafetyalert503", Getprojectsafetyalert503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       id: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Getprojectsafetyalert200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getprojectsafetyalert400", Getprojectsafetyalert400>
       | OpenAiClientError<"Getprojectsafetyalert404", Getprojectsafetyalert404>
       | OpenAiClientError<"Getprojectsafetyalert429", Getprojectsafetyalert429>
-      | OpenAiClientError<"Getprojectsafetyalert503", Getprojectsafetyalert503>
+      | OpenAiClientError<"Getprojectsafetyalert503", Getprojectsafetyalert503>,
+      R
     >
   }
   /**
@@ -65621,26 +66338,30 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DownloadLiveRecording400", DownloadLiveRecording400>
       | OpenAiClientError<"DownloadLiveRecording404", DownloadLiveRecording404>
       | OpenAiClientError<"DownloadLiveRecording429", DownloadLiveRecording429>
       | OpenAiClientError<"DownloadLiveRecording500", DownloadLiveRecording500>
-      | OpenAiClientError<"DownloadLiveRecording503", DownloadLiveRecording503>
+      | OpenAiClientError<"DownloadLiveRecording503", DownloadLiveRecording503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DownloadLiveRecording400", DownloadLiveRecording400>
       | OpenAiClientError<"DownloadLiveRecording404", DownloadLiveRecording404>
       | OpenAiClientError<"DownloadLiveRecording429", DownloadLiveRecording429>
       | OpenAiClientError<"DownloadLiveRecording500", DownloadLiveRecording500>
-      | OpenAiClientError<"DownloadLiveRecording503", DownloadLiveRecording503>
+      | OpenAiClientError<"DownloadLiveRecording503", DownloadLiveRecording503>,
+      R
     >
   }
   /**
@@ -65648,7 +66369,7 @@ export interface OpenAiClient {
    */
   readonly "downloadLiveRecordingStream": (
     sessionId: string
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Get Decisions API usage details for the organization.
    */
@@ -65657,11 +66378,13 @@ export interface OpenAiClient {
       options: { readonly params: typeof OrganizationDecisionsusageParams.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<OrganizationDecisionsusage200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"OrganizationDecisionsusage400", OrganizationDecisionsusage400>
       | OpenAiClientError<"OrganizationDecisionsusage403", OrganizationDecisionsusage403>
-      | OpenAiClientError<"OrganizationDecisionsusage429", OrganizationDecisionsusage429>
+      | OpenAiClientError<"OrganizationDecisionsusage429", OrganizationDecisionsusage429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -65670,11 +66393,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<OrganizationDecisionsusage200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"OrganizationDecisionsusage400", OrganizationDecisionsusage400>
       | OpenAiClientError<"OrganizationDecisionsusage403", OrganizationDecisionsusage403>
-      | OpenAiClientError<"OrganizationDecisionsusage429", OrganizationDecisionsusage429>
+      | OpenAiClientError<"OrganizationDecisionsusage429", OrganizationDecisionsusage429>,
+      R
     >
   }
   /**
@@ -65688,11 +66413,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Listexternalstorageconfigurations200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Listexternalstorageconfigurations400", Listexternalstorageconfigurations400>
       | OpenAiClientError<"Listexternalstorageconfigurations403", Listexternalstorageconfigurations403>
-      | OpenAiClientError<"Listexternalstorageconfigurations404", Listexternalstorageconfigurations404>
+      | OpenAiClientError<"Listexternalstorageconfigurations404", Listexternalstorageconfigurations404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -65701,11 +66428,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Listexternalstorageconfigurations200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Listexternalstorageconfigurations400", Listexternalstorageconfigurations400>
       | OpenAiClientError<"Listexternalstorageconfigurations403", Listexternalstorageconfigurations403>
-      | OpenAiClientError<"Listexternalstorageconfigurations404", Listexternalstorageconfigurations404>
+      | OpenAiClientError<"Listexternalstorageconfigurations404", Listexternalstorageconfigurations404>,
+      R
     >
   }
   /**
@@ -65719,12 +66448,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Createanexternalstorageconfiguration200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Createanexternalstorageconfiguration400", Createanexternalstorageconfiguration400>
       | OpenAiClientError<"Createanexternalstorageconfiguration403", Createanexternalstorageconfiguration403>
       | OpenAiClientError<"Createanexternalstorageconfiguration404", Createanexternalstorageconfiguration404>
-      | OpenAiClientError<"Createanexternalstorageconfiguration503", Createanexternalstorageconfiguration503>
+      | OpenAiClientError<"Createanexternalstorageconfiguration503", Createanexternalstorageconfiguration503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -65733,12 +66464,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Createanexternalstorageconfiguration200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Createanexternalstorageconfiguration400", Createanexternalstorageconfiguration400>
       | OpenAiClientError<"Createanexternalstorageconfiguration403", Createanexternalstorageconfiguration403>
       | OpenAiClientError<"Createanexternalstorageconfiguration404", Createanexternalstorageconfiguration404>
-      | OpenAiClientError<"Createanexternalstorageconfiguration503", Createanexternalstorageconfiguration503>
+      | OpenAiClientError<"Createanexternalstorageconfiguration503", Createanexternalstorageconfiguration503>,
+      R
     >
   }
   /**
@@ -65750,22 +66483,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getanexternalstorageconfiguration200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getanexternalstorageconfiguration400", Getanexternalstorageconfiguration400>
       | OpenAiClientError<"Getanexternalstorageconfiguration403", Getanexternalstorageconfiguration403>
-      | OpenAiClientError<"Getanexternalstorageconfiguration404", Getanexternalstorageconfiguration404>
+      | OpenAiClientError<"Getanexternalstorageconfiguration404", Getanexternalstorageconfiguration404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       externalStorageId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Getanexternalstorageconfiguration200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getanexternalstorageconfiguration400", Getanexternalstorageconfiguration400>
       | OpenAiClientError<"Getanexternalstorageconfiguration403", Getanexternalstorageconfiguration403>
-      | OpenAiClientError<"Getanexternalstorageconfiguration404", Getanexternalstorageconfiguration404>
+      | OpenAiClientError<"Getanexternalstorageconfiguration404", Getanexternalstorageconfiguration404>,
+      R
     >
   }
   /**
@@ -65777,22 +66514,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Deleteanexternalstorageconfiguration200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteanexternalstorageconfiguration400", Deleteanexternalstorageconfiguration400>
       | OpenAiClientError<"Deleteanexternalstorageconfiguration403", Deleteanexternalstorageconfiguration403>
-      | OpenAiClientError<"Deleteanexternalstorageconfiguration404", Deleteanexternalstorageconfiguration404>
+      | OpenAiClientError<"Deleteanexternalstorageconfiguration404", Deleteanexternalstorageconfiguration404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       externalStorageId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Deleteanexternalstorageconfiguration200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteanexternalstorageconfiguration400", Deleteanexternalstorageconfiguration400>
       | OpenAiClientError<"Deleteanexternalstorageconfiguration403", Deleteanexternalstorageconfiguration403>
-      | OpenAiClientError<"Deleteanexternalstorageconfiguration404", Deleteanexternalstorageconfiguration404>
+      | OpenAiClientError<"Deleteanexternalstorageconfiguration404", Deleteanexternalstorageconfiguration404>,
+      R
     >
   }
   /**
@@ -65804,24 +66545,28 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Validateanexternalstorageconfiguration200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Validateanexternalstorageconfiguration400", Validateanexternalstorageconfiguration400>
       | OpenAiClientError<"Validateanexternalstorageconfiguration403", Validateanexternalstorageconfiguration403>
       | OpenAiClientError<"Validateanexternalstorageconfiguration404", Validateanexternalstorageconfiguration404>
-      | OpenAiClientError<"Validateanexternalstorageconfiguration503", Validateanexternalstorageconfiguration503>
+      | OpenAiClientError<"Validateanexternalstorageconfiguration503", Validateanexternalstorageconfiguration503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       externalStorageId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Validateanexternalstorageconfiguration200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Validateanexternalstorageconfiguration400", Validateanexternalstorageconfiguration400>
       | OpenAiClientError<"Validateanexternalstorageconfiguration403", Validateanexternalstorageconfiguration403>
       | OpenAiClientError<"Validateanexternalstorageconfiguration404", Validateanexternalstorageconfiguration404>
-      | OpenAiClientError<"Validateanexternalstorageconfiguration503", Validateanexternalstorageconfiguration503>
+      | OpenAiClientError<"Validateanexternalstorageconfiguration503", Validateanexternalstorageconfiguration503>,
+      R
     >
   }
   /**
@@ -65832,19 +66577,23 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getorganizationspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getorganizationspendlimit403", Getorganizationspendlimit403>
-      | OpenAiClientError<"Getorganizationspendlimit404", Getorganizationspendlimit404>
+      | OpenAiClientError<"Getorganizationspendlimit404", Getorganizationspendlimit404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Getorganizationspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getorganizationspendlimit403", Getorganizationspendlimit403>
-      | OpenAiClientError<"Getorganizationspendlimit404", Getorganizationspendlimit404>
+      | OpenAiClientError<"Getorganizationspendlimit404", Getorganizationspendlimit404>,
+      R
     >
   }
   /**
@@ -65855,10 +66604,12 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateorganizationspendlimitRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Updateorganizationspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Updateorganizationspendlimit400", Updateorganizationspendlimit400>
-      | OpenAiClientError<"Updateorganizationspendlimit403", Updateorganizationspendlimit403>
+      | OpenAiClientError<"Updateorganizationspendlimit403", Updateorganizationspendlimit403>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -65867,10 +66618,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Updateorganizationspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Updateorganizationspendlimit400", Updateorganizationspendlimit400>
-      | OpenAiClientError<"Updateorganizationspendlimit403", Updateorganizationspendlimit403>
+      | OpenAiClientError<"Updateorganizationspendlimit403", Updateorganizationspendlimit403>,
+      R
     >
   }
   /**
@@ -65881,19 +66634,23 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Deleteorganizationspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteorganizationspendlimit403", Deleteorganizationspendlimit403>
-      | OpenAiClientError<"Deleteorganizationspendlimit404", Deleteorganizationspendlimit404>
+      | OpenAiClientError<"Deleteorganizationspendlimit404", Deleteorganizationspendlimit404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Deleteorganizationspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteorganizationspendlimit403", Deleteorganizationspendlimit403>
-      | OpenAiClientError<"Deleteorganizationspendlimit404", Deleteorganizationspendlimit404>
+      | OpenAiClientError<"Deleteorganizationspendlimit404", Deleteorganizationspendlimit404>,
+      R
     >
   }
   /**
@@ -65905,22 +66662,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getprojectspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getprojectspendlimit400", Getprojectspendlimit400>
       | OpenAiClientError<"Getprojectspendlimit403", Getprojectspendlimit403>
-      | OpenAiClientError<"Getprojectspendlimit404", Getprojectspendlimit404>
+      | OpenAiClientError<"Getprojectspendlimit404", Getprojectspendlimit404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Getprojectspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getprojectspendlimit400", Getprojectspendlimit400>
       | OpenAiClientError<"Getprojectspendlimit403", Getprojectspendlimit403>
-      | OpenAiClientError<"Getprojectspendlimit404", Getprojectspendlimit404>
+      | OpenAiClientError<"Getprojectspendlimit404", Getprojectspendlimit404>,
+      R
     >
   }
   /**
@@ -65932,11 +66693,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateprojectspendlimitRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Updateprojectspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Updateprojectspendlimit400", Updateprojectspendlimit400>
       | OpenAiClientError<"Updateprojectspendlimit403", Updateprojectspendlimit403>
-      | OpenAiClientError<"Updateprojectspendlimit404", Updateprojectspendlimit404>
+      | OpenAiClientError<"Updateprojectspendlimit404", Updateprojectspendlimit404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -65946,11 +66709,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Updateprojectspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Updateprojectspendlimit400", Updateprojectspendlimit400>
       | OpenAiClientError<"Updateprojectspendlimit403", Updateprojectspendlimit403>
-      | OpenAiClientError<"Updateprojectspendlimit404", Updateprojectspendlimit404>
+      | OpenAiClientError<"Updateprojectspendlimit404", Updateprojectspendlimit404>,
+      R
     >
   }
   /**
@@ -65962,22 +66727,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Deleteprojectspendlimit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteprojectspendlimit400", Deleteprojectspendlimit400>
       | OpenAiClientError<"Deleteprojectspendlimit403", Deleteprojectspendlimit403>
-      | OpenAiClientError<"Deleteprojectspendlimit404", Deleteprojectspendlimit404>
+      | OpenAiClientError<"Deleteprojectspendlimit404", Deleteprojectspendlimit404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Deleteprojectspendlimit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Deleteprojectspendlimit400", Deleteprojectspendlimit400>
       | OpenAiClientError<"Deleteprojectspendlimit403", Deleteprojectspendlimit403>
-      | OpenAiClientError<"Deleteprojectspendlimit404", Deleteprojectspendlimit404>
+      | OpenAiClientError<"Deleteprojectspendlimit404", Deleteprojectspendlimit404>,
+      R
     >
   }
   /**
@@ -65990,13 +66759,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateanAPIkeyforaserviceaccountRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateanAPIkeyforaserviceaccount200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount400", CreateanAPIkeyforaserviceaccount400>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount403", CreateanAPIkeyforaserviceaccount403>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount404", CreateanAPIkeyforaserviceaccount404>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount409", CreateanAPIkeyforaserviceaccount409>
-      | OpenAiClientError<"CreateanAPIkeyforaserviceaccount429", CreateanAPIkeyforaserviceaccount429>
+      | OpenAiClientError<"CreateanAPIkeyforaserviceaccount429", CreateanAPIkeyforaserviceaccount429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       projectId: string,
@@ -66007,13 +66778,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateanAPIkeyforaserviceaccount200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount400", CreateanAPIkeyforaserviceaccount400>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount403", CreateanAPIkeyforaserviceaccount403>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount404", CreateanAPIkeyforaserviceaccount404>
       | OpenAiClientError<"CreateanAPIkeyforaserviceaccount409", CreateanAPIkeyforaserviceaccount409>
-      | OpenAiClientError<"CreateanAPIkeyforaserviceaccount429", CreateanAPIkeyforaserviceaccount429>
+      | OpenAiClientError<"CreateanAPIkeyforaserviceaccount429", CreateanAPIkeyforaserviceaccount429>,
+      R
     >
   }
   /**
@@ -66026,13 +66799,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreatecontentprovenancecheckRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Createcontentprovenancecheck200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Createcontentprovenancecheck400", Createcontentprovenancecheck400>
       | OpenAiClientError<"Createcontentprovenancecheck404", Createcontentprovenancecheck404>
       | OpenAiClientError<"Createcontentprovenancecheck429", Createcontentprovenancecheck429>
       | OpenAiClientError<"Createcontentprovenancecheck500", Createcontentprovenancecheck500>
-      | OpenAiClientError<"Createcontentprovenancecheck503", Createcontentprovenancecheck503>
+      | OpenAiClientError<"Createcontentprovenancecheck503", Createcontentprovenancecheck503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66041,13 +66816,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<Createcontentprovenancecheck200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Createcontentprovenancecheck400", Createcontentprovenancecheck400>
       | OpenAiClientError<"Createcontentprovenancecheck404", Createcontentprovenancecheck404>
       | OpenAiClientError<"Createcontentprovenancecheck429", Createcontentprovenancecheck429>
       | OpenAiClientError<"Createcontentprovenancecheck500", Createcontentprovenancecheck500>
-      | OpenAiClientError<"Createcontentprovenancecheck503", Createcontentprovenancecheck503>
+      | OpenAiClientError<"Createcontentprovenancecheck503", Createcontentprovenancecheck503>,
+      R
     >
   }
   /**
@@ -66058,10 +66835,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVideosParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVideos200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVideos400", ListVideos400>
-      | OpenAiClientError<"ListVideos404", ListVideos404>
+      | OpenAiClientError<"ListVideos404", ListVideos404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -66069,10 +66848,12 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVideos200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVideos400", ListVideos400>
-      | OpenAiClientError<"ListVideos404", ListVideos404>
+      | OpenAiClientError<"ListVideos404", ListVideos404>,
+      R
     >
   }
   /**
@@ -66083,25 +66864,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVideoRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideo200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideo400", CreateVideo400>
       | OpenAiClientError<"CreateVideo404", CreateVideo404>
       | OpenAiClientError<"CreateVideo429", CreateVideo429>
       | OpenAiClientError<"CreateVideo500", CreateVideo500>
-      | OpenAiClientError<"CreateVideo503", CreateVideo503>
+      | OpenAiClientError<"CreateVideo503", CreateVideo503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateVideoRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideo200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideo400", CreateVideo400>
       | OpenAiClientError<"CreateVideo404", CreateVideo404>
       | OpenAiClientError<"CreateVideo429", CreateVideo429>
       | OpenAiClientError<"CreateVideo500", CreateVideo500>
-      | OpenAiClientError<"CreateVideo503", CreateVideo503>
+      | OpenAiClientError<"CreateVideo503", CreateVideo503>,
+      R
     >
   }
   /**
@@ -66112,12 +66897,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVideoCharacterRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoCharacter200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoCharacter400", CreateVideoCharacter400>
       | OpenAiClientError<"CreateVideoCharacter404", CreateVideoCharacter404>
       | OpenAiClientError<"CreateVideoCharacter500", CreateVideoCharacter500>
-      | OpenAiClientError<"CreateVideoCharacter504", CreateVideoCharacter504>
+      | OpenAiClientError<"CreateVideoCharacter504", CreateVideoCharacter504>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66126,12 +66913,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoCharacter200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoCharacter400", CreateVideoCharacter400>
       | OpenAiClientError<"CreateVideoCharacter404", CreateVideoCharacter404>
       | OpenAiClientError<"CreateVideoCharacter500", CreateVideoCharacter500>
-      | OpenAiClientError<"CreateVideoCharacter504", CreateVideoCharacter504>
+      | OpenAiClientError<"CreateVideoCharacter504", CreateVideoCharacter504>,
+      R
     >
   }
   /**
@@ -66143,20 +66932,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVideoCharacter200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVideoCharacter400", GetVideoCharacter400>
-      | OpenAiClientError<"GetVideoCharacter404", GetVideoCharacter404>
+      | OpenAiClientError<"GetVideoCharacter404", GetVideoCharacter404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       characterId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVideoCharacter200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVideoCharacter400", GetVideoCharacter400>
-      | OpenAiClientError<"GetVideoCharacter404", GetVideoCharacter404>
+      | OpenAiClientError<"GetVideoCharacter404", GetVideoCharacter404>,
+      R
     >
   }
   /**
@@ -66167,25 +66960,29 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVideoEditRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoEdit200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoEdit400", CreateVideoEdit400>
       | OpenAiClientError<"CreateVideoEdit404", CreateVideoEdit404>
       | OpenAiClientError<"CreateVideoEdit429", CreateVideoEdit429>
       | OpenAiClientError<"CreateVideoEdit500", CreateVideoEdit500>
-      | OpenAiClientError<"CreateVideoEdit503", CreateVideoEdit503>
+      | OpenAiClientError<"CreateVideoEdit503", CreateVideoEdit503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateVideoEditRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoEdit200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoEdit400", CreateVideoEdit400>
       | OpenAiClientError<"CreateVideoEdit404", CreateVideoEdit404>
       | OpenAiClientError<"CreateVideoEdit429", CreateVideoEdit429>
       | OpenAiClientError<"CreateVideoEdit500", CreateVideoEdit500>
-      | OpenAiClientError<"CreateVideoEdit503", CreateVideoEdit503>
+      | OpenAiClientError<"CreateVideoEdit503", CreateVideoEdit503>,
+      R
     >
   }
   /**
@@ -66196,13 +66993,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVideoExtendRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoExtend200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoExtend400", CreateVideoExtend400>
       | OpenAiClientError<"CreateVideoExtend404", CreateVideoExtend404>
       | OpenAiClientError<"CreateVideoExtend429", CreateVideoExtend429>
       | OpenAiClientError<"CreateVideoExtend500", CreateVideoExtend500>
-      | OpenAiClientError<"CreateVideoExtend503", CreateVideoExtend503>
+      | OpenAiClientError<"CreateVideoExtend503", CreateVideoExtend503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66211,13 +67010,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoExtend200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoExtend400", CreateVideoExtend400>
       | OpenAiClientError<"CreateVideoExtend404", CreateVideoExtend404>
       | OpenAiClientError<"CreateVideoExtend429", CreateVideoExtend429>
       | OpenAiClientError<"CreateVideoExtend500", CreateVideoExtend500>
-      | OpenAiClientError<"CreateVideoExtend503", CreateVideoExtend503>
+      | OpenAiClientError<"CreateVideoExtend503", CreateVideoExtend503>,
+      R
     >
   }
   /**
@@ -66229,20 +67030,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetVideo200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVideo400", GetVideo400>
-      | OpenAiClientError<"GetVideo404", GetVideo404>
+      | OpenAiClientError<"GetVideo404", GetVideo404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       videoId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetVideo200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetVideo400", GetVideo400>
-      | OpenAiClientError<"GetVideo404", GetVideo404>
+      | OpenAiClientError<"GetVideo404", GetVideo404>,
+      R
     >
   }
   /**
@@ -66254,22 +67059,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVideo200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVideo400", DeleteVideo400>
       | OpenAiClientError<"DeleteVideo404", DeleteVideo404>
-      | OpenAiClientError<"DeleteVideo500", DeleteVideo500>
+      | OpenAiClientError<"DeleteVideo500", DeleteVideo500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       videoId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVideo200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVideo400", DeleteVideo400>
       | OpenAiClientError<"DeleteVideo404", DeleteVideo404>
-      | OpenAiClientError<"DeleteVideo500", DeleteVideo500>
+      | OpenAiClientError<"DeleteVideo500", DeleteVideo500>,
+      R
     >
   }
   /**
@@ -66283,11 +67092,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof RetrieveVideoContentParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVideoContent400", RetrieveVideoContent400>
       | OpenAiClientError<"RetrieveVideoContent404", RetrieveVideoContent404>
-      | OpenAiClientError<"RetrieveVideoContent500", RetrieveVideoContent500>
+      | OpenAiClientError<"RetrieveVideoContent500", RetrieveVideoContent500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       videoId: string,
@@ -66297,11 +67108,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVideoContent400", RetrieveVideoContent400>
       | OpenAiClientError<"RetrieveVideoContent404", RetrieveVideoContent404>
-      | OpenAiClientError<"RetrieveVideoContent500", RetrieveVideoContent500>
+      | OpenAiClientError<"RetrieveVideoContent500", RetrieveVideoContent500>,
+      R
     >
   }
   /**
@@ -66312,7 +67125,7 @@ export interface OpenAiClient {
   readonly "RetrieveVideoContentStream": (
     videoId: string,
     options: { readonly params?: typeof RetrieveVideoContentParams.Encoded | undefined } | undefined
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Create a remix of a completed video using a refreshed prompt.
    */
@@ -66322,13 +67135,15 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVideoRemixRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoRemix200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoRemix400", CreateVideoRemix400>
       | OpenAiClientError<"CreateVideoRemix404", CreateVideoRemix404>
       | OpenAiClientError<"CreateVideoRemix429", CreateVideoRemix429>
       | OpenAiClientError<"CreateVideoRemix500", CreateVideoRemix500>
-      | OpenAiClientError<"CreateVideoRemix503", CreateVideoRemix503>
+      | OpenAiClientError<"CreateVideoRemix503", CreateVideoRemix503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       videoId: string,
@@ -66338,13 +67153,15 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVideoRemix200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVideoRemix400", CreateVideoRemix400>
       | OpenAiClientError<"CreateVideoRemix404", CreateVideoRemix404>
       | OpenAiClientError<"CreateVideoRemix429", CreateVideoRemix429>
       | OpenAiClientError<"CreateVideoRemix500", CreateVideoRemix500>
-      | OpenAiClientError<"CreateVideoRemix503", CreateVideoRemix503>
+      | OpenAiClientError<"CreateVideoRemix503", CreateVideoRemix503>,
+      R
     >
   }
   /**
@@ -66357,19 +67174,23 @@ export interface OpenAiClient {
       options: { readonly payload: typeof GetinputtokencountsRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Getinputtokencounts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getinputtokencounts400", Getinputtokencounts400>
-      | OpenAiClientError<"Getinputtokencounts429", Getinputtokencounts429>
+      | OpenAiClientError<"Getinputtokencounts429", Getinputtokencounts429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof GetinputtokencountsRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<Getinputtokencounts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Getinputtokencounts400", Getinputtokencounts400>
-      | OpenAiClientError<"Getinputtokencounts429", Getinputtokencounts429>
+      | OpenAiClientError<"Getinputtokencounts429", Getinputtokencounts429>,
+      R
     >
   }
   /**
@@ -66382,21 +67203,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CompactconversationRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Compactconversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Compactconversation400", Compactconversation400>
       | OpenAiClientError<"Compactconversation429", Compactconversation429>
-      | OpenAiClientError<"Compactconversation503", Compactconversation503>
+      | OpenAiClientError<"Compactconversation503", Compactconversation503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CompactconversationRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<Compactconversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"Compactconversation400", Compactconversation400>
       | OpenAiClientError<"Compactconversation429", Compactconversation429>
-      | OpenAiClientError<"Compactconversation503", Compactconversation503>
+      | OpenAiClientError<"Compactconversation503", Compactconversation503>,
+      R
     >
   }
   /**
@@ -66407,10 +67232,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListSkillsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListSkills200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListSkills404", ListSkills404>
-      | OpenAiClientError<"ListSkills429", ListSkills429>
+      | OpenAiClientError<"ListSkills429", ListSkills429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -66418,10 +67245,12 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListSkills200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListSkills404", ListSkills404>
-      | OpenAiClientError<"ListSkills429", ListSkills429>
+      | OpenAiClientError<"ListSkills429", ListSkills429>,
+      R
     >
   }
   /**
@@ -66432,21 +67261,25 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateSkillRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkill200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSkill400", CreateSkill400>
       | OpenAiClientError<"CreateSkill429", CreateSkill429>
-      | OpenAiClientError<"CreateSkill500", CreateSkill500>
+      | OpenAiClientError<"CreateSkill500", CreateSkill500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateSkillRequestFormData.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkill200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSkill400", CreateSkill400>
       | OpenAiClientError<"CreateSkill429", CreateSkill429>
-      | OpenAiClientError<"CreateSkill500", CreateSkill500>
+      | OpenAiClientError<"CreateSkill500", CreateSkill500>,
+      R
     >
   }
   /**
@@ -66458,20 +67291,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetSkill200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkill404", GetSkill404>
-      | OpenAiClientError<"GetSkill429", GetSkill429>
+      | OpenAiClientError<"GetSkill429", GetSkill429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetSkill200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkill404", GetSkill404>
-      | OpenAiClientError<"GetSkill429", GetSkill429>
+      | OpenAiClientError<"GetSkill429", GetSkill429>,
+      R
     >
   }
   /**
@@ -66483,11 +67320,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateSkillDefaultVersionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateSkillDefaultVersion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateSkillDefaultVersion400", UpdateSkillDefaultVersion400>
       | OpenAiClientError<"UpdateSkillDefaultVersion404", UpdateSkillDefaultVersion404>
-      | OpenAiClientError<"UpdateSkillDefaultVersion429", UpdateSkillDefaultVersion429>
+      | OpenAiClientError<"UpdateSkillDefaultVersion429", UpdateSkillDefaultVersion429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66497,11 +67336,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateSkillDefaultVersion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateSkillDefaultVersion400", UpdateSkillDefaultVersion400>
       | OpenAiClientError<"UpdateSkillDefaultVersion404", UpdateSkillDefaultVersion404>
-      | OpenAiClientError<"UpdateSkillDefaultVersion429", UpdateSkillDefaultVersion429>
+      | OpenAiClientError<"UpdateSkillDefaultVersion429", UpdateSkillDefaultVersion429>,
+      R
     >
   }
   /**
@@ -66513,20 +67354,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkill200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteSkill404", DeleteSkill404>
-      | OpenAiClientError<"DeleteSkill429", DeleteSkill429>
+      | OpenAiClientError<"DeleteSkill429", DeleteSkill429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkill200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteSkill404", DeleteSkill404>
-      | OpenAiClientError<"DeleteSkill429", DeleteSkill429>
+      | OpenAiClientError<"DeleteSkill429", DeleteSkill429>,
+      R
     >
   }
   /**
@@ -66538,26 +67383,32 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillContent404", GetSkillContent404>
-      | OpenAiClientError<"GetSkillContent429", GetSkillContent429>
+      | OpenAiClientError<"GetSkillContent429", GetSkillContent429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillContent404", GetSkillContent404>
-      | OpenAiClientError<"GetSkillContent429", GetSkillContent429>
+      | OpenAiClientError<"GetSkillContent429", GetSkillContent429>,
+      R
     >
   }
   /**
    * Download a skill zip bundle by its ID.
    */
-  readonly "GetSkillContentStream": (skillId: string) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  readonly "GetSkillContentStream": (
+    skillId: string
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * List skill versions for a skill.
    */
@@ -66567,11 +67418,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListSkillVersionsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListSkillVersions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListSkillVersions400", ListSkillVersions400>
       | OpenAiClientError<"ListSkillVersions404", ListSkillVersions404>
-      | OpenAiClientError<"ListSkillVersions429", ListSkillVersions429>
+      | OpenAiClientError<"ListSkillVersions429", ListSkillVersions429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66581,11 +67434,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListSkillVersions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListSkillVersions400", ListSkillVersions400>
       | OpenAiClientError<"ListSkillVersions404", ListSkillVersions404>
-      | OpenAiClientError<"ListSkillVersions429", ListSkillVersions429>
+      | OpenAiClientError<"ListSkillVersions429", ListSkillVersions429>,
+      R
     >
   }
   /**
@@ -66597,12 +67452,14 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateSkillVersionRequestFormData.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillVersion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSkillVersion400", CreateSkillVersion400>
       | OpenAiClientError<"CreateSkillVersion404", CreateSkillVersion404>
       | OpenAiClientError<"CreateSkillVersion429", CreateSkillVersion429>
-      | OpenAiClientError<"CreateSkillVersion500", CreateSkillVersion500>
+      | OpenAiClientError<"CreateSkillVersion500", CreateSkillVersion500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66612,12 +67469,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateSkillVersion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateSkillVersion400", CreateSkillVersion400>
       | OpenAiClientError<"CreateSkillVersion404", CreateSkillVersion404>
       | OpenAiClientError<"CreateSkillVersion429", CreateSkillVersion429>
-      | OpenAiClientError<"CreateSkillVersion500", CreateSkillVersion500>
+      | OpenAiClientError<"CreateSkillVersion500", CreateSkillVersion500>,
+      R
     >
   }
   /**
@@ -66630,11 +67489,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetSkillVersion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillVersion400", GetSkillVersion400>
       | OpenAiClientError<"GetSkillVersion404", GetSkillVersion404>
-      | OpenAiClientError<"GetSkillVersion429", GetSkillVersion429>
+      | OpenAiClientError<"GetSkillVersion429", GetSkillVersion429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66642,11 +67503,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetSkillVersion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillVersion400", GetSkillVersion400>
       | OpenAiClientError<"GetSkillVersion404", GetSkillVersion404>
-      | OpenAiClientError<"GetSkillVersion429", GetSkillVersion429>
+      | OpenAiClientError<"GetSkillVersion429", GetSkillVersion429>,
+      R
     >
   }
   /**
@@ -66659,11 +67522,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillVersion200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteSkillVersion400", DeleteSkillVersion400>
       | OpenAiClientError<"DeleteSkillVersion404", DeleteSkillVersion404>
-      | OpenAiClientError<"DeleteSkillVersion429", DeleteSkillVersion429>
+      | OpenAiClientError<"DeleteSkillVersion429", DeleteSkillVersion429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66671,11 +67536,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteSkillVersion200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteSkillVersion400", DeleteSkillVersion400>
       | OpenAiClientError<"DeleteSkillVersion404", DeleteSkillVersion404>
-      | OpenAiClientError<"DeleteSkillVersion429", DeleteSkillVersion429>
+      | OpenAiClientError<"DeleteSkillVersion429", DeleteSkillVersion429>,
+      R
     >
   }
   /**
@@ -66688,11 +67555,13 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillVersionContent400", GetSkillVersionContent400>
       | OpenAiClientError<"GetSkillVersionContent404", GetSkillVersionContent404>
-      | OpenAiClientError<"GetSkillVersionContent429", GetSkillVersionContent429>
+      | OpenAiClientError<"GetSkillVersionContent429", GetSkillVersionContent429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       skillId: string,
@@ -66700,11 +67569,13 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetSkillVersionContent400", GetSkillVersionContent400>
       | OpenAiClientError<"GetSkillVersionContent404", GetSkillVersionContent404>
-      | OpenAiClientError<"GetSkillVersionContent429", GetSkillVersionContent429>
+      | OpenAiClientError<"GetSkillVersionContent429", GetSkillVersionContent429>,
+      R
     >
   }
   /**
@@ -66713,7 +67584,7 @@ export interface OpenAiClient {
   readonly "GetSkillVersionContentStream": (
     skillId: string,
     version: string
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Cancel an active ChatKit session and return its most recent metadata.
    *
@@ -66725,22 +67596,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CancelChatSessionMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelChatSessionMethod400", CancelChatSessionMethod400>
       | OpenAiClientError<"CancelChatSessionMethod404", CancelChatSessionMethod404>
-      | OpenAiClientError<"CancelChatSessionMethod429", CancelChatSessionMethod429>
+      | OpenAiClientError<"CancelChatSessionMethod429", CancelChatSessionMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<CancelChatSessionMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CancelChatSessionMethod400", CancelChatSessionMethod400>
       | OpenAiClientError<"CancelChatSessionMethod404", CancelChatSessionMethod404>
-      | OpenAiClientError<"CancelChatSessionMethod429", CancelChatSessionMethod429>
+      | OpenAiClientError<"CancelChatSessionMethod429", CancelChatSessionMethod429>,
+      R
     >
   }
   /**
@@ -66751,11 +67626,13 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateChatSessionMethodRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateChatSessionMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateChatSessionMethod400", CreateChatSessionMethod400>
       | OpenAiClientError<"CreateChatSessionMethod404", CreateChatSessionMethod404>
-      | OpenAiClientError<"CreateChatSessionMethod429", CreateChatSessionMethod429>
+      | OpenAiClientError<"CreateChatSessionMethod429", CreateChatSessionMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66764,11 +67641,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateChatSessionMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateChatSessionMethod400", CreateChatSessionMethod400>
       | OpenAiClientError<"CreateChatSessionMethod404", CreateChatSessionMethod404>
-      | OpenAiClientError<"CreateChatSessionMethod429", CreateChatSessionMethod429>
+      | OpenAiClientError<"CreateChatSessionMethod429", CreateChatSessionMethod429>,
+      R
     >
   }
   /**
@@ -66780,11 +67659,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListThreadItemsMethodParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListThreadItemsMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListThreadItemsMethod400", ListThreadItemsMethod400>
       | OpenAiClientError<"ListThreadItemsMethod404", ListThreadItemsMethod404>
-      | OpenAiClientError<"ListThreadItemsMethod429", ListThreadItemsMethod429>
+      | OpenAiClientError<"ListThreadItemsMethod429", ListThreadItemsMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
@@ -66794,11 +67675,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListThreadItemsMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListThreadItemsMethod400", ListThreadItemsMethod400>
       | OpenAiClientError<"ListThreadItemsMethod404", ListThreadItemsMethod404>
-      | OpenAiClientError<"ListThreadItemsMethod429", ListThreadItemsMethod429>
+      | OpenAiClientError<"ListThreadItemsMethod429", ListThreadItemsMethod429>,
+      R
     >
   }
   /**
@@ -66810,22 +67693,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<GetThreadMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetThreadMethod400", GetThreadMethod400>
       | OpenAiClientError<"GetThreadMethod404", GetThreadMethod404>
-      | OpenAiClientError<"GetThreadMethod429", GetThreadMethod429>
+      | OpenAiClientError<"GetThreadMethod429", GetThreadMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<GetThreadMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"GetThreadMethod400", GetThreadMethod400>
       | OpenAiClientError<"GetThreadMethod404", GetThreadMethod404>
-      | OpenAiClientError<"GetThreadMethod429", GetThreadMethod429>
+      | OpenAiClientError<"GetThreadMethod429", GetThreadMethod429>,
+      R
     >
   }
   /**
@@ -66837,22 +67724,26 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteThreadMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteThreadMethod400", DeleteThreadMethod400>
       | OpenAiClientError<"DeleteThreadMethod404", DeleteThreadMethod404>
-      | OpenAiClientError<"DeleteThreadMethod429", DeleteThreadMethod429>
+      | OpenAiClientError<"DeleteThreadMethod429", DeleteThreadMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       threadId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteThreadMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteThreadMethod400", DeleteThreadMethod400>
       | OpenAiClientError<"DeleteThreadMethod404", DeleteThreadMethod404>
-      | OpenAiClientError<"DeleteThreadMethod429", DeleteThreadMethod429>
+      | OpenAiClientError<"DeleteThreadMethod429", DeleteThreadMethod429>,
+      R
     >
   }
   /**
@@ -66863,11 +67754,13 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListThreadsMethodParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListThreadsMethod200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListThreadsMethod400", ListThreadsMethod400>
       | OpenAiClientError<"ListThreadsMethod404", ListThreadsMethod404>
-      | OpenAiClientError<"ListThreadsMethod429", ListThreadsMethod429>
+      | OpenAiClientError<"ListThreadsMethod429", ListThreadsMethod429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66876,11 +67769,13 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListThreadsMethod200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListThreadsMethod400", ListThreadsMethod400>
       | OpenAiClientError<"ListThreadsMethod404", ListThreadsMethod404>
-      | OpenAiClientError<"ListThreadsMethod429", ListThreadsMethod429>
+      | OpenAiClientError<"ListThreadsMethod429", ListThreadsMethod429>,
+      R
     >
   }
   /**
@@ -66893,12 +67788,17 @@ export interface OpenAiClient {
   readonly "createDecision": {
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateDecisionRequestJson.Encoded; readonly config: Config }
-    ): Effect.Effect<WithOptionalResponse<CreateDecision200, Config>, HttpClientError.HttpClientError | SchemaError>
+    ): Effect.Effect<
+      WithOptionalResponse<CreateDecision200, Config>,
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
+    >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateDecisionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateDecision200, Config | undefined>,
-      HttpClientError.HttpClientError | SchemaError
+      E | HttpClientError.HttpClientError | SchemaError,
+      R
     >
   }
   /**
@@ -66909,6 +67809,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentEnvironmentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironments200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironments400", ListAgentEnvironments400>
@@ -66917,7 +67818,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironments404", ListAgentEnvironments404>
       | OpenAiClientError<"ListAgentEnvironments409", ListAgentEnvironments409>
       | OpenAiClientError<"ListAgentEnvironments500", ListAgentEnvironments500>
-      | OpenAiClientError<"ListAgentEnvironments503", ListAgentEnvironments503>
+      | OpenAiClientError<"ListAgentEnvironments503", ListAgentEnvironments503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66926,6 +67828,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironments200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironments400", ListAgentEnvironments400>
@@ -66934,7 +67837,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironments404", ListAgentEnvironments404>
       | OpenAiClientError<"ListAgentEnvironments409", ListAgentEnvironments409>
       | OpenAiClientError<"ListAgentEnvironments500", ListAgentEnvironments500>
-      | OpenAiClientError<"ListAgentEnvironments503", ListAgentEnvironments503>
+      | OpenAiClientError<"ListAgentEnvironments503", ListAgentEnvironments503>,
+      R
     >
   }
   /**
@@ -66949,6 +67853,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironment201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironment400", CreateAgentEnvironment400>
@@ -66958,7 +67863,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironment409", CreateAgentEnvironment409>
       | OpenAiClientError<"CreateAgentEnvironment429", CreateAgentEnvironment429>
       | OpenAiClientError<"CreateAgentEnvironment500", CreateAgentEnvironment500>
-      | OpenAiClientError<"CreateAgentEnvironment503", CreateAgentEnvironment503>
+      | OpenAiClientError<"CreateAgentEnvironment503", CreateAgentEnvironment503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -66968,6 +67874,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironment201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironment400", CreateAgentEnvironment400>
@@ -66977,7 +67884,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironment409", CreateAgentEnvironment409>
       | OpenAiClientError<"CreateAgentEnvironment429", CreateAgentEnvironment429>
       | OpenAiClientError<"CreateAgentEnvironment500", CreateAgentEnvironment500>
-      | OpenAiClientError<"CreateAgentEnvironment503", CreateAgentEnvironment503>
+      | OpenAiClientError<"CreateAgentEnvironment503", CreateAgentEnvironment503>,
+      R
     >
   }
   /**
@@ -66989,6 +67897,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentEnvironment200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentEnvironment400", RetrieveAgentEnvironment400>
@@ -66997,13 +67906,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentEnvironment404", RetrieveAgentEnvironment404>
       | OpenAiClientError<"RetrieveAgentEnvironment409", RetrieveAgentEnvironment409>
       | OpenAiClientError<"RetrieveAgentEnvironment500", RetrieveAgentEnvironment500>
-      | OpenAiClientError<"RetrieveAgentEnvironment503", RetrieveAgentEnvironment503>
+      | OpenAiClientError<"RetrieveAgentEnvironment503", RetrieveAgentEnvironment503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentEnvironment200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentEnvironment400", RetrieveAgentEnvironment400>
@@ -67012,7 +67923,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentEnvironment404", RetrieveAgentEnvironment404>
       | OpenAiClientError<"RetrieveAgentEnvironment409", RetrieveAgentEnvironment409>
       | OpenAiClientError<"RetrieveAgentEnvironment500", RetrieveAgentEnvironment500>
-      | OpenAiClientError<"RetrieveAgentEnvironment503", RetrieveAgentEnvironment503>
+      | OpenAiClientError<"RetrieveAgentEnvironment503", RetrieveAgentEnvironment503>,
+      R
     >
   }
   /**
@@ -67024,6 +67936,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentEnvironmentFilesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironmentFiles200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironmentFiles400", ListAgentEnvironmentFiles400>
@@ -67032,7 +67945,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironmentFiles404", ListAgentEnvironmentFiles404>
       | OpenAiClientError<"ListAgentEnvironmentFiles409", ListAgentEnvironmentFiles409>
       | OpenAiClientError<"ListAgentEnvironmentFiles500", ListAgentEnvironmentFiles500>
-      | OpenAiClientError<"ListAgentEnvironmentFiles503", ListAgentEnvironmentFiles503>
+      | OpenAiClientError<"ListAgentEnvironmentFiles503", ListAgentEnvironmentFiles503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentId: string,
@@ -67042,6 +67956,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironmentFiles200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironmentFiles400", ListAgentEnvironmentFiles400>
@@ -67050,7 +67965,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironmentFiles404", ListAgentEnvironmentFiles404>
       | OpenAiClientError<"ListAgentEnvironmentFiles409", ListAgentEnvironmentFiles409>
       | OpenAiClientError<"ListAgentEnvironmentFiles500", ListAgentEnvironmentFiles500>
-      | OpenAiClientError<"ListAgentEnvironmentFiles503", ListAgentEnvironmentFiles503>
+      | OpenAiClientError<"ListAgentEnvironmentFiles503", ListAgentEnvironmentFiles503>,
+      R
     >
   }
   /**
@@ -67062,6 +67978,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateAgentEnvironmentFileRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironmentFile201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironmentFile400", CreateAgentEnvironmentFile400>
@@ -67071,7 +67988,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironmentFile409", CreateAgentEnvironmentFile409>
       | OpenAiClientError<"CreateAgentEnvironmentFile429", CreateAgentEnvironmentFile429>
       | OpenAiClientError<"CreateAgentEnvironmentFile500", CreateAgentEnvironmentFile500>
-      | OpenAiClientError<"CreateAgentEnvironmentFile503", CreateAgentEnvironmentFile503>
+      | OpenAiClientError<"CreateAgentEnvironmentFile503", CreateAgentEnvironmentFile503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentId: string,
@@ -67081,6 +67999,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironmentFile201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironmentFile400", CreateAgentEnvironmentFile400>
@@ -67090,7 +68009,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironmentFile409", CreateAgentEnvironmentFile409>
       | OpenAiClientError<"CreateAgentEnvironmentFile429", CreateAgentEnvironmentFile429>
       | OpenAiClientError<"CreateAgentEnvironmentFile500", CreateAgentEnvironmentFile500>
-      | OpenAiClientError<"CreateAgentEnvironmentFile503", CreateAgentEnvironmentFile503>
+      | OpenAiClientError<"CreateAgentEnvironmentFile503", CreateAgentEnvironmentFile503>,
+      R
     >
   }
   /**
@@ -67102,6 +68022,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionSubagentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagents200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagents400", ListAgentSessionSubagents400>
@@ -67110,7 +68031,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagents404", ListAgentSessionSubagents404>
       | OpenAiClientError<"ListAgentSessionSubagents409", ListAgentSessionSubagents409>
       | OpenAiClientError<"ListAgentSessionSubagents500", ListAgentSessionSubagents500>
-      | OpenAiClientError<"ListAgentSessionSubagents503", ListAgentSessionSubagents503>
+      | OpenAiClientError<"ListAgentSessionSubagents503", ListAgentSessionSubagents503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67120,6 +68042,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagents200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagents400", ListAgentSessionSubagents400>
@@ -67128,7 +68051,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagents404", ListAgentSessionSubagents404>
       | OpenAiClientError<"ListAgentSessionSubagents409", ListAgentSessionSubagents409>
       | OpenAiClientError<"ListAgentSessionSubagents500", ListAgentSessionSubagents500>
-      | OpenAiClientError<"ListAgentSessionSubagents503", ListAgentSessionSubagents503>
+      | OpenAiClientError<"ListAgentSessionSubagents503", ListAgentSessionSubagents503>,
+      R
     >
   }
   /**
@@ -67141,6 +68065,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionSubagent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionSubagent400", RetrieveAgentSessionSubagent400>
@@ -67149,7 +68074,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionSubagent404", RetrieveAgentSessionSubagent404>
       | OpenAiClientError<"RetrieveAgentSessionSubagent409", RetrieveAgentSessionSubagent409>
       | OpenAiClientError<"RetrieveAgentSessionSubagent500", RetrieveAgentSessionSubagent500>
-      | OpenAiClientError<"RetrieveAgentSessionSubagent503", RetrieveAgentSessionSubagent503>
+      | OpenAiClientError<"RetrieveAgentSessionSubagent503", RetrieveAgentSessionSubagent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67157,6 +68083,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionSubagent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionSubagent400", RetrieveAgentSessionSubagent400>
@@ -67165,7 +68092,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionSubagent404", RetrieveAgentSessionSubagent404>
       | OpenAiClientError<"RetrieveAgentSessionSubagent409", RetrieveAgentSessionSubagent409>
       | OpenAiClientError<"RetrieveAgentSessionSubagent500", RetrieveAgentSessionSubagent500>
-      | OpenAiClientError<"RetrieveAgentSessionSubagent503", RetrieveAgentSessionSubagent503>
+      | OpenAiClientError<"RetrieveAgentSessionSubagent503", RetrieveAgentSessionSubagent503>,
+      R
     >
   }
   /**
@@ -67181,6 +68109,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentItems400", ListAgentSessionSubagentItems400>
@@ -67189,7 +68118,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentItems404", ListAgentSessionSubagentItems404>
       | OpenAiClientError<"ListAgentSessionSubagentItems409", ListAgentSessionSubagentItems409>
       | OpenAiClientError<"ListAgentSessionSubagentItems500", ListAgentSessionSubagentItems500>
-      | OpenAiClientError<"ListAgentSessionSubagentItems503", ListAgentSessionSubagentItems503>
+      | OpenAiClientError<"ListAgentSessionSubagentItems503", ListAgentSessionSubagentItems503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67200,6 +68130,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentItems400", ListAgentSessionSubagentItems400>
@@ -67208,7 +68139,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentItems404", ListAgentSessionSubagentItems404>
       | OpenAiClientError<"ListAgentSessionSubagentItems409", ListAgentSessionSubagentItems409>
       | OpenAiClientError<"ListAgentSessionSubagentItems500", ListAgentSessionSubagentItems500>
-      | OpenAiClientError<"ListAgentSessionSubagentItems503", ListAgentSessionSubagentItems503>
+      | OpenAiClientError<"ListAgentSessionSubagentItems503", ListAgentSessionSubagentItems503>,
+      R
     >
   }
   /**
@@ -67224,6 +68156,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentTurns200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentTurns400", ListAgentSessionSubagentTurns400>
@@ -67232,7 +68165,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentTurns404", ListAgentSessionSubagentTurns404>
       | OpenAiClientError<"ListAgentSessionSubagentTurns409", ListAgentSessionSubagentTurns409>
       | OpenAiClientError<"ListAgentSessionSubagentTurns500", ListAgentSessionSubagentTurns500>
-      | OpenAiClientError<"ListAgentSessionSubagentTurns503", ListAgentSessionSubagentTurns503>
+      | OpenAiClientError<"ListAgentSessionSubagentTurns503", ListAgentSessionSubagentTurns503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67243,6 +68177,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentTurns200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentTurns400", ListAgentSessionSubagentTurns400>
@@ -67251,7 +68186,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentTurns404", ListAgentSessionSubagentTurns404>
       | OpenAiClientError<"ListAgentSessionSubagentTurns409", ListAgentSessionSubagentTurns409>
       | OpenAiClientError<"ListAgentSessionSubagentTurns500", ListAgentSessionSubagentTurns500>
-      | OpenAiClientError<"ListAgentSessionSubagentTurns503", ListAgentSessionSubagentTurns503>
+      | OpenAiClientError<"ListAgentSessionSubagentTurns503", ListAgentSessionSubagentTurns503>,
+      R
     >
   }
   /**
@@ -67265,6 +68201,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionSubagentTurn200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn400", RetrieveAgentSessionSubagentTurn400>
@@ -67273,7 +68210,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn404", RetrieveAgentSessionSubagentTurn404>
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn409", RetrieveAgentSessionSubagentTurn409>
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn500", RetrieveAgentSessionSubagentTurn500>
-      | OpenAiClientError<"RetrieveAgentSessionSubagentTurn503", RetrieveAgentSessionSubagentTurn503>
+      | OpenAiClientError<"RetrieveAgentSessionSubagentTurn503", RetrieveAgentSessionSubagentTurn503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67282,6 +68220,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionSubagentTurn200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn400", RetrieveAgentSessionSubagentTurn400>
@@ -67290,7 +68229,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn404", RetrieveAgentSessionSubagentTurn404>
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn409", RetrieveAgentSessionSubagentTurn409>
       | OpenAiClientError<"RetrieveAgentSessionSubagentTurn500", RetrieveAgentSessionSubagentTurn500>
-      | OpenAiClientError<"RetrieveAgentSessionSubagentTurn503", RetrieveAgentSessionSubagentTurn503>
+      | OpenAiClientError<"RetrieveAgentSessionSubagentTurn503", RetrieveAgentSessionSubagentTurn503>,
+      R
     >
   }
   /**
@@ -67307,6 +68247,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentTurnItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems400", ListAgentSessionSubagentTurnItems400>
@@ -67315,7 +68256,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems404", ListAgentSessionSubagentTurnItems404>
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems409", ListAgentSessionSubagentTurnItems409>
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems500", ListAgentSessionSubagentTurnItems500>
-      | OpenAiClientError<"ListAgentSessionSubagentTurnItems503", ListAgentSessionSubagentTurnItems503>
+      | OpenAiClientError<"ListAgentSessionSubagentTurnItems503", ListAgentSessionSubagentTurnItems503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67327,6 +68269,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionSubagentTurnItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems400", ListAgentSessionSubagentTurnItems400>
@@ -67335,7 +68278,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems404", ListAgentSessionSubagentTurnItems404>
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems409", ListAgentSessionSubagentTurnItems409>
       | OpenAiClientError<"ListAgentSessionSubagentTurnItems500", ListAgentSessionSubagentTurnItems500>
-      | OpenAiClientError<"ListAgentSessionSubagentTurnItems503", ListAgentSessionSubagentTurnItems503>
+      | OpenAiClientError<"ListAgentSessionSubagentTurnItems503", ListAgentSessionSubagentTurnItems503>,
+      R
     >
   }
   /**
@@ -67346,6 +68290,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgents200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgents400", ListAgents400>
@@ -67354,7 +68299,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgents404", ListAgents404>
       | OpenAiClientError<"ListAgents409", ListAgents409>
       | OpenAiClientError<"ListAgents500", ListAgents500>
-      | OpenAiClientError<"ListAgents503", ListAgents503>
+      | OpenAiClientError<"ListAgents503", ListAgents503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -67362,6 +68308,7 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgents200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgents400", ListAgents400>
@@ -67370,7 +68317,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgents404", ListAgents404>
       | OpenAiClientError<"ListAgents409", ListAgents409>
       | OpenAiClientError<"ListAgents500", ListAgents500>
-      | OpenAiClientError<"ListAgents503", ListAgents503>
+      | OpenAiClientError<"ListAgents503", ListAgents503>,
+      R
     >
   }
   /**
@@ -67381,6 +68329,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateAgentRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgent201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgent400", CreateAgent400>
@@ -67389,12 +68338,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgent404", CreateAgent404>
       | OpenAiClientError<"CreateAgent409", CreateAgent409>
       | OpenAiClientError<"CreateAgent500", CreateAgent500>
-      | OpenAiClientError<"CreateAgent503", CreateAgent503>
+      | OpenAiClientError<"CreateAgent503", CreateAgent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateAgentRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgent201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgent400", CreateAgent400>
@@ -67403,7 +68354,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgent404", CreateAgent404>
       | OpenAiClientError<"CreateAgent409", CreateAgent409>
       | OpenAiClientError<"CreateAgent500", CreateAgent500>
-      | OpenAiClientError<"CreateAgent503", CreateAgent503>
+      | OpenAiClientError<"CreateAgent503", CreateAgent503>,
+      R
     >
   }
   /**
@@ -67415,6 +68367,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgent400", RetrieveAgent400>
@@ -67423,13 +68376,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgent404", RetrieveAgent404>
       | OpenAiClientError<"RetrieveAgent409", RetrieveAgent409>
       | OpenAiClientError<"RetrieveAgent500", RetrieveAgent500>
-      | OpenAiClientError<"RetrieveAgent503", RetrieveAgent503>
+      | OpenAiClientError<"RetrieveAgent503", RetrieveAgent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       agentId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgent400", RetrieveAgent400>
@@ -67438,7 +68393,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgent404", RetrieveAgent404>
       | OpenAiClientError<"RetrieveAgent409", RetrieveAgent409>
       | OpenAiClientError<"RetrieveAgent500", RetrieveAgent500>
-      | OpenAiClientError<"RetrieveAgent503", RetrieveAgent503>
+      | OpenAiClientError<"RetrieveAgent503", RetrieveAgent503>,
+      R
     >
   }
   /**
@@ -67450,6 +68406,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateAgentRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgent400", UpdateAgent400>
@@ -67458,13 +68415,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgent404", UpdateAgent404>
       | OpenAiClientError<"UpdateAgent409", UpdateAgent409>
       | OpenAiClientError<"UpdateAgent500", UpdateAgent500>
-      | OpenAiClientError<"UpdateAgent503", UpdateAgent503>
+      | OpenAiClientError<"UpdateAgent503", UpdateAgent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       agentId: string,
       options: { readonly payload: typeof UpdateAgentRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgent400", UpdateAgent400>
@@ -67473,7 +68432,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgent404", UpdateAgent404>
       | OpenAiClientError<"UpdateAgent409", UpdateAgent409>
       | OpenAiClientError<"UpdateAgent500", UpdateAgent500>
-      | OpenAiClientError<"UpdateAgent503", UpdateAgent503>
+      | OpenAiClientError<"UpdateAgent503", UpdateAgent503>,
+      R
     >
   }
   /**
@@ -67485,6 +68445,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgent200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgent400", DeleteAgent400>
@@ -67493,13 +68454,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgent404", DeleteAgent404>
       | OpenAiClientError<"DeleteAgent409", DeleteAgent409>
       | OpenAiClientError<"DeleteAgent500", DeleteAgent500>
-      | OpenAiClientError<"DeleteAgent503", DeleteAgent503>
+      | OpenAiClientError<"DeleteAgent503", DeleteAgent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       agentId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgent200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgent400", DeleteAgent400>
@@ -67508,7 +68471,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgent404", DeleteAgent404>
       | OpenAiClientError<"DeleteAgent409", DeleteAgent409>
       | OpenAiClientError<"DeleteAgent500", DeleteAgent500>
-      | OpenAiClientError<"DeleteAgent503", DeleteAgent503>
+      | OpenAiClientError<"DeleteAgent503", DeleteAgent503>,
+      R
     >
   }
   /**
@@ -67522,6 +68486,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironmentTemplates200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironmentTemplates400", ListAgentEnvironmentTemplates400>
@@ -67529,7 +68494,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironmentTemplates403", ListAgentEnvironmentTemplates403>
       | OpenAiClientError<"ListAgentEnvironmentTemplates404", ListAgentEnvironmentTemplates404>
       | OpenAiClientError<"ListAgentEnvironmentTemplates500", ListAgentEnvironmentTemplates500>
-      | OpenAiClientError<"ListAgentEnvironmentTemplates503", ListAgentEnvironmentTemplates503>
+      | OpenAiClientError<"ListAgentEnvironmentTemplates503", ListAgentEnvironmentTemplates503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -67538,6 +68504,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentEnvironmentTemplates200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentEnvironmentTemplates400", ListAgentEnvironmentTemplates400>
@@ -67545,7 +68512,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentEnvironmentTemplates403", ListAgentEnvironmentTemplates403>
       | OpenAiClientError<"ListAgentEnvironmentTemplates404", ListAgentEnvironmentTemplates404>
       | OpenAiClientError<"ListAgentEnvironmentTemplates500", ListAgentEnvironmentTemplates500>
-      | OpenAiClientError<"ListAgentEnvironmentTemplates503", ListAgentEnvironmentTemplates503>
+      | OpenAiClientError<"ListAgentEnvironmentTemplates503", ListAgentEnvironmentTemplates503>,
+      R
     >
   }
   /**
@@ -67556,6 +68524,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateAgentEnvironmentTemplateRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironmentTemplate201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironmentTemplate400", CreateAgentEnvironmentTemplate400>
@@ -67563,7 +68532,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironmentTemplate403", CreateAgentEnvironmentTemplate403>
       | OpenAiClientError<"CreateAgentEnvironmentTemplate404", CreateAgentEnvironmentTemplate404>
       | OpenAiClientError<"CreateAgentEnvironmentTemplate500", CreateAgentEnvironmentTemplate500>
-      | OpenAiClientError<"CreateAgentEnvironmentTemplate503", CreateAgentEnvironmentTemplate503>
+      | OpenAiClientError<"CreateAgentEnvironmentTemplate503", CreateAgentEnvironmentTemplate503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -67572,6 +68542,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentEnvironmentTemplate201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentEnvironmentTemplate400", CreateAgentEnvironmentTemplate400>
@@ -67579,7 +68550,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentEnvironmentTemplate403", CreateAgentEnvironmentTemplate403>
       | OpenAiClientError<"CreateAgentEnvironmentTemplate404", CreateAgentEnvironmentTemplate404>
       | OpenAiClientError<"CreateAgentEnvironmentTemplate500", CreateAgentEnvironmentTemplate500>
-      | OpenAiClientError<"CreateAgentEnvironmentTemplate503", CreateAgentEnvironmentTemplate503>
+      | OpenAiClientError<"CreateAgentEnvironmentTemplate503", CreateAgentEnvironmentTemplate503>,
+      R
     >
   }
   /**
@@ -67591,6 +68563,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentEnvironmentTemplate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate400", RetrieveAgentEnvironmentTemplate400>
@@ -67598,13 +68571,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate403", RetrieveAgentEnvironmentTemplate403>
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate404", RetrieveAgentEnvironmentTemplate404>
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate500", RetrieveAgentEnvironmentTemplate500>
-      | OpenAiClientError<"RetrieveAgentEnvironmentTemplate503", RetrieveAgentEnvironmentTemplate503>
+      | OpenAiClientError<"RetrieveAgentEnvironmentTemplate503", RetrieveAgentEnvironmentTemplate503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentTemplateId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentEnvironmentTemplate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate400", RetrieveAgentEnvironmentTemplate400>
@@ -67612,7 +68587,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate403", RetrieveAgentEnvironmentTemplate403>
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate404", RetrieveAgentEnvironmentTemplate404>
       | OpenAiClientError<"RetrieveAgentEnvironmentTemplate500", RetrieveAgentEnvironmentTemplate500>
-      | OpenAiClientError<"RetrieveAgentEnvironmentTemplate503", RetrieveAgentEnvironmentTemplate503>
+      | OpenAiClientError<"RetrieveAgentEnvironmentTemplate503", RetrieveAgentEnvironmentTemplate503>,
+      R
     >
   }
   /**
@@ -67624,6 +68600,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateAgentEnvironmentTemplateRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgentEnvironmentTemplate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate400", UpdateAgentEnvironmentTemplate400>
@@ -67632,7 +68609,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate404", UpdateAgentEnvironmentTemplate404>
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate409", UpdateAgentEnvironmentTemplate409>
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate500", UpdateAgentEnvironmentTemplate500>
-      | OpenAiClientError<"UpdateAgentEnvironmentTemplate503", UpdateAgentEnvironmentTemplate503>
+      | OpenAiClientError<"UpdateAgentEnvironmentTemplate503", UpdateAgentEnvironmentTemplate503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentTemplateId: string,
@@ -67642,6 +68620,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgentEnvironmentTemplate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate400", UpdateAgentEnvironmentTemplate400>
@@ -67650,7 +68629,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate404", UpdateAgentEnvironmentTemplate404>
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate409", UpdateAgentEnvironmentTemplate409>
       | OpenAiClientError<"UpdateAgentEnvironmentTemplate500", UpdateAgentEnvironmentTemplate500>
-      | OpenAiClientError<"UpdateAgentEnvironmentTemplate503", UpdateAgentEnvironmentTemplate503>
+      | OpenAiClientError<"UpdateAgentEnvironmentTemplate503", UpdateAgentEnvironmentTemplate503>,
+      R
     >
   }
   /**
@@ -67662,6 +68642,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentEnvironmentTemplate200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate400", DeleteAgentEnvironmentTemplate400>
@@ -67670,13 +68651,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate404", DeleteAgentEnvironmentTemplate404>
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate409", DeleteAgentEnvironmentTemplate409>
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate500", DeleteAgentEnvironmentTemplate500>
-      | OpenAiClientError<"DeleteAgentEnvironmentTemplate503", DeleteAgentEnvironmentTemplate503>
+      | OpenAiClientError<"DeleteAgentEnvironmentTemplate503", DeleteAgentEnvironmentTemplate503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       environmentTemplateId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentEnvironmentTemplate200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate400", DeleteAgentEnvironmentTemplate400>
@@ -67685,7 +68668,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate404", DeleteAgentEnvironmentTemplate404>
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate409", DeleteAgentEnvironmentTemplate409>
       | OpenAiClientError<"DeleteAgentEnvironmentTemplate500", DeleteAgentEnvironmentTemplate500>
-      | OpenAiClientError<"DeleteAgentEnvironmentTemplate503", DeleteAgentEnvironmentTemplate503>
+      | OpenAiClientError<"DeleteAgentEnvironmentTemplate503", DeleteAgentEnvironmentTemplate503>,
+      R
     >
   }
   /**
@@ -67696,6 +68680,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessions200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessions400", ListAgentSessions400>
@@ -67704,7 +68689,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessions404", ListAgentSessions404>
       | OpenAiClientError<"ListAgentSessions409", ListAgentSessions409>
       | OpenAiClientError<"ListAgentSessions500", ListAgentSessions500>
-      | OpenAiClientError<"ListAgentSessions503", ListAgentSessions503>
+      | OpenAiClientError<"ListAgentSessions503", ListAgentSessions503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -67713,6 +68699,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessions200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessions400", ListAgentSessions400>
@@ -67721,7 +68708,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessions404", ListAgentSessions404>
       | OpenAiClientError<"ListAgentSessions409", ListAgentSessions409>
       | OpenAiClientError<"ListAgentSessions500", ListAgentSessions500>
-      | OpenAiClientError<"ListAgentSessions503", ListAgentSessions503>
+      | OpenAiClientError<"ListAgentSessions503", ListAgentSessions503>,
+      R
     >
   }
   /**
@@ -67732,6 +68720,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateAgentSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentSession201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentSession400", CreateAgentSession400>
@@ -67741,12 +68730,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentSession409", CreateAgentSession409>
       | OpenAiClientError<"CreateAgentSession429", CreateAgentSession429>
       | OpenAiClientError<"CreateAgentSession500", CreateAgentSession500>
-      | OpenAiClientError<"CreateAgentSession503", CreateAgentSession503>
+      | OpenAiClientError<"CreateAgentSession503", CreateAgentSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateAgentSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateAgentSession201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentSession400", CreateAgentSession400>
@@ -67756,7 +68747,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentSession409", CreateAgentSession409>
       | OpenAiClientError<"CreateAgentSession429", CreateAgentSession429>
       | OpenAiClientError<"CreateAgentSession500", CreateAgentSession500>
-      | OpenAiClientError<"CreateAgentSession503", CreateAgentSession503>
+      | OpenAiClientError<"CreateAgentSession503", CreateAgentSession503>,
+      R
     >
   }
   /**
@@ -67766,8 +68758,8 @@ export interface OpenAiClient {
     options: { readonly payload: typeof CreateAgentSessionRequestJson.Encoded }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: CreateAgentSession201Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof CreateAgentSession201Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof CreateAgentSession201Sse.DecodingServices
   >
   /**
    * Retrieves the current state of a managed agent session. See [managing sessions](https://developers.openai.com/api/docs/guides/agents-api/sessions/manage).
@@ -67778,6 +68770,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSession200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSession400", RetrieveAgentSession400>
@@ -67786,13 +68779,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSession404", RetrieveAgentSession404>
       | OpenAiClientError<"RetrieveAgentSession409", RetrieveAgentSession409>
       | OpenAiClientError<"RetrieveAgentSession500", RetrieveAgentSession500>
-      | OpenAiClientError<"RetrieveAgentSession503", RetrieveAgentSession503>
+      | OpenAiClientError<"RetrieveAgentSession503", RetrieveAgentSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSession200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSession400", RetrieveAgentSession400>
@@ -67801,7 +68796,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSession404", RetrieveAgentSession404>
       | OpenAiClientError<"RetrieveAgentSession409", RetrieveAgentSession409>
       | OpenAiClientError<"RetrieveAgentSession500", RetrieveAgentSession500>
-      | OpenAiClientError<"RetrieveAgentSession503", RetrieveAgentSession503>
+      | OpenAiClientError<"RetrieveAgentSession503", RetrieveAgentSession503>,
+      R
     >
   }
   /**
@@ -67813,6 +68809,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateAgentSessionRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgentSession200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgentSession400", UpdateAgentSession400>
@@ -67821,13 +68818,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgentSession404", UpdateAgentSession404>
       | OpenAiClientError<"UpdateAgentSession409", UpdateAgentSession409>
       | OpenAiClientError<"UpdateAgentSession500", UpdateAgentSession500>
-      | OpenAiClientError<"UpdateAgentSession503", UpdateAgentSession503>
+      | OpenAiClientError<"UpdateAgentSession503", UpdateAgentSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly payload: typeof UpdateAgentSessionRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateAgentSession200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateAgentSession400", UpdateAgentSession400>
@@ -67836,7 +68835,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateAgentSession404", UpdateAgentSession404>
       | OpenAiClientError<"UpdateAgentSession409", UpdateAgentSession409>
       | OpenAiClientError<"UpdateAgentSession500", UpdateAgentSession500>
-      | OpenAiClientError<"UpdateAgentSession503", UpdateAgentSession503>
+      | OpenAiClientError<"UpdateAgentSession503", UpdateAgentSession503>,
+      R
     >
   }
   /**
@@ -67848,6 +68848,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentSession200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentSession400", DeleteAgentSession400>
@@ -67856,13 +68857,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentSession404", DeleteAgentSession404>
       | OpenAiClientError<"DeleteAgentSession409", DeleteAgentSession409>
       | OpenAiClientError<"DeleteAgentSession500", DeleteAgentSession500>
-      | OpenAiClientError<"DeleteAgentSession503", DeleteAgentSession503>
+      | OpenAiClientError<"DeleteAgentSession503", DeleteAgentSession503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentSession200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentSession400", DeleteAgentSession400>
@@ -67871,7 +68874,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentSession404", DeleteAgentSession404>
       | OpenAiClientError<"DeleteAgentSession409", DeleteAgentSession409>
       | OpenAiClientError<"DeleteAgentSession500", DeleteAgentSession500>
-      | OpenAiClientError<"DeleteAgentSession503", DeleteAgentSession503>
+      | OpenAiClientError<"DeleteAgentSession503", DeleteAgentSession503>,
+      R
     >
   }
   /**
@@ -67883,6 +68887,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionArtifactsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionArtifacts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionArtifacts400", ListAgentSessionArtifacts400>
@@ -67891,7 +68896,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionArtifacts404", ListAgentSessionArtifacts404>
       | OpenAiClientError<"ListAgentSessionArtifacts409", ListAgentSessionArtifacts409>
       | OpenAiClientError<"ListAgentSessionArtifacts500", ListAgentSessionArtifacts500>
-      | OpenAiClientError<"ListAgentSessionArtifacts503", ListAgentSessionArtifacts503>
+      | OpenAiClientError<"ListAgentSessionArtifacts503", ListAgentSessionArtifacts503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67901,6 +68907,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionArtifacts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionArtifacts400", ListAgentSessionArtifacts400>
@@ -67909,7 +68916,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionArtifacts404", ListAgentSessionArtifacts404>
       | OpenAiClientError<"ListAgentSessionArtifacts409", ListAgentSessionArtifacts409>
       | OpenAiClientError<"ListAgentSessionArtifacts500", ListAgentSessionArtifacts500>
-      | OpenAiClientError<"ListAgentSessionArtifacts503", ListAgentSessionArtifacts503>
+      | OpenAiClientError<"ListAgentSessionArtifacts503", ListAgentSessionArtifacts503>,
+      R
     >
   }
   /**
@@ -67922,6 +68930,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionArtifact200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionArtifact400", RetrieveAgentSessionArtifact400>
@@ -67930,7 +68939,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionArtifact404", RetrieveAgentSessionArtifact404>
       | OpenAiClientError<"RetrieveAgentSessionArtifact409", RetrieveAgentSessionArtifact409>
       | OpenAiClientError<"RetrieveAgentSessionArtifact500", RetrieveAgentSessionArtifact500>
-      | OpenAiClientError<"RetrieveAgentSessionArtifact503", RetrieveAgentSessionArtifact503>
+      | OpenAiClientError<"RetrieveAgentSessionArtifact503", RetrieveAgentSessionArtifact503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67938,6 +68948,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionArtifact200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionArtifact400", RetrieveAgentSessionArtifact400>
@@ -67946,7 +68957,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionArtifact404", RetrieveAgentSessionArtifact404>
       | OpenAiClientError<"RetrieveAgentSessionArtifact409", RetrieveAgentSessionArtifact409>
       | OpenAiClientError<"RetrieveAgentSessionArtifact500", RetrieveAgentSessionArtifact500>
-      | OpenAiClientError<"RetrieveAgentSessionArtifact503", RetrieveAgentSessionArtifact503>
+      | OpenAiClientError<"RetrieveAgentSessionArtifact503", RetrieveAgentSessionArtifact503>,
+      R
     >
   }
   /**
@@ -67959,6 +68971,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentSessionArtifact200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentSessionArtifact400", DeleteAgentSessionArtifact400>
@@ -67967,7 +68980,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentSessionArtifact404", DeleteAgentSessionArtifact404>
       | OpenAiClientError<"DeleteAgentSessionArtifact409", DeleteAgentSessionArtifact409>
       | OpenAiClientError<"DeleteAgentSessionArtifact500", DeleteAgentSessionArtifact500>
-      | OpenAiClientError<"DeleteAgentSessionArtifact503", DeleteAgentSessionArtifact503>
+      | OpenAiClientError<"DeleteAgentSessionArtifact503", DeleteAgentSessionArtifact503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -67975,6 +68989,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteAgentSessionArtifact200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteAgentSessionArtifact400", DeleteAgentSessionArtifact400>
@@ -67983,7 +68998,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteAgentSessionArtifact404", DeleteAgentSessionArtifact404>
       | OpenAiClientError<"DeleteAgentSessionArtifact409", DeleteAgentSessionArtifact409>
       | OpenAiClientError<"DeleteAgentSessionArtifact500", DeleteAgentSessionArtifact500>
-      | OpenAiClientError<"DeleteAgentSessionArtifact503", DeleteAgentSessionArtifact503>
+      | OpenAiClientError<"DeleteAgentSessionArtifact503", DeleteAgentSessionArtifact503>,
+      R
     >
   }
   /**
@@ -67996,6 +69012,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent400", RetrieveAgentSessionArtifactContent400>
@@ -68004,7 +69021,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent404", RetrieveAgentSessionArtifactContent404>
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent409", RetrieveAgentSessionArtifactContent409>
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent500", RetrieveAgentSessionArtifactContent500>
-      | OpenAiClientError<"RetrieveAgentSessionArtifactContent503", RetrieveAgentSessionArtifactContent503>
+      | OpenAiClientError<"RetrieveAgentSessionArtifactContent503", RetrieveAgentSessionArtifactContent503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68012,6 +69030,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<Uint8Array, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent400", RetrieveAgentSessionArtifactContent400>
@@ -68020,7 +69039,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent404", RetrieveAgentSessionArtifactContent404>
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent409", RetrieveAgentSessionArtifactContent409>
       | OpenAiClientError<"RetrieveAgentSessionArtifactContent500", RetrieveAgentSessionArtifactContent500>
-      | OpenAiClientError<"RetrieveAgentSessionArtifactContent503", RetrieveAgentSessionArtifactContent503>
+      | OpenAiClientError<"RetrieveAgentSessionArtifactContent503", RetrieveAgentSessionArtifactContent503>,
+      R
     >
   }
   /**
@@ -68029,7 +69049,7 @@ export interface OpenAiClient {
   readonly "retrieveAgentSessionArtifactContentStream": (
     sessionId: string,
     artifactId: string
-  ) => Stream.Stream<Uint8Array, HttpClientError.HttpClientError>
+  ) => Stream.Stream<Uint8Array, E | HttpClientError.HttpClientError, R>
   /**
    * Streams live events for an agent session. See [session events](https://developers.openai.com/api/docs/guides/agents-api/sessions/events).
    */
@@ -68039,6 +69059,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionEvents400", ListAgentSessionEvents400>
@@ -68047,13 +69068,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionEvents404", ListAgentSessionEvents404>
       | OpenAiClientError<"ListAgentSessionEvents409", ListAgentSessionEvents409>
       | OpenAiClientError<"ListAgentSessionEvents500", ListAgentSessionEvents500>
-      | OpenAiClientError<"ListAgentSessionEvents503", ListAgentSessionEvents503>
+      | OpenAiClientError<"ListAgentSessionEvents503", ListAgentSessionEvents503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionEvents400", ListAgentSessionEvents400>
@@ -68062,7 +69085,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionEvents404", ListAgentSessionEvents404>
       | OpenAiClientError<"ListAgentSessionEvents409", ListAgentSessionEvents409>
       | OpenAiClientError<"ListAgentSessionEvents500", ListAgentSessionEvents500>
-      | OpenAiClientError<"ListAgentSessionEvents503", ListAgentSessionEvents503>
+      | OpenAiClientError<"ListAgentSessionEvents503", ListAgentSessionEvents503>,
+      R
     >
   }
   /**
@@ -68072,8 +69096,8 @@ export interface OpenAiClient {
     sessionId: string
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: ListAgentSessionEvents200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof ListAgentSessionEvents200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof ListAgentSessionEvents200Sse.DecodingServices
   >
   /**
    * Submits message, cancellation, tool-result, or computer-use approval-response events to a managed agent session. Cancellation can recover a still-open turn whose backend execution has ended by marking it cancelled and abandoning unpublished outputs. Saved results, published files, and existing terminal outcomes are preserved. HTTP 202 confirms acceptance, not durable completion. See [session events](https://developers.openai.com/api/docs/guides/agents-api/sessions/events).
@@ -68088,6 +69112,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<void, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentSessionEvents400", CreateAgentSessionEvents400>
@@ -68096,7 +69121,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentSessionEvents404", CreateAgentSessionEvents404>
       | OpenAiClientError<"CreateAgentSessionEvents409", CreateAgentSessionEvents409>
       | OpenAiClientError<"CreateAgentSessionEvents500", CreateAgentSessionEvents500>
-      | OpenAiClientError<"CreateAgentSessionEvents503", CreateAgentSessionEvents503>
+      | OpenAiClientError<"CreateAgentSessionEvents503", CreateAgentSessionEvents503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68107,6 +69133,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<void, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateAgentSessionEvents400", CreateAgentSessionEvents400>
@@ -68115,7 +69142,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateAgentSessionEvents404", CreateAgentSessionEvents404>
       | OpenAiClientError<"CreateAgentSessionEvents409", CreateAgentSessionEvents409>
       | OpenAiClientError<"CreateAgentSessionEvents500", CreateAgentSessionEvents500>
-      | OpenAiClientError<"CreateAgentSessionEvents503", CreateAgentSessionEvents503>
+      | OpenAiClientError<"CreateAgentSessionEvents503", CreateAgentSessionEvents503>,
+      R
     >
   }
   /**
@@ -68127,6 +69155,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionItems400", ListAgentSessionItems400>
@@ -68135,7 +69164,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionItems404", ListAgentSessionItems404>
       | OpenAiClientError<"ListAgentSessionItems409", ListAgentSessionItems409>
       | OpenAiClientError<"ListAgentSessionItems500", ListAgentSessionItems500>
-      | OpenAiClientError<"ListAgentSessionItems503", ListAgentSessionItems503>
+      | OpenAiClientError<"ListAgentSessionItems503", ListAgentSessionItems503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68145,6 +69175,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionItems400", ListAgentSessionItems400>
@@ -68153,7 +69184,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionItems404", ListAgentSessionItems404>
       | OpenAiClientError<"ListAgentSessionItems409", ListAgentSessionItems409>
       | OpenAiClientError<"ListAgentSessionItems500", ListAgentSessionItems500>
-      | OpenAiClientError<"ListAgentSessionItems503", ListAgentSessionItems503>
+      | OpenAiClientError<"ListAgentSessionItems503", ListAgentSessionItems503>,
+      R
     >
   }
   /**
@@ -68165,6 +69197,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionTracesParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTraces200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTraces400", ListAgentSessionTraces400>
@@ -68173,7 +69206,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTraces404", ListAgentSessionTraces404>
       | OpenAiClientError<"ListAgentSessionTraces409", ListAgentSessionTraces409>
       | OpenAiClientError<"ListAgentSessionTraces500", ListAgentSessionTraces500>
-      | OpenAiClientError<"ListAgentSessionTraces503", ListAgentSessionTraces503>
+      | OpenAiClientError<"ListAgentSessionTraces503", ListAgentSessionTraces503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68183,6 +69217,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTraces200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTraces400", ListAgentSessionTraces400>
@@ -68191,7 +69226,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTraces404", ListAgentSessionTraces404>
       | OpenAiClientError<"ListAgentSessionTraces409", ListAgentSessionTraces409>
       | OpenAiClientError<"ListAgentSessionTraces500", ListAgentSessionTraces500>
-      | OpenAiClientError<"ListAgentSessionTraces503", ListAgentSessionTraces503>
+      | OpenAiClientError<"ListAgentSessionTraces503", ListAgentSessionTraces503>,
+      R
     >
   }
   /**
@@ -68203,6 +69239,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionTurnsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTurns200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTurns400", ListAgentSessionTurns400>
@@ -68211,7 +69248,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTurns404", ListAgentSessionTurns404>
       | OpenAiClientError<"ListAgentSessionTurns409", ListAgentSessionTurns409>
       | OpenAiClientError<"ListAgentSessionTurns500", ListAgentSessionTurns500>
-      | OpenAiClientError<"ListAgentSessionTurns503", ListAgentSessionTurns503>
+      | OpenAiClientError<"ListAgentSessionTurns503", ListAgentSessionTurns503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68221,6 +69259,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTurns200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTurns400", ListAgentSessionTurns400>
@@ -68229,7 +69268,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTurns404", ListAgentSessionTurns404>
       | OpenAiClientError<"ListAgentSessionTurns409", ListAgentSessionTurns409>
       | OpenAiClientError<"ListAgentSessionTurns500", ListAgentSessionTurns500>
-      | OpenAiClientError<"ListAgentSessionTurns503", ListAgentSessionTurns503>
+      | OpenAiClientError<"ListAgentSessionTurns503", ListAgentSessionTurns503>,
+      R
     >
   }
   /**
@@ -68242,6 +69282,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionTurn200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionTurn400", RetrieveAgentSessionTurn400>
@@ -68250,7 +69291,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionTurn404", RetrieveAgentSessionTurn404>
       | OpenAiClientError<"RetrieveAgentSessionTurn409", RetrieveAgentSessionTurn409>
       | OpenAiClientError<"RetrieveAgentSessionTurn500", RetrieveAgentSessionTurn500>
-      | OpenAiClientError<"RetrieveAgentSessionTurn503", RetrieveAgentSessionTurn503>
+      | OpenAiClientError<"RetrieveAgentSessionTurn503", RetrieveAgentSessionTurn503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68258,6 +69300,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveAgentSessionTurn200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveAgentSessionTurn400", RetrieveAgentSessionTurn400>
@@ -68266,7 +69309,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveAgentSessionTurn404", RetrieveAgentSessionTurn404>
       | OpenAiClientError<"RetrieveAgentSessionTurn409", RetrieveAgentSessionTurn409>
       | OpenAiClientError<"RetrieveAgentSessionTurn500", RetrieveAgentSessionTurn500>
-      | OpenAiClientError<"RetrieveAgentSessionTurn503", RetrieveAgentSessionTurn503>
+      | OpenAiClientError<"RetrieveAgentSessionTurn503", RetrieveAgentSessionTurn503>,
+      R
     >
   }
   /**
@@ -68279,6 +69323,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListAgentSessionTurnItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTurnItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTurnItems400", ListAgentSessionTurnItems400>
@@ -68287,7 +69332,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTurnItems404", ListAgentSessionTurnItems404>
       | OpenAiClientError<"ListAgentSessionTurnItems409", ListAgentSessionTurnItems409>
       | OpenAiClientError<"ListAgentSessionTurnItems500", ListAgentSessionTurnItems500>
-      | OpenAiClientError<"ListAgentSessionTurnItems503", ListAgentSessionTurnItems503>
+      | OpenAiClientError<"ListAgentSessionTurnItems503", ListAgentSessionTurnItems503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       sessionId: string,
@@ -68298,6 +69344,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListAgentSessionTurnItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListAgentSessionTurnItems400", ListAgentSessionTurnItems400>
@@ -68306,7 +69353,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListAgentSessionTurnItems404", ListAgentSessionTurnItems404>
       | OpenAiClientError<"ListAgentSessionTurnItems409", ListAgentSessionTurnItems409>
       | OpenAiClientError<"ListAgentSessionTurnItems500", ListAgentSessionTurnItems500>
-      | OpenAiClientError<"ListAgentSessionTurnItems503", ListAgentSessionTurnItems503>
+      | OpenAiClientError<"ListAgentSessionTurnItems503", ListAgentSessionTurnItems503>,
+      R
     >
   }
   /**
@@ -68317,6 +69365,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVaultsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVaults200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVaults400", ListVaults400>
@@ -68325,7 +69374,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListVaults404", ListVaults404>
       | OpenAiClientError<"ListVaults409", ListVaults409>
       | OpenAiClientError<"ListVaults500", ListVaults500>
-      | OpenAiClientError<"ListVaults503", ListVaults503>
+      | OpenAiClientError<"ListVaults503", ListVaults503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options:
@@ -68333,6 +69383,7 @@ export interface OpenAiClient {
         | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVaults200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVaults400", ListVaults400>
@@ -68341,7 +69392,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListVaults404", ListVaults404>
       | OpenAiClientError<"ListVaults409", ListVaults409>
       | OpenAiClientError<"ListVaults500", ListVaults500>
-      | OpenAiClientError<"ListVaults503", ListVaults503>
+      | OpenAiClientError<"ListVaults503", ListVaults503>,
+      R
     >
   }
   /**
@@ -68352,6 +69404,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVaultRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVault201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVault400", CreateVault400>
@@ -68360,12 +69413,14 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateVault404", CreateVault404>
       | OpenAiClientError<"CreateVault409", CreateVault409>
       | OpenAiClientError<"CreateVault500", CreateVault500>
-      | OpenAiClientError<"CreateVault503", CreateVault503>
+      | OpenAiClientError<"CreateVault503", CreateVault503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly payload: typeof CreateVaultRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<CreateVault201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVault400", CreateVault400>
@@ -68374,7 +69429,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateVault404", CreateVault404>
       | OpenAiClientError<"CreateVault409", CreateVault409>
       | OpenAiClientError<"CreateVault500", CreateVault500>
-      | OpenAiClientError<"CreateVault503", CreateVault503>
+      | OpenAiClientError<"CreateVault503", CreateVault503>,
+      R
     >
   }
   /**
@@ -68386,6 +69442,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVault200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVault400", RetrieveVault400>
@@ -68394,13 +69451,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveVault404", RetrieveVault404>
       | OpenAiClientError<"RetrieveVault409", RetrieveVault409>
       | OpenAiClientError<"RetrieveVault500", RetrieveVault500>
-      | OpenAiClientError<"RetrieveVault503", RetrieveVault503>
+      | OpenAiClientError<"RetrieveVault503", RetrieveVault503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVault200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVault400", RetrieveVault400>
@@ -68409,7 +69468,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveVault404", RetrieveVault404>
       | OpenAiClientError<"RetrieveVault409", RetrieveVault409>
       | OpenAiClientError<"RetrieveVault500", RetrieveVault500>
-      | OpenAiClientError<"RetrieveVault503", RetrieveVault503>
+      | OpenAiClientError<"RetrieveVault503", RetrieveVault503>,
+      R
     >
   }
   /**
@@ -68421,6 +69481,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateVaultRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVault200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVault400", UpdateVault400>
@@ -68429,13 +69490,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateVault404", UpdateVault404>
       | OpenAiClientError<"UpdateVault409", UpdateVault409>
       | OpenAiClientError<"UpdateVault500", UpdateVault500>
-      | OpenAiClientError<"UpdateVault503", UpdateVault503>
+      | OpenAiClientError<"UpdateVault503", UpdateVault503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
       options: { readonly payload: typeof UpdateVaultRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<UpdateVault200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateVault400", UpdateVault400>
@@ -68444,7 +69507,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"UpdateVault404", UpdateVault404>
       | OpenAiClientError<"UpdateVault409", UpdateVault409>
       | OpenAiClientError<"UpdateVault500", UpdateVault500>
-      | OpenAiClientError<"UpdateVault503", UpdateVault503>
+      | OpenAiClientError<"UpdateVault503", UpdateVault503>,
+      R
     >
   }
   /**
@@ -68456,6 +69520,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVault200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVault400", DeleteVault400>
@@ -68464,13 +69529,15 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteVault404", DeleteVault404>
       | OpenAiClientError<"DeleteVault409", DeleteVault409>
       | OpenAiClientError<"DeleteVault500", DeleteVault500>
-      | OpenAiClientError<"DeleteVault503", DeleteVault503>
+      | OpenAiClientError<"DeleteVault503", DeleteVault503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVault200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVault400", DeleteVault400>
@@ -68479,7 +69546,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteVault404", DeleteVault404>
       | OpenAiClientError<"DeleteVault409", DeleteVault409>
       | OpenAiClientError<"DeleteVault500", DeleteVault500>
-      | OpenAiClientError<"DeleteVault503", DeleteVault503>
+      | OpenAiClientError<"DeleteVault503", DeleteVault503>,
+      R
     >
   }
   /**
@@ -68491,6 +69559,7 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListVaultCredentialsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListVaultCredentials200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVaultCredentials400", ListVaultCredentials400>
@@ -68499,7 +69568,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListVaultCredentials404", ListVaultCredentials404>
       | OpenAiClientError<"ListVaultCredentials409", ListVaultCredentials409>
       | OpenAiClientError<"ListVaultCredentials500", ListVaultCredentials500>
-      | OpenAiClientError<"ListVaultCredentials503", ListVaultCredentials503>
+      | OpenAiClientError<"ListVaultCredentials503", ListVaultCredentials503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
@@ -68509,6 +69579,7 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListVaultCredentials200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListVaultCredentials400", ListVaultCredentials400>
@@ -68517,7 +69588,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"ListVaultCredentials404", ListVaultCredentials404>
       | OpenAiClientError<"ListVaultCredentials409", ListVaultCredentials409>
       | OpenAiClientError<"ListVaultCredentials500", ListVaultCredentials500>
-      | OpenAiClientError<"ListVaultCredentials503", ListVaultCredentials503>
+      | OpenAiClientError<"ListVaultCredentials503", ListVaultCredentials503>,
+      R
     >
   }
   /**
@@ -68529,6 +69601,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateVaultCredentialRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateVaultCredential201, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVaultCredential400", CreateVaultCredential400>
@@ -68537,7 +69610,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateVaultCredential404", CreateVaultCredential404>
       | OpenAiClientError<"CreateVaultCredential409", CreateVaultCredential409>
       | OpenAiClientError<"CreateVaultCredential500", CreateVaultCredential500>
-      | OpenAiClientError<"CreateVaultCredential503", CreateVaultCredential503>
+      | OpenAiClientError<"CreateVaultCredential503", CreateVaultCredential503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
@@ -68547,6 +69621,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateVaultCredential201, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"CreateVaultCredential400", CreateVaultCredential400>
@@ -68555,7 +69630,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"CreateVaultCredential404", CreateVaultCredential404>
       | OpenAiClientError<"CreateVaultCredential409", CreateVaultCredential409>
       | OpenAiClientError<"CreateVaultCredential500", CreateVaultCredential500>
-      | OpenAiClientError<"CreateVaultCredential503", CreateVaultCredential503>
+      | OpenAiClientError<"CreateVaultCredential503", CreateVaultCredential503>,
+      R
     >
   }
   /**
@@ -68568,6 +69644,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVaultCredential200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVaultCredential400", RetrieveVaultCredential400>
@@ -68576,7 +69653,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveVaultCredential404", RetrieveVaultCredential404>
       | OpenAiClientError<"RetrieveVaultCredential409", RetrieveVaultCredential409>
       | OpenAiClientError<"RetrieveVaultCredential500", RetrieveVaultCredential500>
-      | OpenAiClientError<"RetrieveVaultCredential503", RetrieveVaultCredential503>
+      | OpenAiClientError<"RetrieveVaultCredential503", RetrieveVaultCredential503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
@@ -68584,6 +69662,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveVaultCredential200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveVaultCredential400", RetrieveVaultCredential400>
@@ -68592,7 +69671,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RetrieveVaultCredential404", RetrieveVaultCredential404>
       | OpenAiClientError<"RetrieveVaultCredential409", RetrieveVaultCredential409>
       | OpenAiClientError<"RetrieveVaultCredential500", RetrieveVaultCredential500>
-      | OpenAiClientError<"RetrieveVaultCredential503", RetrieveVaultCredential503>
+      | OpenAiClientError<"RetrieveVaultCredential503", RetrieveVaultCredential503>,
+      R
     >
   }
   /**
@@ -68605,6 +69685,7 @@ export interface OpenAiClient {
       options: { readonly payload: typeof RotateVaultCredentialRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RotateVaultCredential200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RotateVaultCredential400", RotateVaultCredential400>
@@ -68613,7 +69694,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RotateVaultCredential404", RotateVaultCredential404>
       | OpenAiClientError<"RotateVaultCredential409", RotateVaultCredential409>
       | OpenAiClientError<"RotateVaultCredential500", RotateVaultCredential500>
-      | OpenAiClientError<"RotateVaultCredential503", RotateVaultCredential503>
+      | OpenAiClientError<"RotateVaultCredential503", RotateVaultCredential503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
@@ -68624,6 +69706,7 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<RotateVaultCredential200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RotateVaultCredential400", RotateVaultCredential400>
@@ -68632,7 +69715,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"RotateVaultCredential404", RotateVaultCredential404>
       | OpenAiClientError<"RotateVaultCredential409", RotateVaultCredential409>
       | OpenAiClientError<"RotateVaultCredential500", RotateVaultCredential500>
-      | OpenAiClientError<"RotateVaultCredential503", RotateVaultCredential503>
+      | OpenAiClientError<"RotateVaultCredential503", RotateVaultCredential503>,
+      R
     >
   }
   /**
@@ -68645,6 +69729,7 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteVaultCredential200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVaultCredential400", DeleteVaultCredential400>
@@ -68653,7 +69738,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteVaultCredential404", DeleteVaultCredential404>
       | OpenAiClientError<"DeleteVaultCredential409", DeleteVaultCredential409>
       | OpenAiClientError<"DeleteVaultCredential500", DeleteVaultCredential500>
-      | OpenAiClientError<"DeleteVaultCredential503", DeleteVaultCredential503>
+      | OpenAiClientError<"DeleteVaultCredential503", DeleteVaultCredential503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       vaultId: string,
@@ -68661,6 +69747,7 @@ export interface OpenAiClient {
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteVaultCredential200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteVaultCredential400", DeleteVaultCredential400>
@@ -68669,7 +69756,8 @@ export interface OpenAiClient {
       | OpenAiClientError<"DeleteVaultCredential404", DeleteVaultCredential404>
       | OpenAiClientError<"DeleteVaultCredential409", DeleteVaultCredential409>
       | OpenAiClientError<"DeleteVaultCredential500", DeleteVaultCredential500>
-      | OpenAiClientError<"DeleteVaultCredential503", DeleteVaultCredential503>
+      | OpenAiClientError<"DeleteVaultCredential503", DeleteVaultCredential503>,
+      R
     >
   }
   /**
@@ -68680,10 +69768,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof ListWebhookEndpointsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListWebhookEndpoints200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListWebhookEndpoints400", ListWebhookEndpoints400>
-      | OpenAiClientError<"ListWebhookEndpoints404", ListWebhookEndpoints404>
+      | OpenAiClientError<"ListWebhookEndpoints404", ListWebhookEndpoints404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -68692,10 +69782,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListWebhookEndpoints200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"ListWebhookEndpoints400", ListWebhookEndpoints400>
-      | OpenAiClientError<"ListWebhookEndpoints404", ListWebhookEndpoints404>
+      | OpenAiClientError<"ListWebhookEndpoints404", ListWebhookEndpoints404>,
+      R
     >
   }
   /**
@@ -68706,9 +69798,11 @@ export interface OpenAiClient {
       options: { readonly payload: typeof CreateWebhookEndpointRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<CreateWebhookEndpoint200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"CreateWebhookEndpoint400", CreateWebhookEndpoint400>
+      | OpenAiClientError<"CreateWebhookEndpoint400", CreateWebhookEndpoint400>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -68717,9 +69811,11 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<CreateWebhookEndpoint200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"CreateWebhookEndpoint400", CreateWebhookEndpoint400>
+      | OpenAiClientError<"CreateWebhookEndpoint400", CreateWebhookEndpoint400>,
+      R
     >
   }
   /**
@@ -68731,20 +69827,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<RetrieveWebhookEndpoint200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveWebhookEndpoint400", RetrieveWebhookEndpoint400>
-      | OpenAiClientError<"RetrieveWebhookEndpoint404", RetrieveWebhookEndpoint404>
+      | OpenAiClientError<"RetrieveWebhookEndpoint404", RetrieveWebhookEndpoint404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       webhookEndpointId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<RetrieveWebhookEndpoint200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RetrieveWebhookEndpoint400", RetrieveWebhookEndpoint400>
-      | OpenAiClientError<"RetrieveWebhookEndpoint404", RetrieveWebhookEndpoint404>
+      | OpenAiClientError<"RetrieveWebhookEndpoint404", RetrieveWebhookEndpoint404>,
+      R
     >
   }
   /**
@@ -68756,10 +69856,12 @@ export interface OpenAiClient {
       options: { readonly payload: typeof UpdateWebhookEndpointRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<UpdateWebhookEndpoint200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateWebhookEndpoint400", UpdateWebhookEndpoint400>
-      | OpenAiClientError<"UpdateWebhookEndpoint404", UpdateWebhookEndpoint404>
+      | OpenAiClientError<"UpdateWebhookEndpoint404", UpdateWebhookEndpoint404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       webhookEndpointId: string,
@@ -68769,10 +69871,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<UpdateWebhookEndpoint200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"UpdateWebhookEndpoint400", UpdateWebhookEndpoint400>
-      | OpenAiClientError<"UpdateWebhookEndpoint404", UpdateWebhookEndpoint404>
+      | OpenAiClientError<"UpdateWebhookEndpoint404", UpdateWebhookEndpoint404>,
+      R
     >
   }
   /**
@@ -68784,20 +69888,24 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<DeleteWebhookEndpoint200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteWebhookEndpoint400", DeleteWebhookEndpoint400>
-      | OpenAiClientError<"DeleteWebhookEndpoint404", DeleteWebhookEndpoint404>
+      | OpenAiClientError<"DeleteWebhookEndpoint404", DeleteWebhookEndpoint404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       webhookEndpointId: string,
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<DeleteWebhookEndpoint200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"DeleteWebhookEndpoint400", DeleteWebhookEndpoint400>
-      | OpenAiClientError<"DeleteWebhookEndpoint404", DeleteWebhookEndpoint404>
+      | OpenAiClientError<"DeleteWebhookEndpoint404", DeleteWebhookEndpoint404>,
+      R
     >
   }
   /**
@@ -68812,10 +69920,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<RotateWebhookEndpointSigningSecret200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RotateWebhookEndpointSigningSecret400", RotateWebhookEndpointSigningSecret400>
-      | OpenAiClientError<"RotateWebhookEndpointSigningSecret404", RotateWebhookEndpointSigningSecret404>
+      | OpenAiClientError<"RotateWebhookEndpointSigningSecret404", RotateWebhookEndpointSigningSecret404>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       webhookEndpointId: string,
@@ -68825,10 +69935,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<RotateWebhookEndpointSigningSecret200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"RotateWebhookEndpointSigningSecret400", RotateWebhookEndpointSigningSecret400>
-      | OpenAiClientError<"RotateWebhookEndpointSigningSecret404", RotateWebhookEndpointSigningSecret404>
+      | OpenAiClientError<"RotateWebhookEndpointSigningSecret404", RotateWebhookEndpointSigningSecret404>,
+      R
     >
   }
   /**
@@ -68840,22 +69952,26 @@ export interface OpenAiClient {
       options: { readonly payload: typeof TestWebhookEndpointRequestJson.Encoded; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<TestWebhookEndpoint200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"TestWebhookEndpoint400", TestWebhookEndpoint400>
       | OpenAiClientError<"TestWebhookEndpoint404", TestWebhookEndpoint404>
-      | OpenAiClientError<"TestWebhookEndpoint500", TestWebhookEndpoint500>
+      | OpenAiClientError<"TestWebhookEndpoint500", TestWebhookEndpoint500>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       webhookEndpointId: string,
       options: { readonly payload: typeof TestWebhookEndpointRequestJson.Encoded; readonly config?: Config | undefined }
     ): Effect.Effect<
       WithOptionalResponse<TestWebhookEndpoint200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"TestWebhookEndpoint400", TestWebhookEndpoint400>
       | OpenAiClientError<"TestWebhookEndpoint404", TestWebhookEndpoint404>
-      | OpenAiClientError<"TestWebhookEndpoint500", TestWebhookEndpoint500>
+      | OpenAiClientError<"TestWebhookEndpoint500", TestWebhookEndpoint500>,
+      R
     >
   }
   /**
@@ -68866,17 +69982,21 @@ export interface OpenAiClient {
       options: { readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<ListWebhookEventTypes200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"ListWebhookEventTypes401", ListWebhookEventTypes401>
+      | OpenAiClientError<"ListWebhookEventTypes401", ListWebhookEventTypes401>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: { readonly config?: Config | undefined } | undefined
     ): Effect.Effect<
       WithOptionalResponse<ListWebhookEventTypes200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
-      | OpenAiClientError<"ListWebhookEventTypes401", ListWebhookEventTypes401>
+      | OpenAiClientError<"ListWebhookEventTypes401", ListWebhookEventTypes401>,
+      R
     >
   }
   /**
@@ -68897,12 +70017,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCreateResponse400", BetaCreateResponse400>
       | OpenAiClientError<"BetaCreateResponse404", BetaCreateResponse404>
       | OpenAiClientError<"BetaCreateResponse429", BetaCreateResponse429>
-      | OpenAiClientError<"BetaCreateResponse503", BetaCreateResponse503>
+      | OpenAiClientError<"BetaCreateResponse503", BetaCreateResponse503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -68912,12 +70034,14 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCreateResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCreateResponse400", BetaCreateResponse400>
       | OpenAiClientError<"BetaCreateResponse404", BetaCreateResponse404>
       | OpenAiClientError<"BetaCreateResponse429", BetaCreateResponse429>
-      | OpenAiClientError<"BetaCreateResponse503", BetaCreateResponse503>
+      | OpenAiClientError<"BetaCreateResponse503", BetaCreateResponse503>,
+      R
     >
   }
   /**
@@ -68936,8 +70060,8 @@ export interface OpenAiClient {
     }
   ) => Stream.Stream<
     { readonly event: string; readonly id: string | undefined; readonly data: BetaCreateResponse200Sse },
-    HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
-    typeof BetaCreateResponse200Sse.DecodingServices
+    E | HttpClientError.HttpClientError | SchemaError | Sse.Retry | Sse.SseError,
+    R | typeof BetaCreateResponse200Sse.DecodingServices
   >
   /**
    * Retrieves a model response with the given ID.
@@ -68948,10 +70072,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof BetaGetResponseParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaGetResponse404", BetaGetResponse404>
-      | OpenAiClientError<"BetaGetResponse429", BetaGetResponse429>
+      | OpenAiClientError<"BetaGetResponse429", BetaGetResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -68961,10 +70087,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaGetResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaGetResponse404", BetaGetResponse404>
-      | OpenAiClientError<"BetaGetResponse429", BetaGetResponse429>
+      | OpenAiClientError<"BetaGetResponse429", BetaGetResponse429>,
+      R
     >
   }
   /**
@@ -68976,10 +70104,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof BetaDeleteResponseParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaDeleteResponse404", BetaDeleteResponse404>
-      | OpenAiClientError<"BetaDeleteResponse429", BetaDeleteResponse429>
+      | OpenAiClientError<"BetaDeleteResponse429", BetaDeleteResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -68989,10 +70119,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaDeleteResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaDeleteResponse404", BetaDeleteResponse404>
-      | OpenAiClientError<"BetaDeleteResponse429", BetaDeleteResponse429>
+      | OpenAiClientError<"BetaDeleteResponse429", BetaDeleteResponse429>,
+      R
     >
   }
   /**
@@ -69006,10 +70138,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof BetaCancelResponseParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaCancelResponse200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCancelResponse404", BetaCancelResponse404>
-      | OpenAiClientError<"BetaCancelResponse429", BetaCancelResponse429>
+      | OpenAiClientError<"BetaCancelResponse429", BetaCancelResponse429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -69019,10 +70153,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaCancelResponse200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCancelResponse404", BetaCancelResponse404>
-      | OpenAiClientError<"BetaCancelResponse429", BetaCancelResponse429>
+      | OpenAiClientError<"BetaCancelResponse429", BetaCancelResponse429>,
+      R
     >
   }
   /**
@@ -69039,11 +70175,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCompactconversation200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCompactconversation400", BetaCompactconversation400>
       | OpenAiClientError<"BetaCompactconversation429", BetaCompactconversation429>
-      | OpenAiClientError<"BetaCompactconversation503", BetaCompactconversation503>
+      | OpenAiClientError<"BetaCompactconversation503", BetaCompactconversation503>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -69053,11 +70191,13 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaCompactconversation200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaCompactconversation400", BetaCompactconversation400>
       | OpenAiClientError<"BetaCompactconversation429", BetaCompactconversation429>
-      | OpenAiClientError<"BetaCompactconversation503", BetaCompactconversation503>
+      | OpenAiClientError<"BetaCompactconversation503", BetaCompactconversation503>,
+      R
     >
   }
   /**
@@ -69069,10 +70209,12 @@ export interface OpenAiClient {
       options: { readonly params?: typeof BetaListInputItemsParams.Encoded | undefined; readonly config: Config }
     ): Effect.Effect<
       WithOptionalResponse<BetaListInputItems200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaListInputItems404", BetaListInputItems404>
-      | OpenAiClientError<"BetaListInputItems429", BetaListInputItems429>
+      | OpenAiClientError<"BetaListInputItems429", BetaListInputItems429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       responseId: string,
@@ -69082,10 +70224,12 @@ export interface OpenAiClient {
       } | undefined
     ): Effect.Effect<
       WithOptionalResponse<BetaListInputItems200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaListInputItems404", BetaListInputItems404>
-      | OpenAiClientError<"BetaListInputItems429", BetaListInputItems429>
+      | OpenAiClientError<"BetaListInputItems429", BetaListInputItems429>,
+      R
     >
   }
   /**
@@ -69102,10 +70246,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetinputtokencounts200, Config>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaGetinputtokencounts400", BetaGetinputtokencounts400>
-      | OpenAiClientError<"BetaGetinputtokencounts429", BetaGetinputtokencounts429>
+      | OpenAiClientError<"BetaGetinputtokencounts429", BetaGetinputtokencounts429>,
+      R
     >
     <Config extends OperationConfig | undefined = undefined>(
       options: {
@@ -69115,10 +70261,12 @@ export interface OpenAiClient {
       }
     ): Effect.Effect<
       WithOptionalResponse<BetaGetinputtokencounts200, Config | undefined>,
+      | E
       | HttpClientError.HttpClientError
       | SchemaError
       | OpenAiClientError<"BetaGetinputtokencounts400", BetaGetinputtokencounts400>
-      | OpenAiClientError<"BetaGetinputtokencounts429", BetaGetinputtokencounts429>
+      | OpenAiClientError<"BetaGetinputtokencounts429", BetaGetinputtokencounts429>,
+      R
     >
   }
 }
