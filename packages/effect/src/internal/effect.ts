@@ -4050,59 +4050,60 @@ export const scopeCloseUnsafe = <A, E>(self: Scope.Scope, exit_: Exit.Exit<A, E>
     closeScopeObservers(self)
     return
   }
-  const parent = getCurrentFiber()!
-  const inspection = parent.getRef(CurrentInspection)
-  if (inspection !== undefined || internalInspection.scopeObservers.has(self)) {
-    if (!internalInspection.scopeObservers.has(self)) internalInspection.scopeObservers.set(self, new Set())
-    ;(parent as FiberImpl)._stack.push(scopeCloseInspection(self))
-  }
+  let cleanup: Effect.Effect<unknown>
+  let single:
+    | ReadonlyArray<readonly [object | undefined, (exit: Exit.Exit<any, any>) => Effect.Effect<unknown>]>
+    | undefined
   if (state.finalizer !== undefined) {
-    if (inspection !== undefined) {
-      const context = parent.context
-      internalInspection.register(self, inspection, self, "Scope.close", () => ({
-        scope: self,
-        exit: exit_,
-        finalizers: [[state.finalizerKey, state.finalizer]],
-        index: 0,
-        exits: [],
-        fibers: [],
-        parent,
-        context
-      }))
-    }
-    return runFinalizer(state.finalizer, exit_)
+    single = [[state.finalizerKey, state.finalizer]]
+    cleanup = runFinalizer(state.finalizer, exit_)
+  } else if (state.finalizers!.size === 1) {
+    single = Array.from(state.finalizers!)
+    cleanup = runFinalizer(single[0][1], exit_)
+  } else {
+    cleanup = scopeCloseFinalizers(self, state.finalizers!, exit_)
   }
-  const finalizers = state.finalizers!
-  if (finalizers.size === 1) {
-    if (inspection !== undefined) {
-      const context = parent.context
-      internalInspection.register(self, inspection, self, "Scope.close", () => ({
-        scope: self,
-        exit: exit_,
-        finalizers: Array.from(finalizers),
-        index: 0,
-        exits: [],
-        fibers: [],
-        parent,
-        context
-      }))
-    }
-    return runFinalizer(finalizers.values().next().value!, exit_)
+  if (effectIsExit(cleanup)) {
+    closeScopeObservers(self)
+    return cleanup
   }
-  return scopeCloseFinalizers(self, finalizers, exit_)
+  const original = cleanup as unknown as Primitive
+  const observed = Object.create(original)
+  observed[evaluate] = (parent: FiberImpl) => {
+    let observers = internalInspection.scopeObservers.get(self)
+    if (observers === undefined) {
+      internalInspection.scopeObservers.set(self, observers = { disposers: new Set(), closings: new Set() })
+    }
+    const closing = { scope: self, cleanup, exit: exit_, finalizers: single, parent, context: parent.context }
+    observers.closings.add(closing)
+    const inspection = parent.getRef(CurrentInspection)
+    const unregister = single === undefined ? undefined : inspection?.register(closing, "Scope.close", () => ({
+      ...closing,
+      index: 0,
+      exits: [],
+      fibers: []
+    }))
+    parent._stack.push(scopeCloseInspection(() => {
+      unregister?.()
+      observers.closings.delete(closing)
+      closeScopeObservers(self)
+    }))
+    return original[evaluate]!.call(original, parent)
+  }
+  return observed as Effect.Effect<unknown>
 }
 
 const closeScopeObservers = (scope: Scope.Scope): void => {
   const observers = internalInspection.scopeObservers.get(scope)
-  if (observers === undefined) return
+  if (observers === undefined || observers.closings.size > 0) return
   internalInspection.scopeObservers.delete(scope)
-  for (const unregister of observers) unregister()
+  for (const unregister of observers.disposers) unregister()
 }
 
-const scopeCloseInspection: (scope: Scope.Scope) => Primitive = makePrimitive({
+const scopeCloseInspection: (unregister: () => void) => Primitive = makePrimitive({
   op: "ScopeCloseInspection",
   [contAll]() {
-    closeScopeObservers(this[args])
+    this[args]()
   }
 })
 
@@ -4138,7 +4139,7 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
   const inspection = parent.getRef(CurrentInspection)
   const context = parent.context
   if (inspection !== undefined) {
-    internalInspection.register(self, inspection, self, "Scope.close", () => ({
+    const unregister = inspection.register(arr, "Scope.close", () => ({
       scope: self,
       exit: exit_,
       finalizers: arr,
@@ -4148,6 +4149,7 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
       parent,
       context
     }))
+    ;(parent as FiberImpl)._stack.push(scopeCloseInspection(unregister))
   }
   for (; index >= 0; index--) {
     const [key, finalizer] = arr[index]

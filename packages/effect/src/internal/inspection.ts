@@ -2,7 +2,10 @@ import type * as Inspection from "../Inspection.ts"
 import type * as Scope from "../Scope.ts"
 
 /** @internal */
-export const scopeObservers = new WeakMap<Scope.Scope, Set<() => void>>()
+export const scopeObservers = new WeakMap<Scope.Scope, {
+  readonly disposers: Set<() => void>
+  readonly closings: Set<object>
+}>()
 
 /** @internal */
 export const switchMapSources = new WeakMap<object, {
@@ -32,6 +35,6 @@ export const register = (
     unregister()
     return
   }
-  if (observers === undefined) scopeObservers.set(scope, observers = new Set())
-  observers.add(unregister)
+  if (observers === undefined) scopeObservers.set(scope, observers = { disposers: new Set(), closings: new Set() })
+  observers.disposers.add(unregister)
 }
