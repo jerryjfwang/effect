@@ -7123,8 +7123,8 @@ export const drop: {
   <A, E, R>(self: Stream<A, E, R>, n: number): Stream<A, E, R> => {
     const count = Count.normalize(n)
     if (count === 0) return self
-    return transformPull(self, (pull, _scope) =>
-      Effect.sync(() => {
+    const stream = transformPull(self, (pull, scope) =>
+      Effect.suspend(() => {
         let dropped = 0
         const pump: Pull.Pull<Arr.NonEmptyReadonlyArray<A>, E, void, R> = pull.pipe(
           Effect.flatMap((chunk) => {
@@ -7134,8 +7134,23 @@ export const drop: {
             return Effect.succeed(chunk.slice(count - dropped) as Arr.NonEmptyArray<A>)
           })
         )
-        return pump
+        const fiber = Fiber.getCurrent()!
+        const inspection = fiber.getRef(Inspection.CurrentInspection)
+        if (inspection === undefined) return Effect.succeed(pump)
+        const context = fiber.context
+        const unregister = inspection.register(pump, "Stream.drop", () => ({
+          stream,
+          source: self,
+          pull,
+          scope,
+          fiber,
+          context,
+          count,
+          dropped
+        }))
+        return Effect.as(Scope.addFinalizer(scope, Effect.sync(unregister)), pump)
       }))
+    return stream
   }
 )
 
@@ -9782,6 +9797,7 @@ export const changesWith: {
         const fiber = Fiber.getCurrent()!
         const inspection = fiber.getRef(Inspection.CurrentInspection)
         if (inspection === undefined) return Effect.succeed(pump)
+        const context = fiber.context
         const unregister = inspection.register(pump, "Stream.changesWith", () => ({
           stream,
           source: self,
@@ -9789,7 +9805,7 @@ export const changesWith: {
           pull,
           scope,
           fiber,
-          context: fiber.context,
+          context,
           first,
           last
         }))
