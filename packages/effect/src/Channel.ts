@@ -6398,8 +6398,8 @@ export const switchMap: {
     InErr & InErr1,
     InDone & InDone1,
     Env | Env1
-  > =>
-    self.pipe(
+  > => {
+    const channel = self.pipe(
       map(f),
       mergeAll({
         ...options,
@@ -6407,6 +6407,9 @@ export const switchMap: {
         switch: true
       })
     )
+    internalInspection.switchMapSources.set(channel, { source: self, mapper: f })
+    return channel
+  }
 )
 
 /**
@@ -6576,6 +6579,7 @@ export const mergeAll: {
           internalInspection.register(forkedScope, inspection, fibers, "Channel.mergeAll", () => ({
             channel,
             source: channels,
+            provenance: internalInspection.switchMapSources.get(channel),
             upstream,
             pull,
             scope,

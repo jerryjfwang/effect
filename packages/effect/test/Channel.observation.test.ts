@@ -1,8 +1,26 @@
 import { assert, describe, it } from "@effect/vitest"
-import { Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope } from "effect"
+import { Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Stream } from "effect"
 import * as Inspection from "effect/Inspection"
 
 describe("Channel observation", () => {
+  it.effect("retains the Stream mapper identity through Channel lowering", () =>
+    Effect.gen(function*() {
+      let observed: any
+      const inspection = Inspection.make({
+        register(_owner, kind, read) {
+          if (kind === "Channel.mergeAll") observed = read()
+          return () => {}
+        }
+      })
+      const source = Stream.make(1, 2)
+      const mapper = (value: number) => Stream.succeed(value + 1)
+      const stream = Stream.switchMap(source, mapper)
+      yield* Stream.runCollect(stream).pipe(Effect.provideService(Inspection.CurrentInspection, inspection))
+      assert.strictEqual(observed.provenance.stream.source, source)
+      assert.strictEqual(observed.provenance.stream.mapper, mapper)
+      assert.strictEqual(observed.channel, stream.channel)
+    }))
+
   it.effect("retains a retiring worker and its constructed replacement through cleanup", () =>
     Effect.gen(function*() {
       const entered = yield* Latch.make()

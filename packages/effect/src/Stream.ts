@@ -2433,12 +2433,16 @@ export const switchMap: {
     readonly concurrency?: Concurrency | undefined
     readonly bufferSize?: number | undefined
   } | undefined
-): Stream<A2, E | E2, R | R2> =>
-  self.channel.pipe(
+): Stream<A2, E | E2, R | R2> => {
+  const stream = self.channel.pipe(
     Channel.flattenArray,
     Channel.switchMap((a) => f(a).channel, options),
     fromChannel
-  ))
+  )
+  const source = internalInspection.switchMapSources.get(stream.channel)!
+  internalInspection.switchMapSources.set(stream.channel, { ...source, stream: { source: self, mapper: f } })
+  return stream
+})
 
 /**
  * Flattens a stream of streams into a single stream.
