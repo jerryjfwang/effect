@@ -1668,21 +1668,28 @@ export interface SubscriptionObservation<A> {
   readonly unread: ReadonlyArray<A>
   readonly cursor: {
     readonly owner: PubSub.BackingSubscription<A>
-    readonly head: Readonly<Node<A>>
+    readonly head: object
     readonly index: number
     readonly unsubscribed: boolean
   }
   readonly publisher: {
     readonly owner: PubSub.Atomic<A>
-    readonly head: Readonly<Node<A>>
-    readonly tail: Readonly<Node<A>>
+    readonly head: object
+    readonly tail: object
+    readonly nodes: ReadonlyArray<{
+      readonly owner: object
+      readonly value: A | AbsentValue
+      readonly replayIndex: number | undefined
+      readonly subscribers: number
+      readonly next: object | null
+    }>
     readonly publisherIndex: number
     readonly subscribersIndex: number
-    readonly replayBuffer: Readonly<ReplayBuffer<A>> | undefined
+    readonly replayBuffer: ReplayBufferObservation<A> | undefined
   }
   readonly replay: {
     readonly owner: PubSub.ReplayWindow<A>
-    readonly buffer: Readonly<ReplayBuffer<A>>
+    readonly buffer: ReplayBufferObservation<A>
     readonly values: ReadonlyArray<A | AbsentValue>
     readonly index: number
     readonly remaining: number
@@ -1692,6 +1699,25 @@ export interface SubscriptionObservation<A> {
   readonly pollers: ReadonlyArray<Deferred.Deferred<A>>
   readonly ended: Option.Option<A>
   readonly shutdown: boolean
+}
+
+/**
+ * Copied replay-buffer metadata retaining native node and payload identities.
+ *
+ * @stability unstable
+ * @category models
+ * @since 4.1.3
+ */
+export interface ReplayBufferObservation<A> {
+  readonly owner: object
+  readonly capacity: number
+  readonly head: object
+  readonly tail: object
+  readonly size: number
+  readonly index: number
+  readonly publisherIndex: number
+  readonly entries: ReadonlyArray<{ readonly owner: object; readonly value: A | AbsentValue; readonly index: number }>
+  readonly slideValues: ReadonlyArray<{ readonly value: A; readonly index: number }>
 }
 
 /**
@@ -1731,6 +1757,18 @@ export const observeSubscriptionUnsafe = <A>(
   }
   const backing = self.subscription.observeUnsafe()
   const replay = self.replayWindow instanceof ReplayWindowImpl ? self.replayWindow : undefined
+  const nodes: Array<SubscriptionObservation<A>["publisher"]["nodes"][number]> = []
+  let node: Node<A> | null = self.pubsub.publisherHead
+  while (node !== null) {
+    nodes.push({
+      owner: node,
+      value: node.value,
+      replayIndex: node.replayIndex,
+      subscribers: node.subscribers,
+      next: node.next
+    })
+    node = node.next
+  }
   return Result.succeed({
     subscription: self,
     unread: backing.unread,
@@ -1739,13 +1777,14 @@ export const observeSubscriptionUnsafe = <A>(
       owner: self.pubsub,
       head: self.pubsub.publisherHead,
       tail: self.pubsub.publisherTail,
+      nodes,
       publisherIndex: self.pubsub.publisherIndex,
       subscribersIndex: self.pubsub.subscribersIndex,
-      replayBuffer: self.pubsub.replayBuffer
+      replayBuffer: self.pubsub.replayBuffer?.observeUnsafe()
     },
     replay: replay && {
       owner: replay,
-      buffer: replay.buffer,
+      buffer: replay.buffer.observeUnsafe(),
       values: replay.values.slice(),
       index: replay.index,
       remaining: replay.remaining,
@@ -3041,6 +3080,26 @@ class ReplayBuffer<A> {
 
   constructor(capacity: number) {
     this.capacity = capacity
+  }
+
+  observeUnsafe(): ReplayBufferObservation<A> {
+    const entries: Array<ReplayBufferObservation<A>["entries"][number]> = []
+    let node = this.head
+    for (let i = 0; i < this.size; i++) {
+      entries.push({ owner: node, value: node.value, index: node.index })
+      node = node.next!
+    }
+    return {
+      owner: this,
+      capacity: this.capacity,
+      head: this.head,
+      tail: this.tail,
+      size: this.size,
+      index: this.index,
+      publisherIndex: this.publisherIndex,
+      entries,
+      slideValues: this.slideValues.map((entry) => ({ value: entry.value, index: entry.index }))
+    }
   }
 
   slide(value: A, publisherIndex: number): void {

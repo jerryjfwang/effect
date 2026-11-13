@@ -2,6 +2,19 @@ import { assert, describe, it } from "@effect/vitest"
 import { Effect, PubSub, Result } from "effect"
 
 describe("PubSub observation", () => {
+  it.effect("keeps copied replay metadata stable while publishers advance", () =>
+    Effect.gen(function*() {
+      const pubsub = yield* PubSub.unbounded<number>({ replay: 2 })
+      yield* PubSub.publish(pubsub, 1)
+      const subscription = yield* PubSub.subscribe(pubsub)
+      const observed = PubSub.observeSubscriptionUnsafe(subscription)
+      assert.isTrue(Result.isSuccess(observed))
+      if (Result.isFailure(observed)) return
+      yield* PubSub.publish(pubsub, 2)
+      assert.strictEqual(observed.success.publisher.replayBuffer?.publisherIndex, 1)
+      assert.deepStrictEqual(yield* PubSub.takeAll(subscription), [1, 2])
+    }))
+
   it.effect("observes unread values without advancing either subscriber", () =>
     Effect.gen(function*() {
       const pubsub = yield* PubSub.unbounded<number>({ replay: 2 })
