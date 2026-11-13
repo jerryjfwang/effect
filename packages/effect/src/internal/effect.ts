@@ -582,8 +582,8 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
   declare _deferredInterrupt: boolean
   declare _parent: FiberImpl<any, any> | undefined
   declare _asyncContext: AsyncContext | undefined
+  declare private inspectionService: Inspection | undefined
   declare private inspection: {
-    readonly service: Inspection
     readonly creation: FiberCreation
     readonly creator: Fiber.Fiber<any, any> | undefined
     unregister: () => void
@@ -598,17 +598,21 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
   get currentDispatcher(): Scheduler.SchedulerDispatcher {
     if (this._dispatcher === undefined) {
       this._dispatcher = this.cache.scheduler.makeDispatcher()
-      this.refreshInspection()
+      if (this._exit === undefined) {
+        this.refreshInspection()
+      } else if (this.inspectionService !== undefined) {
+        Scheduler.inspectDispatcher(this._dispatcher, this.cache.scheduler, undefined, this.inspectionService)
+      }
     }
     return this._dispatcher
   }
 
   private refreshInspection(creation?: FiberCreation): void {
     if (this._stack === undefined || this._exit !== undefined) return
-    const service = this.inspection?.service ?? this.getRef(CurrentInspection)
+    const service = this.inspectionService ?? this.getRef(CurrentInspection)
     if (service === undefined) return
+    this.inspectionService = service
     const inspection = this.inspection ??= {
-      service,
       creation: creation ?? { site: "Unobserved" },
       creator: creation === undefined ? undefined : getCurrentFiber(),
       unregister: constVoid

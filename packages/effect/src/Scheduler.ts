@@ -220,7 +220,7 @@ export class MixedScheduler implements Scheduler {
 export const inspectDispatcher = (
   dispatcher: SchedulerDispatcher,
   scheduler: Scheduler,
-  fiber: Fiber.Fiber<any, any>,
+  fiber: Fiber.Fiber<any, any> | undefined,
   inspection: Inspection.Inspection
 ): (() => void) | undefined => MixedSchedulerDispatcher.inspect(dispatcher, scheduler, fiber, inspection)
 
@@ -248,7 +248,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
   static inspect(
     dispatcher: SchedulerDispatcher,
     scheduler: Scheduler,
-    fiber: Fiber.Fiber<any, any>,
+    fiber: Fiber.Fiber<any, any> | undefined,
     service: Inspection.Inspection
   ): (() => void) | undefined {
     if (!(#inspection in dispatcher) || Object.getPrototypeOf(dispatcher) !== MixedSchedulerDispatcher.prototype) return
@@ -256,9 +256,12 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
     return dispatcher.attachInspection(fiber, service)
   }
 
-  private attachInspection(fiber: Fiber.Fiber<any, any>, service: Inspection.Inspection): (() => void) | undefined {
-    if (this.#inspection !== undefined) return
+  private attachInspection(
+    fiber: Fiber.Fiber<any, any> | undefined,
+    service: Inspection.Inspection
+  ): (() => void) | undefined {
     this.#inspectionService ??= service
+    if (fiber === undefined || this.#inspection !== undefined) return
     const inspection = this.activateInspection(fiber, this.#inspectionService)
     return () => {
       inspection.fiber = undefined

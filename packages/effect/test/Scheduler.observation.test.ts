@@ -1,7 +1,140 @@
 import { assert, describe, it } from "@effect/vitest"
-import { Context, Effect, Exit, Fiber, Inspection, Latch, Queue, Scheduler } from "effect"
+import { Context, Effect, Exit, Fiber, Inspection, Latch, Queue, Scheduler, Schema, Scope } from "effect"
+
+import { Rpc, RpcClient, RpcGroup, type RpcMessage } from "effect/rpc"
 
 describe("Scheduler observation", () => {
+  for (const phase of ["AfterCompletion", "CompletionObserver"] as const) {
+    for (const mode of ["Absent", "Present", "Register", "Unregister"] as const) {
+      it(`retains first inspection affinity for ${phase} dispatcher access with ${mode}`, () => {
+        const tasks: Array<() => void> = []
+        const events: Array<number> = []
+        const snapshots: Array<any> = []
+        let fiberRegistrations = 0
+        let foreignDispatchers = 0
+        const inspection = Inspection.make({
+          register(_owner, kind, read) {
+            if (kind === "Fiber") fiberRegistrations++
+            if (kind === "Scheduler.MixedDispatcher") snapshots.push(read())
+            if (mode === "Register") throw new Error("register")
+            return () => {
+              if (mode === "Unregister") throw new Error("unregister")
+            }
+          }
+        })
+        const other = Inspection.make({
+          register(_owner, kind) {
+            if (kind === "Scheduler.MixedDispatcher") foreignDispatchers++
+            return () => {}
+          }
+        })
+        const scheduler = new Scheduler.MixedScheduler("async", (task) => {
+          tasks.push(task)
+          return () => {}
+        })
+        const context = Context.make(Scheduler.Scheduler, scheduler).pipe(
+          Context.add(Inspection.CurrentInspection, mode === "Absent" ? undefined : inspection)
+        )
+        let resume: (effect: Effect.Effect<void>) => void = () => {}
+        const fiber = Effect.runForkWith(context)(Effect.callback<void>((complete) => {
+          resume = complete
+        }))
+        let dispatcher: Scheduler.SchedulerDispatcher | undefined
+        const before = fiberRegistrations
+        if (phase === "CompletionObserver") {
+          fiber.addObserver(() => {
+            dispatcher = fiber.currentDispatcher
+            dispatcher.flush()
+            assert.strictEqual(snapshots.length, 0)
+            dispatcher.scheduleTask(() => events.push(1), 0)
+          })
+          resume(Effect.void)
+        } else {
+          resume(Effect.void)
+          const accessed = Effect.runForkWith(Context.make(Inspection.CurrentInspection, other))(
+            Effect.sync(() => fiber.currentDispatcher)
+          ).pollUnsafe()!
+          assert.isTrue(Exit.isSuccess(accessed))
+          if (Exit.isFailure(accessed)) return
+          dispatcher = accessed.value
+          dispatcher.flush()
+          assert.strictEqual(snapshots.length, 0)
+          dispatcher.scheduleTask(() => events.push(1), 0)
+        }
+        assert.deepStrictEqual(fiber.pollUnsafe(), Exit.void)
+        assert.strictEqual(fiberRegistrations, before)
+        assert.strictEqual(snapshots.length, mode === "Absent" ? 0 : 1)
+        if (mode !== "Absent") assert.strictEqual(snapshots[0].fiber, undefined)
+        while (tasks.length > 0) tasks.shift()!()
+        dispatcher!.scheduleTask(() => events.push(2), 0)
+        while (tasks.length > 0) tasks.shift()!()
+        assert.deepStrictEqual(events, [1, 2])
+        assert.strictEqual(fiberRegistrations, before)
+        assert.strictEqual(foreignDispatchers, 0)
+        assert.strictEqual(snapshots.length, mode === "Absent" ? 0 : 2)
+        assert.strictEqual(inspection.failure()._tag, mode === "Register" || mode === "Unregister" ? "Some" : "None")
+      })
+    }
+  }
+
+  it("observes the native RPC sender interruption scheduled after its caller completes", () => {
+    const tasks: Array<() => void> = []
+    const readers = new Map<object, { kind: string; read: () => any }>()
+    const inspection = Inspection.make({
+      register(owner, kind, read) {
+        readers.set(owner, { kind, read })
+        return () => readers.delete(owner)
+      }
+    })
+    const scheduler = new Scheduler.MixedScheduler("async", (task) => {
+      tasks.push(task)
+      return () => {}
+    })
+    const scope = Scope.makeUnsafe()
+    const context = Context.make(Inspection.CurrentInspection, inspection).pipe(
+      Context.add(Scheduler.Scheduler, scheduler),
+      Context.add(Scope.Scope, scope)
+    )
+    const run = Effect.runForkWith(context)
+    const group = RpcGroup.make(Rpc.make("Ping", { success: Schema.String }))
+    let requestId: RpcMessage.RequestId | undefined
+    let sender: Fiber.Fiber<unknown, unknown> | undefined
+    const created = run(RpcClient.makeNoSerialization(group, {
+      disableTracing: true,
+      onFromClient: ({ message }) => {
+        if (message._tag !== "Request") return Effect.void
+        requestId = message.id
+        return Effect.callback(() => {
+          sender = Fiber.getCurrent()
+        })
+      }
+    })).pollUnsafe()!
+    assert.isTrue(Exit.isSuccess(created))
+    if (Exit.isFailure(created)) return
+    const { client, write } = created.value
+    const caller = run(client.Ping())
+    try {
+      assert.isUndefined(caller.pollUnsafe())
+      const response = run(write({ _tag: "Exit", clientId: 0, requestId: requestId!, exit: Exit.succeed("reply") }))
+      assert.deepStrictEqual(caller.pollUnsafe(), Exit.succeed("reply"))
+      assert.deepStrictEqual(response.pollUnsafe(), Exit.void)
+      assert.isUndefined(sender!.pollUnsafe())
+      const dispatchers = Array.from(readers.values()).filter((entry) => entry.kind === "Scheduler.MixedDispatcher")
+      assert.strictEqual(dispatchers.length, 1)
+      assert.strictEqual(dispatchers[0].read().fiber, undefined)
+      assert.isFalse(readers.has(caller))
+      assert.strictEqual(tasks.length, 1)
+      while (tasks.length > 0) tasks.shift()!()
+      assert.isTrue(Exit.isFailure(sender!.pollUnsafe()!))
+    } finally {
+      while (tasks.length > 0) tasks.shift()!()
+      const closing = run(Scope.close(scope, Exit.void))
+      while (tasks.length > 0) tasks.shift()!()
+      assert.deepStrictEqual(closing.pollUnsafe(), Exit.void)
+    }
+    assert.strictEqual(readers.size, 0)
+  })
+
   for (const enabled of [false, true]) {
     it(`preserves transparent native dispatcher proxies with inspection ${enabled}`, () => {
       const tasks: Array<() => void> = []
