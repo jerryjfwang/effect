@@ -304,7 +304,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
    */
   scheduleTask(task: () => void, priority: number) {
     this.tasks.scheduleTask(task, priority)
-    if (this.#inspection === undefined && this.#inspectionService !== undefined) {
+    if (#inspection in this && this.#inspection === undefined && this.#inspectionService !== undefined) {
       this.activateInspection(undefined, this.#inspectionService)
     }
     if (this.running === undefined) {
@@ -327,7 +327,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
     const buckets = this.tasks.drain()
     let i = 0
     let j = 0
-    const inspection = this.#inspection
+    const inspection = #inspection in this ? this.#inspection : undefined
     if (inspection !== undefined) inspection.frames.push(() => ({ buckets, i, j }))
     try {
       for (; i < buckets.length; i++) {
@@ -337,8 +337,10 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
         }
       }
     } finally {
-      inspection?.frames.pop()
-      this.retireInspection()
+      if (#inspection in this) {
+        inspection?.frames.pop()
+        this.retireInspection()
+      }
     }
   }
 
@@ -353,7 +355,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
       }
       this.runTasks()
     }
-    this.retireInspection()
+    if (#inspection in this) this.retireInspection()
   }
 }
 

@@ -2,6 +2,63 @@ import { assert, describe, it } from "@effect/vitest"
 import { Context, Effect, Exit, Fiber, Inspection, Latch, Queue, Scheduler } from "effect"
 
 describe("Scheduler observation", () => {
+  for (const enabled of [false, true]) {
+    it(`preserves transparent native dispatcher proxies with inspection ${enabled}`, () => {
+      const tasks: Array<() => void> = []
+      const events: Array<string> = []
+      let nativeReaders = 0
+      let observed: unknown
+      const inspection = Inspection.make({
+        register(_owner, kind, read) {
+          if (kind === "Fiber") observed = (read() as any).dispatcher
+          if (kind === "Scheduler.MixedDispatcher") nativeReaders++
+          return () => {}
+        }
+      })
+      const nativeScheduler = new Scheduler.MixedScheduler("async", (task) => {
+        events.push("schedule")
+        let active = true
+        tasks.push(() => {
+          if (active) task()
+        })
+        return () => {
+          active = false
+          events.push("cancel")
+        }
+      })
+      const proxy = new Proxy(nativeScheduler.makeDispatcher(), {})
+      const scheduler: Scheduler.Scheduler = {
+        executionMode: "async",
+        shouldYield: () => false,
+        makeDispatcher: () => proxy
+      }
+      const context = Context.make(Scheduler.Scheduler, scheduler).pipe(
+        Context.add(Inspection.CurrentInspection, enabled ? inspection : undefined)
+      )
+      const fiber = Effect.runForkWith(context)(Effect.as(Effect.yieldNow, 7))
+      proxy.flush()
+      while (tasks.length > 0) tasks.shift()!()
+      assert.deepStrictEqual(fiber.pollUnsafe(), Exit.succeed(7))
+      assert.deepStrictEqual(events, ["schedule", "cancel"])
+      if (enabled) assert.strictEqual(observed === proxy, true)
+      assert.strictEqual(nativeReaders, 0)
+      const defect = new Error("native proxy task")
+      proxy.scheduleTask(() => {
+        throw defect
+      }, 0)
+      let thrown: unknown
+      try {
+        proxy.flush()
+      } catch (error) {
+        thrown = error
+      }
+      while (tasks.length > 0) tasks.shift()!()
+      assert.strictEqual(thrown, defect)
+      assert.deepStrictEqual(events, ["schedule", "cancel", "schedule", "cancel"])
+      proxy.flush()
+    })
+  }
+
   it("observes Queue work scheduled after its creating Fiber has completed", () => {
     const tasks: Array<() => void> = []
     const readers = new Map<object, () => any>()
