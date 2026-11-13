@@ -14,6 +14,7 @@ import type { LazyArg } from "../Function.ts"
 import { constant, constFalse, constTrue, constUndefined, constVoid, dual, identity } from "../Function.ts"
 import * as Hash from "../Hash.ts"
 import { toJson, toStringUnknown } from "../Inspectable.ts"
+import { CurrentInspection } from "../Inspection.ts"
 import * as Iterable from "../Iterable.ts"
 import type * as _Latch from "../Latch.ts"
 import type * as Logger from "../Logger.ts"
@@ -4083,8 +4084,20 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
   const fibers: Array<Fiber.Fiber<any, never>> = []
   const arr = Array.from(finalizers)
   const parent = getCurrentFiber()!
-  for (let i = arr.length - 1; i >= 0; i--) {
-    const [key, finalizer] = arr[i]
+  let index = arr.length - 1
+  const inspection = parent.getRef(CurrentInspection)
+  const unregister = inspection?.register(self, "Scope.close", () => ({
+    scope: self,
+    exit: exit_,
+    finalizers: arr,
+    index,
+    exits,
+    fibers,
+    parent,
+    context: parent.context
+  }))
+  for (; index >= 0; index--) {
+    const [key, finalizer] = arr[index]
     if (self.strategy === "sequential") {
       exits.push(yield* exit(runFinalizer(finalizer, exit_)))
     } else if (key !== parent) {
@@ -4096,6 +4109,7 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
   if (fibers.length > 0) {
     exits = yield* fiberAwaitAll(fibers)
   }
+  unregister?.()
   return yield* exitAsVoidAll(exits)
 })
 
