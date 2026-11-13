@@ -12,6 +12,8 @@
  */
 import * as Context from "./Context.ts"
 import type * as Fiber from "./Fiber.ts"
+import { constVoid } from "./Function.ts"
+import type * as Inspection from "./Inspection.ts"
 
 /**
  * A scheduler manages the execution of Effect fibers by controlling when queued
@@ -210,19 +212,81 @@ export class MixedScheduler implements Scheduler {
    * @since 4.0.0
    */
   makeDispatcher() {
-    return new MixedSchedulerDispatcher(this.setImmediate)
+    return new MixedSchedulerDispatcher(this)
   }
+}
+
+/** @internal */
+export const inspectDispatcher = (
+  dispatcher: SchedulerDispatcher,
+  scheduler: Scheduler,
+  fiber: Fiber.Fiber<any, any>,
+  inspection: Inspection.Inspection
+): (() => void) | undefined => MixedSchedulerDispatcher.inspect(dispatcher, scheduler, fiber, inspection)
+
+interface DispatcherInspection {
+  fiber: Fiber.Fiber<any, any> | undefined
+  readonly frames: Array<() => { buckets: ReturnType<PriorityBuckets["drain"]>; i: number; j: number }>
+  unregister: () => void
 }
 
 class MixedSchedulerDispatcher implements SchedulerDispatcher {
   private tasks = new PriorityBuckets()
   private running: (() => void) | undefined = undefined
+  #inspection: DispatcherInspection | undefined
+  readonly scheduler: MixedScheduler
   readonly setImmediate: (f: () => void) => () => void
 
   constructor(
-    setImmediateFn: (f: () => void) => () => void = setImmediate
+    scheduler: MixedScheduler
   ) {
-    this.setImmediate = setImmediateFn
+    this.scheduler = scheduler
+    this.setImmediate = scheduler.setImmediate
+  }
+
+  static inspect(
+    dispatcher: SchedulerDispatcher,
+    scheduler: Scheduler,
+    fiber: Fiber.Fiber<any, any>,
+    service: Inspection.Inspection
+  ): (() => void) | undefined {
+    if (!(#inspection in dispatcher) || Object.getPrototypeOf(dispatcher) !== MixedSchedulerDispatcher.prototype) return
+    if (dispatcher.scheduler !== scheduler) return
+    return dispatcher.attachInspection(fiber, service)
+  }
+
+  private attachInspection(fiber: Fiber.Fiber<any, any>, service: Inspection.Inspection): (() => void) | undefined {
+    if (this.#inspection !== undefined) return
+    const inspection: DispatcherInspection = {
+      fiber,
+      frames: [],
+      unregister: constVoid
+    }
+    this.#inspection = inspection
+    inspection.unregister = service.register(this, "Scheduler.MixedDispatcher", () => ({
+      scheduler: this.scheduler,
+      executionMode: this.scheduler.executionMode,
+      setImmediate: this.setImmediate,
+      afterScheduled: this.afterScheduled,
+      running: this.running,
+      buckets: this.tasks.buckets,
+      frames: inspection.frames.map((read) => read()),
+      fiber: inspection.fiber
+    }))
+    return () => {
+      inspection.fiber = undefined
+      this.retireInspection()
+    }
+  }
+
+  private retireInspection(): void {
+    const inspection = this.#inspection
+    if (
+      inspection === undefined || inspection.fiber !== undefined || this.running !== undefined ||
+      this.tasks.buckets.length > 0 || inspection.frames.length > 0
+    ) return
+    this.#inspection = undefined
+    inspection.unregister()
   }
 
   /**
@@ -248,11 +312,20 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
    */
   runTasks() {
     const buckets = this.tasks.drain()
-    for (let i = 0; i < buckets.length; i++) {
-      const toRun = buckets[i][1]
-      for (let j = 0; j < toRun.length; j++) {
-        toRun[j]()
+    let i = 0
+    let j = 0
+    const inspection = this.#inspection
+    if (inspection !== undefined) inspection.frames.push(() => ({ buckets, i, j }))
+    try {
+      for (; i < buckets.length; i++) {
+        const toRun = buckets[i][1]
+        for (j = 0; j < toRun.length; j++) {
+          toRun[j]()
+        }
       }
+    } finally {
+      inspection?.frames.pop()
+      this.retireInspection()
     }
   }
 
@@ -267,6 +340,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
       }
       this.runTasks()
     }
+    this.retireInspection()
   }
 }
 

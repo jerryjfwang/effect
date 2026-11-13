@@ -11,7 +11,7 @@ describe("Scope observation", () => {
       const readers = new Map<object, string>()
       const inspection = Inspection.make({
         register(owner, kind) {
-          readers.set(owner, kind)
+          if (kind === "Stream.changesWith" || kind === "Scope.close") readers.set(owner, kind)
           return () => readers.delete(owner)
         }
       })
@@ -51,7 +51,7 @@ describe("Scope observation", () => {
     const readers = new Map<object, string>()
     const inspection = Inspection.make({
       register(owner, kind) {
-        readers.set(owner, kind)
+        if (kind === "Stream.changesWith" || kind === "Scope.close") readers.set(owner, kind)
         return () => readers.delete(owner)
       }
     })
@@ -144,7 +144,7 @@ describe("Scope observation", () => {
       const readers = new Map<object, string>()
       const inspection = Inspection.make({
         register(owner, kind) {
-          readers.set(owner, kind)
+          if (kind === "Stream.changesWith" || kind === "Scope.close") readers.set(owner, kind)
           return () => readers.delete(owner)
         }
       })
@@ -225,7 +225,7 @@ describe("Scope observation", () => {
       const readers = new Map<object, string>()
       const inspection = Inspection.make({
         register(owner, kind) {
-          readers.set(owner, kind)
+          if (kind === "Stream.changesWith" || kind === "Scope.close") readers.set(owner, kind)
           return () => readers.delete(owner)
         }
       })

@@ -587,6 +587,7 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     readonly creation: FiberCreation
     readonly creator: Fiber.Fiber<any, any> | undefined
     unregister: () => void
+    detachDispatcher?: (() => void) | undefined
   } | undefined
 
   // set in setContext
@@ -611,6 +612,9 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
       creation: creation ?? { site: "Unobserved" },
       creator: creation === undefined ? undefined : getCurrentFiber(),
       unregister: constVoid
+    }
+    if (this._dispatcher !== undefined && inspection.detachDispatcher === undefined) {
+      inspection.detachDispatcher = Scheduler.inspectDispatcher(this._dispatcher, this.cache.scheduler, this, service)
     }
     inspection.unregister()
     inspection.unregister = service.register(this, "Fiber", () => ({
@@ -740,6 +744,7 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     if (cache.span !== undefined || cache.stackFrame !== undefined) {
       this.cache = { ...cache, span: undefined, stackFrame: undefined }
     }
+    this.inspection?.detachDispatcher?.()
     this.inspection?.unregister()
     this.inspection = undefined
   }
@@ -875,6 +880,10 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     const root: any = (context as any).cacheRoot
     const cache: Fiber.Fiber.Cache = root._fiberCache ??= makeFiberContextCache(context)
     if (this.cache?.scheduler !== cache.scheduler) {
+      if (this.inspection !== undefined) {
+        this.inspection.detachDispatcher?.()
+        this.inspection.detachDispatcher = undefined
+      }
       this._dispatcher = undefined
     }
     this.cache = cache
