@@ -3,6 +3,75 @@ import { Effect, Exit, Fiber, Latch, Queue, Scheduler, Scope, Stream } from "eff
 import * as Inspection from "effect/Inspection"
 
 describe("Scope observation", () => {
+  it.effect("retains the first reader acquired by a finalizer factory until its cleanup completes", () =>
+    Effect.gen(function*() {
+      const scope = yield* Scope.make()
+      const entered = yield* Latch.make()
+      const release = yield* Latch.make()
+      const readers = new Map<object, string>()
+      const inspection = Inspection.make({
+        register(owner, kind) {
+          readers.set(owner, kind)
+          return () => readers.delete(owner)
+        }
+      })
+      const output: Array<ReadonlyArray<number>> = []
+      yield* Scope.addFinalizerExit(scope, () => {
+        const pull = Effect.runSync(
+          Stream.toPull(Stream.make(1, 2).pipe(Stream.changes)).pipe(
+            Scope.provide(scope),
+            Effect.provideService(Inspection.CurrentInspection, inspection)
+          )
+        )
+        return Effect.gen(function*() {
+          yield* entered.open
+          yield* release.await
+          output.push(yield* Effect.orDie(pull))
+        })
+      })
+      const saved = Scope.closeUnsafe(scope, Exit.void)!
+      assert.include(Array.from(readers.values()), "Stream.changesWith")
+      const closing = yield* Effect.uninterruptible(saved).pipe(
+        Effect.provideService(Inspection.CurrentInspection, inspection),
+        Effect.forkChild
+      )
+      yield* entered.await
+      try {
+        assert.include(Array.from(readers.values()), "Stream.changesWith")
+      } finally {
+        release.openUnsafe()
+      }
+      yield* Fiber.join(closing)
+      assert.deepStrictEqual(output, [[1, 2]])
+      assert.strictEqual(readers.size, 0)
+    }))
+
+  it("disposes a first factory reader when its cleanup is already a native Exit", () => {
+    const scope = Scope.makeUnsafe()
+    const readers = new Map<object, string>()
+    const inspection = Inspection.make({
+      register(owner, kind) {
+        readers.set(owner, kind)
+        return () => readers.delete(owner)
+      }
+    })
+    let acquired = false
+    Effect.runSync(Scope.addFinalizerExit(scope, () => {
+      Effect.runSync(
+        Stream.toPull(Stream.make(1).pipe(Stream.changes)).pipe(
+          Scope.provide(scope),
+          Effect.provideService(Inspection.CurrentInspection, inspection),
+          Effect.asVoid
+        )
+      )
+      acquired = Array.from(readers.values()).includes("Stream.changesWith")
+      return Exit.void
+    }))
+    assert.strictEqual(Scope.closeUnsafe(scope, Exit.void), Exit.void)
+    assert.strictEqual(acquired, true)
+    assert.strictEqual(readers.size, 0)
+  })
+
   it.effect("observes concurrent executions of saved cleanup separately", () =>
     Effect.gen(function*() {
       const scope = yield* Scope.make()

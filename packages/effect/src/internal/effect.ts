@@ -4050,6 +4050,9 @@ export const scopeCloseUnsafe = <A, E>(self: Scope.Scope, exit_: Exit.Exit<A, E>
     closeScopeObservers(self)
     return
   }
+  if (!internalInspection.scopeObservers.has(self)) {
+    internalInspection.scopeObservers.set(self, { disposers: new Set(), closings: new Set() })
+  }
   let cleanup: Effect.Effect<unknown>
   let single:
     | ReadonlyArray<readonly [object | undefined, (exit: Exit.Exit<any, any>) => Effect.Effect<unknown>]>
