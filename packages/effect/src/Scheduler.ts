@@ -235,6 +235,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
   private running: (() => void) | undefined = undefined
   #inspection: DispatcherInspection | undefined
   #inspectionService: Inspection.Inspection | undefined
+  /** @internal */
   readonly scheduler: MixedScheduler
   readonly setImmediate: (f: () => void) => () => void
 
@@ -245,6 +246,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
     this.setImmediate = scheduler.setImmediate
   }
 
+  /** @internal */
   static inspect(
     dispatcher: SchedulerDispatcher,
     scheduler: Scheduler,
