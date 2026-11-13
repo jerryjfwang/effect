@@ -63,7 +63,7 @@ describe("Scope observation", () => {
           const pull = yield* Stream.toPull(Stream.make(1).pipe(Stream.changes)).pipe(Scope.provide(scope))
           yield* entered.open
           yield* release.await
-          assert.deepStrictEqual(yield* pull, [1])
+          assert.deepStrictEqual(yield* Effect.orDie(pull), [1])
         })
       )
       const fiber = yield* Scope.close(scope, Exit.void).pipe(
