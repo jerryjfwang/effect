@@ -6400,7 +6400,14 @@ export const switchMap: {
     Env | Env1
   > => {
     const channel = self.pipe(
-      map(f),
+      map((input) => {
+        const capture = { input, mapper: f, channel: f(input) }
+        const selected = Object.create(ChannelProto)
+        selected.transform = (upstream: Pull.Pull<InElem1, InErr1, InDone1>, scope: Scope.Scope) =>
+          toTransform(capture.channel)(upstream, scope)
+        internalInspection.switchMapInputs.set(selected, capture)
+        return selected as typeof capture.channel
+      }),
       mergeAll({
         ...options,
         concurrency: options?.concurrency ?? 1,
@@ -6533,6 +6540,7 @@ export const mergeAll: {
         const fibers = new Map<Fiber.Fiber<any, any>, Scope.Closeable>()
         type Selected = {
           readonly channel: Channel<OutElem, OutErr1, OutDone1, InElem1, InErr1, InDone1, Env1>
+          readonly capture: { readonly input: unknown; readonly mapper: unknown; readonly channel: object } | undefined
           readonly scope: Scope.Closeable
           pull: Pull.Pull<OutElem, OutErr1, OutDone1> | undefined
         }
@@ -6626,7 +6634,12 @@ export const mergeAll: {
             const channel = pullFiber === undefined
               ? yield* pull!
               : yield* Fiber.join(pullFiber)
-            selected = { channel, scope: Scope.forkUnsafe(forkedScope), pull: undefined }
+            selected = {
+              channel,
+              capture: internalInspection.switchMapInputs.get(channel),
+              scope: Scope.forkUnsafe(forkedScope),
+              pull: undefined
+            }
             driverSite = "AcquiringChild"
             selected.pull = yield* toTransform(selected.channel)(upstream, selected.scope)
 

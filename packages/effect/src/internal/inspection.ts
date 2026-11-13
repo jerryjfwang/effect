@@ -12,6 +12,13 @@ export const switchMapSources = new WeakMap<object, {
 }>()
 
 /** @internal */
+export const switchMapInputs = new WeakMap<object, {
+  readonly input: unknown
+  readonly mapper: unknown
+  readonly channel: object
+}>()
+
+/** @internal */
 export const register = (
   scope: Scope.Scope,
   inspection: Inspection.Inspection,

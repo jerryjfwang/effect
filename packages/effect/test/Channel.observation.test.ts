@@ -3,6 +3,57 @@ import { Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Str
 import * as Inspection from "effect/Inspection"
 
 describe("Channel observation", () => {
+  it.effect("retains distinct switch inputs when the mapper reuses one channel", () =>
+    Effect.gen(function*() {
+      const entered = yield* Latch.make()
+      const closing = yield* Latch.make()
+      const release = yield* Latch.make()
+      const source = yield* Queue.unbounded<number>()
+      const scope = yield* Scope.make()
+      const inputs: Array<number> = []
+      let read: (() => any) | undefined
+      const inspection = Inspection.make({
+        register(_owner, kind, reader) {
+          if (kind === "Channel.mergeAll") read = reader
+          return () => {}
+        }
+      })
+      const original = Channel.fromTransform((_upstream, childScope) =>
+        Effect.gen(function*() {
+          yield* Scope.addFinalizer(childScope, Effect.andThen(closing.open, release.await))
+          return Effect.andThen(entered.open, Effect.never)
+        })
+      )
+      const mapper = (input: number) => {
+        inputs.push(input)
+        return original
+      }
+      yield* Channel.fromQueue(source).pipe(
+        Channel.switchMap(mapper),
+        Channel.toPull,
+        Scope.provide(scope),
+        Effect.provideService(Inspection.CurrentInspection, inspection)
+      )
+      yield* Queue.offer(source, 1)
+      yield* entered.await
+      yield* Queue.offer(source, 2)
+      yield* closing.await
+      try {
+        const state = read!()
+        const old = state.workers.get(state.retiring.fiber).selected
+        assert.deepStrictEqual(inputs, [1, 2])
+        assert.strictEqual(old.capture.input, 1)
+        assert.strictEqual(state.selected.capture.input, 2)
+        assert.strictEqual(old.capture.channel, original)
+        assert.strictEqual(state.selected.capture.channel, original)
+        assert.strictEqual(state.selected.capture.mapper, mapper)
+        assert.notStrictEqual(old.channel, state.selected.channel)
+      } finally {
+        release.openUnsafe()
+      }
+      yield* Scope.close(scope, Exit.void)
+    }))
+
   it("retains output while its bounded offer waits for a consumer", () => {
     const tasks: Array<() => void> = []
     const scheduler: Scheduler.Scheduler = {
