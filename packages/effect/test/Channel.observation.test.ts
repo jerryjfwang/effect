@@ -1,8 +1,54 @@
 import { assert, describe, it } from "@effect/vitest"
-import { Channel, Effect, Exit, MutableList, Scheduler } from "effect"
+import { Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope } from "effect"
 import * as Inspection from "effect/Inspection"
 
 describe("Channel observation", () => {
+  it.effect("retains a retiring worker and its constructed replacement through cleanup", () =>
+    Effect.gen(function*() {
+      const entered = yield* Latch.make()
+      const closing = yield* Latch.make()
+      const release = yield* Latch.make()
+      const source = yield* Queue.unbounded<Channel.Channel<number>>()
+      const scope = yield* Scope.make()
+      let read: (() => any) | undefined
+      const inspection = Inspection.make({
+        register(_owner, kind, reader) {
+          if (kind === "Channel.mergeAll") read = reader
+          return () => {
+            if (kind === "Channel.mergeAll") read = undefined
+          }
+        }
+      })
+      const first = Channel.fromTransform((_upstream, childScope) =>
+        Effect.gen(function*() {
+          yield* Scope.addFinalizer(childScope, Effect.andThen(closing.open, release.await))
+          return Effect.andThen(entered.open, Effect.never)
+        })
+      )
+      const replacement = Channel.succeed(7)
+      const pull = yield* Channel.fromQueue(source).pipe(
+        Channel.mergeAll({ concurrency: 1, switch: true }),
+        Channel.toPull,
+        Scope.provide(scope),
+        Effect.provideService(Inspection.CurrentInspection, inspection)
+      )
+      yield* Queue.offer(source, first)
+      yield* entered.await
+      yield* Queue.offer(source, replacement)
+      yield* closing.await
+      assert.isDefined(read)
+      const state = read!()
+      assert.strictEqual(state.selected.channel, replacement)
+      assert.strictEqual(state.fibers.size, 0)
+      assert.strictEqual(state.driverSite, "Interrupting")
+      assert.strictEqual(state.retiring.scope.state._tag, "Closed")
+      assert.strictEqual(state.workers.get(state.retiring.fiber).state._tag, "Closing")
+      yield* release.open
+      assert.strictEqual(yield* pull, 7)
+      yield* Scope.close(scope, Exit.void)
+      assert.isUndefined(read)
+    }))
+
   it("retains worker output at the native pre-offer yield", () => {
     const tasks: Array<() => void> = []
     const scheduler: Scheduler.Scheduler = {
