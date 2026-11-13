@@ -484,55 +484,58 @@ const asyncQueue = <A, E = never, R = never>(
   channel: object,
   kind: "Channel.callback" | "Channel.callbackArray"
 ) => {
-  let acquiredQueue: Queue.Queue<A, E | Cause.Done> | undefined
-  let setup: Effect.Effect<unknown, E, R | Scope.Scope> | undefined
-  let setupFiber: Fiber.Fiber<unknown> | undefined
-  let setupCause: Cause.Cause<E> | undefined
-  const fiber = Fiber.getCurrent()!
-  const inspection = fiber.getRef(Inspection.CurrentInspection)
-  const acquire = Queue.make<A, E | Cause.Done>({
+  type Setup = {
+    effect: Effect.Effect<unknown, E, R | Scope.Scope> | undefined
+    fiber: Fiber.Fiber<unknown> | undefined
+    cause: Cause.Cause<E> | undefined
+  }
+  const setups = new WeakMap<Queue.Queue<A, E | Cause.Done>, Setup>()
+  return Queue.make<A, E | Cause.Done>({
     capacity: options?.bufferSize,
     strategy: options?.strategy
   }).pipe(
     Effect.tap((queue) => {
-      acquiredQueue = queue
+      const setup: Setup = { effect: undefined, fiber: undefined, cause: undefined }
+      setups.set(queue, setup)
+      const fiber = Fiber.getCurrent()!
+      const inspection = fiber.getRef(Inspection.CurrentInspection)
+      if (inspection !== undefined) {
+        const context = fiber.context
+        internalInspection.register(scope, inspection, queue, kind, () => ({
+          channel,
+          callback: f,
+          scope,
+          fiber,
+          context,
+          queue,
+          setup: setup.effect,
+          setupFiber: setup.fiber,
+          setupCause: setup.cause,
+          phase: setup.fiber === undefined ?
+            (setup.effect === undefined ? "Acquiring" : "Starting") :
+            setup.fiber.pollUnsafe() === undefined
+            ? "Running"
+            : "Completed"
+        }))
+      }
       return Scope.addFinalizer(scope, Queue.shutdown(queue))
     }),
     Effect.flatMap((queue) => {
-      setup = f(queue)
-      return Scope.provide(setup, scope).pipe(
+      const setup = setups.get(queue)!
+      setup.effect = f(queue)
+      return Scope.provide(setup.effect, scope).pipe(
         Effect.catchCause((cause) => {
-          setupCause = cause
-          return Queue.failCause(queue, setupCause)
+          setup.cause = cause
+          return Queue.failCause(queue, setup.cause)
         }),
         Effect.forkIn(scope, { startImmediately: true }),
         Effect.map((fiber) => {
-          setupFiber = fiber
+          setup.fiber = fiber
           return queue
         })
       )
     })
   )
-  if (inspection !== undefined) {
-    const context = fiber.context
-    internalInspection.register(scope, inspection, acquire, kind, () => ({
-      channel,
-      callback: f,
-      scope,
-      fiber,
-      context,
-      queue: acquiredQueue,
-      setup,
-      setupFiber,
-      setupCause,
-      phase: setupFiber === undefined ?
-        (setup === undefined ? "Acquiring" : "Starting") :
-        setupFiber.pollUnsafe() === undefined
-        ? "Running"
-        : "Completed"
-    }))
-  }
-  return acquire
 }
 
 /**

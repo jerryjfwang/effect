@@ -1,8 +1,85 @@
 import { assert, describe, it } from "@effect/vitest"
-import { type Cause, Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Stream } from "effect"
+import { type Cause, Channel, Context, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Stream } from "effect"
 import * as Inspection from "effect/Inspection"
 
 describe("Channel observation", () => {
+  it("constructs a callback transform outside a Fiber and observes each later execution", () => {
+    const scope = Scope.makeUnsafe()
+    const readers = new Map<object, () => any>()
+    const inspection = Inspection.make({
+      register(owner, kind, read) {
+        if (kind === "Channel.callback") readers.set(owner, read)
+        return () => readers.delete(owner)
+      }
+    })
+    const marker = Context.Reference<number>("effect/test/CallbackAcquisition", { defaultValue: () => 0 })
+    const queues: Array<Queue.Queue<number, Cause.Done>> = []
+    const channel = Channel.callback<number>((queue) => {
+      queues.push(queue)
+      return Queue.offer(queue, queues.length)
+    })
+    const acquire = Channel.toTransform(channel)(Effect.never, scope)
+    const run = (value: number) =>
+      Effect.runSync(acquire.pipe(
+        Effect.provideService(Inspection.CurrentInspection, inspection),
+        Effect.provideService(marker, value)
+      ))
+    try {
+      const first = run(1)
+      const second = run(2)
+      assert.strictEqual(readers.size, 2)
+      const [a, b] = Array.from(readers.values(), (read) => read())
+      assert.strictEqual(a.queue, queues[0])
+      assert.strictEqual(b.queue, queues[1])
+      assert.notStrictEqual(a.queue, b.queue)
+      assert.notStrictEqual(a.setupFiber, b.setupFiber)
+      assert.strictEqual(Context.get(a.context, marker), 1)
+      assert.strictEqual(Context.get(b.context, marker), 2)
+      assert.strictEqual(Effect.runSync(first), 1)
+      assert.strictEqual(Effect.runSync(second), 2)
+    } finally {
+      Effect.runSync(Scope.close(scope, Exit.void))
+    }
+    assert.strictEqual(readers.size, 0)
+  })
+
+  it.effect("keeps concurrent callback acquisitions and captured contexts distinct", () =>
+    Effect.gen(function*() {
+      const scope = yield* Scope.make()
+      const readers = new Map<object, () => any>()
+      const inspection = Inspection.make({
+        register(owner, kind, read) {
+          if (kind === "Channel.callback") readers.set(owner, read)
+          return () => readers.delete(owner)
+        }
+      })
+      const marker = Context.Reference<number>("effect/test/ConcurrentCallbackAcquisition", { defaultValue: () => 0 })
+      let value = 0
+      const channel = Channel.callback<number>((queue) => Effect.andThen(Queue.offer(queue, ++value), Effect.never))
+      const acquire = Channel.toTransform(channel)(Effect.never, scope).pipe(
+        Effect.provideService(Inspection.CurrentInspection, inspection)
+      )
+      try {
+        const pulls = yield* Effect.all([
+          acquire.pipe(Effect.provideService(marker, 1)),
+          acquire.pipe(Effect.provideService(marker, 2))
+        ], { concurrency: 2 })
+        assert.strictEqual(readers.size, 2)
+        const [a, b] = Array.from(readers.values(), (read) => read())
+        assert.notStrictEqual(a.queue, b.queue)
+        assert.notStrictEqual(a.fiber, b.fiber)
+        assert.notStrictEqual(a.setupFiber, b.setupFiber)
+        assert.strictEqual(Context.get(a.context, marker), 1)
+        assert.strictEqual(Context.get(b.context, marker), 2)
+        assert.strictEqual(a.phase, "Running")
+        assert.strictEqual(b.phase, "Running")
+        assert.deepStrictEqual([yield* pulls[0], yield* pulls[1]], [1, 2])
+      } finally {
+        yield* Scope.close(scope, Exit.void)
+      }
+      assert.strictEqual(readers.size, 0)
+    }))
+
   it.effect("exposes the actual callback queue and setup fiber without consuming messages", () =>
     Effect.gen(function*() {
       const finish = yield* Latch.make()
