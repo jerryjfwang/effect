@@ -1,7 +1,43 @@
 import { assert, describe, it } from "@effect/vitest"
-import { Context, Effect, Exit, Fiber, Inspection, Latch, Scheduler } from "effect"
+import { Context, Effect, Exit, Fiber, Inspection, Latch, Queue, Scheduler } from "effect"
 
 describe("Scheduler observation", () => {
+  it("observes Queue work scheduled after its creating Fiber has completed", () => {
+    const tasks: Array<() => void> = []
+    const readers = new Map<object, () => any>()
+    const inspection = Inspection.make({
+      register(owner, kind, read) {
+        if (kind === "Scheduler.MixedDispatcher") readers.set(owner, read)
+        return () => readers.delete(owner)
+      }
+    })
+    const scheduler = new Scheduler.MixedScheduler("async", (task) => {
+      tasks.push(task)
+      return () => {}
+    })
+    const context = Context.make(Inspection.CurrentInspection, inspection).pipe(
+      Context.add(Scheduler.Scheduler, scheduler)
+    )
+    const created = Effect.runForkWith(context)(Queue.unbounded<number>()).pollUnsafe()!
+    assert.isTrue(Exit.isSuccess(created))
+    if (Exit.isFailure(created)) return
+    assert.strictEqual(readers.size, 0)
+    const take = Effect.runForkWith(context)(Queue.take(created.value))
+    Queue.offerUnsafe(created.value, 42)
+    try {
+      assert.strictEqual(readers.size, 1)
+      const state = Array.from(readers.values())[0]()
+      assert.strictEqual(state.fiber, undefined)
+      assert.strictEqual(state.scheduler, scheduler)
+      assert.isAbove(state.buckets.length, 0)
+    } finally {
+      while (tasks.length > 0) tasks.shift()!()
+      take.interruptUnsafe()
+    }
+    assert.deepStrictEqual(take.pollUnsafe(), Exit.succeed(42))
+    assert.strictEqual(readers.size, 0)
+  })
+
   it("leaves an unknown dispatcher visible without invoking its prototype trap", () => {
     const tasks: Array<() => void> = []
     let observed: unknown

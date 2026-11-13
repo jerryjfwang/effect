@@ -234,6 +234,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
   private tasks = new PriorityBuckets()
   private running: (() => void) | undefined = undefined
   #inspection: DispatcherInspection | undefined
+  #inspectionService: Inspection.Inspection | undefined
   readonly scheduler: MixedScheduler
   readonly setImmediate: (f: () => void) => () => void
 
@@ -257,6 +258,18 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
 
   private attachInspection(fiber: Fiber.Fiber<any, any>, service: Inspection.Inspection): (() => void) | undefined {
     if (this.#inspection !== undefined) return
+    this.#inspectionService ??= service
+    const inspection = this.activateInspection(fiber, this.#inspectionService)
+    return () => {
+      inspection.fiber = undefined
+      this.retireInspection()
+    }
+  }
+
+  private activateInspection(
+    fiber: Fiber.Fiber<any, any> | undefined,
+    service: Inspection.Inspection
+  ): DispatcherInspection {
     const inspection: DispatcherInspection = {
       fiber,
       frames: [],
@@ -273,10 +286,7 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
       frames: inspection.frames.map((read) => read()),
       fiber: inspection.fiber
     }))
-    return () => {
-      inspection.fiber = undefined
-      this.retireInspection()
-    }
+    return inspection
   }
 
   private retireInspection(): void {
@@ -294,6 +304,9 @@ class MixedSchedulerDispatcher implements SchedulerDispatcher {
    */
   scheduleTask(task: () => void, priority: number) {
     this.tasks.scheduleTask(task, priority)
+    if (this.#inspection === undefined && this.#inspectionService !== undefined) {
+      this.activateInspection(undefined, this.#inspectionService)
+    }
     if (this.running === undefined) {
       this.running = this.setImmediate(this.afterScheduled)
     }
