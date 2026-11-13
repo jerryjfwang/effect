@@ -21,8 +21,10 @@ import * as Fiber from "./Fiber.ts"
 import type * as Filter from "./Filter.ts"
 import type { LazyArg } from "./Function.ts"
 import { constant, constTrue, constVoid, dual, identity as identity_ } from "./Function.ts"
+import * as Inspection from "./Inspection.ts"
 import * as Count from "./internal/count.ts"
 import { ClockRef, endSpan, findRecoverableError, ignoreCauseLogger } from "./internal/effect.ts"
+import * as internalInspection from "./internal/inspection.ts"
 import { addSpanStackTrace } from "./internal/tracer.ts"
 import * as Iterable from "./Iterable.ts"
 import * as Latch from "./Latch.ts"
@@ -3205,8 +3207,8 @@ export const flattenArray = <
   Env
 >(
   self: Channel<ReadonlyArray<OutElem>, OutErr, OutDone, InElem, InErr, InDone, Env>
-): Channel<OutElem, OutErr, OutDone, InElem, InErr, InDone, Env> =>
-  transformPull(self, (pull) => {
+): Channel<OutElem, OutErr, OutDone, InElem, InErr, InDone, Env> => {
+  const channel = transformPull(self, (pull, scope) => {
     let array: ReadonlyArray<OutElem> | undefined
     let index = 0
     const pump = Effect.suspend(function loop(): Pull.Pull<OutElem, OutErr, OutDone> {
@@ -3231,8 +3233,25 @@ export const flattenArray = <
       }
       return Effect.succeed(next)
     })
+    const fiber = Fiber.getCurrent()!
+    const inspection = fiber.getRef(Inspection.CurrentInspection)
+    if (inspection !== undefined) {
+      const context = fiber.context
+      internalInspection.register(scope, inspection, pump, "Channel.flattenArray", () => ({
+        channel,
+        source: self,
+        pull,
+        scope,
+        fiber,
+        context,
+        array,
+        index
+      }))
+    }
     return Effect.succeed(pump)
   })
+  return channel
+}
 
 /**
  * Flattens a channel that emits `Take` values into a channel that emits the
