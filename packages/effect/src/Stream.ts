@@ -31,6 +31,7 @@ import type { TypeLambda } from "./HKT.ts"
 import * as Inspection from "./Inspection.ts"
 import * as Count from "./internal/count.ts"
 import * as internalExecutionPlan from "./internal/executionPlan.ts"
+import * as internalInspection from "./internal/inspection.ts"
 import * as internal from "./internal/stream.ts"
 import { addSpanStackTrace } from "./internal/tracer.ts"
 import * as Iterable from "./Iterable.ts"
@@ -7124,7 +7125,7 @@ export const drop: {
     const count = Count.normalize(n)
     if (count === 0) return self
     const stream = transformPull(self, (pull, scope) =>
-      Effect.suspend(() => {
+      Effect.sync(() => {
         let dropped = 0
         const pump: Pull.Pull<Arr.NonEmptyReadonlyArray<A>, E, void, R> = pull.pipe(
           Effect.flatMap((chunk) => {
@@ -7136,9 +7137,9 @@ export const drop: {
         )
         const fiber = Fiber.getCurrent()!
         const inspection = fiber.getRef(Inspection.CurrentInspection)
-        if (inspection === undefined) return Effect.succeed(pump)
+        if (inspection === undefined) return pump
         const context = fiber.context
-        const unregister = inspection.register(pump, "Stream.drop", () => ({
+        internalInspection.register(scope, inspection, pump, "Stream.drop", () => ({
           stream,
           source: self,
           pull,
@@ -7148,7 +7149,7 @@ export const drop: {
           count,
           dropped
         }))
-        return Effect.as(Scope.addFinalizer(scope, Effect.sync(unregister)), pump)
+        return pump
       }))
     return stream
   }
@@ -9774,7 +9775,7 @@ export const changesWith: {
   2,
   <A, E, R>(self: Stream<A, E, R>, f: (x: A, y: A) => boolean): Stream<A, E, R> => {
     const stream = transformPull(self, (pull, scope) =>
-      Effect.suspend(() => {
+      Effect.sync(() => {
         let first = true
         let last: A
         const pump = Effect.flatMap(pull, function loop(arr): Pull.Pull<Arr.NonEmptyReadonlyArray<A>, E> {
@@ -9796,9 +9797,9 @@ export const changesWith: {
         })
         const fiber = Fiber.getCurrent()!
         const inspection = fiber.getRef(Inspection.CurrentInspection)
-        if (inspection === undefined) return Effect.succeed(pump)
+        if (inspection === undefined) return pump
         const context = fiber.context
-        const unregister = inspection.register(pump, "Stream.changesWith", () => ({
+        internalInspection.register(scope, inspection, pump, "Stream.changesWith", () => ({
           stream,
           source: self,
           comparator: f,
@@ -9809,7 +9810,7 @@ export const changesWith: {
           first,
           last
         }))
-        return Effect.as(Scope.addFinalizer(scope, Effect.sync(unregister)), pump)
+        return pump
       }))
     return stream
   }

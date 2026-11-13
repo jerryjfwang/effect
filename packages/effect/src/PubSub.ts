@@ -1683,7 +1683,7 @@ export interface SubscriptionObservation<A> {
   readonly replay: {
     readonly owner: PubSub.ReplayWindow<A>
     readonly buffer: Readonly<ReplayBuffer<A>>
-    readonly values: ReadonlyArray<A>
+    readonly values: ReadonlyArray<A | AbsentValue>
     readonly index: number
     readonly remaining: number
     readonly slideIndex: number

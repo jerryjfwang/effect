@@ -73,7 +73,7 @@ export const make = (options: Pick<Inspection, "register">): Inspection => {
  * @category services
  * @since 4.1.3
  */
-export const CurrentInspection: Context.Reference<Inspection | undefined> = Context.Reference(
+export const CurrentInspection: Context.Reference<Inspection | undefined> = Context.Reference<Inspection | undefined>(
   "effect/Inspection",
   { defaultValue: constUndefined }
 )
