@@ -1729,6 +1729,7 @@ export interface ReplayBufferObservation<A> {
  */
 export interface UnsupportedSubscriptionObservation {
   readonly _tag: "UnsupportedSubscriptionObservation"
+  readonly reason: "Subscription" | "Storage" | "Strategy" | "ReplayWindow"
 }
 
 /**
@@ -1744,16 +1745,24 @@ export interface UnsupportedSubscriptionObservation {
 export const observeSubscriptionUnsafe = <A>(
   self: Subscription<A>
 ): Result.Result<SubscriptionObservation<A>, UnsupportedSubscriptionObservation> => {
+  if (Object.getPrototypeOf(self) !== SubscriptionImpl.prototype) {
+    return Result.fail({ _tag: "UnsupportedSubscriptionObservation", reason: "Subscription" })
+  }
   if (
-    Object.getPrototypeOf(self) !== SubscriptionImpl.prototype ||
     Object.getPrototypeOf(self.pubsub) !== UnboundedPubSub.prototype ||
     !(self.pubsub instanceof UnboundedPubSub) ||
     Object.getPrototypeOf(self.subscription) !== UnboundedPubSubSubscription.prototype ||
-    !(self.subscription instanceof UnboundedPubSubSubscription) ||
-    Object.getPrototypeOf(self.strategy) !== DroppingStrategy.prototype ||
-    (self.replayWindow !== emptyReplayWindow && Object.getPrototypeOf(self.replayWindow) !== ReplayWindowImpl.prototype)
+    !(self.subscription instanceof UnboundedPubSubSubscription)
   ) {
-    return Result.fail({ _tag: "UnsupportedSubscriptionObservation" })
+    return Result.fail({ _tag: "UnsupportedSubscriptionObservation", reason: "Storage" })
+  }
+  if (Object.getPrototypeOf(self.strategy) !== DroppingStrategy.prototype) {
+    return Result.fail({ _tag: "UnsupportedSubscriptionObservation", reason: "Strategy" })
+  }
+  if (
+    self.replayWindow !== emptyReplayWindow && Object.getPrototypeOf(self.replayWindow) !== ReplayWindowImpl.prototype
+  ) {
+    return Result.fail({ _tag: "UnsupportedSubscriptionObservation", reason: "ReplayWindow" })
   }
   const backing = self.subscription.observeUnsafe()
   const replay = self.replayWindow instanceof ReplayWindowImpl ? self.replayWindow : undefined
