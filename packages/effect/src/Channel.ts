@@ -6519,8 +6519,8 @@ export const mergeAll: {
     InErr & InErr1,
     InDone & InDone1,
     Env1 | Env
-  > =>
-    fromTransformBracket(
+  > => {
+    const channel = fromTransformBracket(
       Effect.fnUntraced(function*(upstream, scope, forkedScope) {
         const concurrencyN = concurrency === "unbounded"
           ? Number.MAX_SAFE_INTEGER
@@ -6528,22 +6528,91 @@ export const mergeAll: {
         const semaphore = switch_ ? undefined : Semaphore.makeUnsafe(concurrencyN)
         const doneLatch = yield* Latch.make(true)
         const fibers = new Map<Fiber.Fiber<any, any>, Scope.Closeable>()
-
-        const queue = yield* Queue.bounded<OutElem, OutErr | OutErr1 | Cause.Done<OutDone>>(
+        type Selected = {
+          readonly channel: Channel<OutElem, OutErr1, OutDone1, InElem1, InErr1, InDone1, Env1>
+          readonly scope: Scope.Closeable
+          pull: Pull.Pull<OutElem, OutErr1, OutDone1> | undefined
+        }
+        type ChildExit = ReturnType<typeof Pull.doneExitFromCause<OutErr1 | Cause.Done<OutDone1>>>
+        type WorkerState =
+          | { readonly _tag: "Pulling" }
+          | { readonly _tag: "Yielding" | "Offering"; readonly value: OutElem }
+          | {
+            readonly _tag: "Closing"
+            readonly cause: Cause.Cause<OutErr1 | Cause.Done<OutDone1>>
+            readonly exit: ChildExit
+          }
+          | {
+            readonly _tag: "Completing"
+            readonly exit: ChildExit
+            readonly closeExit: Exit.Exit<void>
+            readonly failure: Exit.Exit<void, Pull.ExcludeDone<OutErr1>>
+          }
+        type Worker = {
+          readonly selected: Selected
+          state: WorkerState
+        }
+        const workers = new Map<Fiber.Fiber<any, any>, Worker>()
+        let selected: Selected | undefined
+        let retiring: { readonly fiber: Fiber.Fiber<any, any>; readonly scope: Scope.Closeable } | undefined
+        let pullFiber: Fiber.Fiber<Selected["channel"], any> | undefined
+        let driver: Fiber.Fiber<boolean, never> | undefined
+        let driverSite:
+          | "Acquiring"
+          | "Pulling"
+          | "AcquiringChild"
+          | "Interrupting"
+          | "Closing"
+          | "Starting"
+          | "Completing"
+          | "Done" = "Acquiring"
+        let terminal: Cause.Cause<OutErr | Cause.Done<OutDone>> | undefined
+        let pull: Pull.Pull<Selected["channel"], OutErr, OutDone> | undefined
+        const acquisitionFiber = Fiber.getCurrent()!
+        const inspection = acquisitionFiber.getRef(Inspection.CurrentInspection)
+        const context = acquisitionFiber.context
+        let queue: Queue.Queue<OutElem, OutErr | OutErr1 | Cause.Done<OutDone>>
+        if (inspection !== undefined) {
+          internalInspection.register(forkedScope, inspection, fibers, "Channel.mergeAll", () => ({
+            channel,
+            source: channels,
+            upstream,
+            pull,
+            scope,
+            forkedScope,
+            fiber: acquisitionFiber,
+            context,
+            queue,
+            concurrency: concurrencyN,
+            switch: switch_,
+            semaphore,
+            doneLatch,
+            fibers,
+            workers,
+            selected,
+            retiring,
+            pullFiber,
+            driver,
+            driverSite,
+            terminal
+          }))
+        }
+        queue = yield* Queue.bounded<OutElem, OutErr | OutErr1 | Cause.Done<OutDone>>(
           bufferSize
         )
         yield* Scope.addFinalizer(forkedScope, Queue.shutdown(queue))
 
-        const pull = yield* toTransform(channels)(upstream, scope)
+        pull = yield* toTransform(channels)(upstream, scope)
 
-        yield* Effect.gen(function*() {
+        driver = yield* Effect.gen(function*() {
           while (true) {
-            let pullFiber: Fiber.Fiber<Pull.Success<typeof pull>, any> | undefined
+            driverSite = "Pulling"
+            pullFiber = undefined
             if (semaphore) {
               if (fibers.size < concurrencyN) {
                 yield* semaphore.take(1)
               } else {
-                pullFiber = yield* Effect.forkChild(pull)
+                pullFiber = yield* Effect.forkChild(pull!)
                 yield* Effect.raceFirst(
                   semaphore.take(1),
                   Effect.andThen(Fiber.join(pullFiber), Effect.never)
@@ -6551,59 +6620,105 @@ export const mergeAll: {
               }
             }
             const channel = pullFiber === undefined
-              ? yield* pull
+              ? yield* pull!
               : yield* Fiber.join(pullFiber)
-            const childScope = Scope.forkUnsafe(forkedScope)
-            const childPull = yield* toTransform(channel)(upstream, childScope)
+            selected = { channel, scope: Scope.forkUnsafe(forkedScope), pull: undefined }
+            driverSite = "AcquiringChild"
+            selected.pull = yield* toTransform(selected.channel)(upstream, selected.scope)
 
             while (fibers.size >= concurrencyN) {
               const [fiber, fiberScope] = Iterable.headUnsafe(fibers)
-              fibers.delete(fiber)
+              retiring = { fiber, scope: fiberScope }
+              fibers.delete(retiring.fiber)
               if (fibers.size === 0) yield* doneLatch.open
-              yield* Fiber.interrupt(fiber)
+              driverSite = "Interrupting"
+              yield* Fiber.interrupt(retiring.fiber)
               // A worker interrupted before it starts never closes its own
               // scope. Finalizer failures of replaced workers are discarded
               // either way.
-              yield* Effect.ignoreCause(Scope.close(fiberScope, Exit.interrupt()))
+              driverSite = "Closing"
+              yield* Effect.ignoreCause(Scope.close(retiring.scope, Exit.interrupt()))
+              workers.delete(retiring.fiber)
+              retiring = undefined
             }
 
-            const fiber = yield* childPull.pipe(
-              Effect.tap(() => Effect.yieldNow),
-              Effect.flatMap((value) => Queue.offer(queue, value)),
-              Effect.forever({ disableYield: true }),
+            driverSite = "Starting"
+            const worker: Worker = { selected, state: { _tag: "Pulling" } }
+            const iteration = worker.selected.pull!.pipe(
+              Effect.tap((value) => {
+                worker.state = { _tag: "Yielding", value }
+                return Effect.yieldNow
+              }),
+              Effect.flatMap(() => {
+                const pending = worker.state as Extract<WorkerState, { readonly value: OutElem }>
+                worker.state = { _tag: "Offering", value: pending.value }
+                return Queue.offer(queue, worker.state.value)
+              })
+            )
+            const fiber = yield* Effect.whileLoop({
+              while: constTrue,
+              body: constant(iteration),
+              step: () => {
+                worker.state = { _tag: "Pulling" }
+              }
+            }).pipe(
               Effect.onError(Effect.fnUntraced(function*(cause) {
-                const exit = Pull.doneExitFromCause(cause)
-                const closeExit = yield* Effect.exit(Scope.close(childScope, exit))
-                if (!fibers.has(fiber)) return
+                worker.state = { _tag: "Closing", cause, exit: Pull.doneExitFromCause(cause) }
+                const closeExit = yield* Effect.exit(Scope.close(worker.selected.scope, worker.state.exit))
+                worker.state = {
+                  _tag: "Completing",
+                  exit: worker.state.exit,
+                  closeExit,
+                  failure: Exit.asVoidAll([worker.state.exit, closeExit])
+                }
+                if (!fibers.has(fiber)) {
+                  workers.delete(fiber)
+                  return
+                }
                 // Publish usage and finalizer failures before releasing the
                 // permit or opening the latch, so the outer channel cannot
                 // complete ahead of them.
-                const failure = Exit.asVoidAll([exit, closeExit])
-                if (Exit.isFailure(failure)) yield* Queue.failCause(queue, failure.cause)
+                if (Exit.isFailure(worker.state.failure)) yield* Queue.failCause(queue, worker.state.failure.cause)
                 fibers.delete(fiber)
                 if (semaphore) yield* semaphore.release(1)
                 if (fibers.size === 0) yield* doneLatch.open
+                workers.delete(fiber)
               })),
               Effect.forkChild
             )
 
             doneLatch.closeUnsafe()
-            fibers.set(fiber, childScope)
+            fibers.set(fiber, worker.selected.scope)
+            workers.set(fiber, worker)
+            selected = undefined
           }
         }).pipe(
           Effect.catchCause((cause) => {
+            driverSite = "Completing"
+            terminal = cause
             const halt = Pull.filterDone(cause)
             if (Result.isSuccess(halt)) {
-              return doneLatch.whenOpen(Queue.failCause(queue, cause))
+              return doneLatch.whenOpen(Queue.failCause(queue, terminal))
             }
-            return Queue.failCause(queue, cause)
+            return Queue.failCause(queue, terminal)
           }),
           Effect.forkIn(forkedScope)
         )
+        if (inspection !== undefined) {
+          driver.addObserver(() => {
+            driverSite = "Done"
+            selected = undefined
+            retiring = undefined
+            pullFiber = undefined
+            terminal = undefined
+          })
+        }
 
         return Queue.take(queue)
       })
     )
+    return channel
+  }
 )
 
 /**
