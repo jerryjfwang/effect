@@ -333,6 +333,12 @@ export * as HKT from "./HKT.ts"
 export * as Inspectable from "./Inspectable.ts"
 
 /**
+ * @stability unstable
+ * @since 4.1.3
+ */
+export * as Inspection from "./Inspection.ts"
+
+/**
  * @stability stable
  * @since 2.0.0
  */
