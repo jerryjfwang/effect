@@ -26,6 +26,7 @@ import { nextPow2 } from "./Number.ts"
 import * as Option from "./Option.ts"
 import { type Pipeable, pipeArguments } from "./Pipeable.ts"
 import { hasProperty } from "./Predicate.ts"
+import * as Result from "./Result.ts"
 import * as Scope from "./Scope.ts"
 import type { Covariant, Invariant } from "./Types.ts"
 
@@ -1653,6 +1654,110 @@ export const remainingUnsafe = <A>(self: Subscription<A>): Option.Option<number>
   return Option.some(self.subscription.size() + self.replayWindow.remaining)
 }
 
+/**
+ * Native subscriber storage observed without consuming messages. References
+ * retain their native identity and must not be mutated by observers. This is
+ * diagnostic state, not a complete description of suspended reader effects.
+ *
+ * @stability unstable
+ * @category models
+ * @since 4.1.3
+ */
+export interface SubscriptionObservation<A> {
+  readonly subscription: Subscription<A>
+  readonly unread: ReadonlyArray<A>
+  readonly cursor: {
+    readonly owner: PubSub.BackingSubscription<A>
+    readonly head: Readonly<Node<A>>
+    readonly index: number
+    readonly unsubscribed: boolean
+  }
+  readonly publisher: {
+    readonly owner: PubSub.Atomic<A>
+    readonly head: Readonly<Node<A>>
+    readonly tail: Readonly<Node<A>>
+    readonly publisherIndex: number
+    readonly subscribersIndex: number
+    readonly replayBuffer: Readonly<ReplayBuffer<A>> | undefined
+  }
+  readonly replay: {
+    readonly owner: PubSub.ReplayWindow<A>
+    readonly buffer: Readonly<ReplayBuffer<A>>
+    readonly values: ReadonlyArray<A>
+    readonly index: number
+    readonly remaining: number
+    readonly slideIndex: number
+    readonly newestIndex: number
+  } | undefined
+  readonly pollers: ReadonlyArray<Deferred.Deferred<A>>
+  readonly ended: Option.Option<A>
+  readonly shutdown: boolean
+}
+
+/**
+ * Identifies storage or strategy outside the native observation contract.
+ *
+ * @stability unstable
+ * @category errors
+ * @since 4.1.3
+ */
+export interface UnsupportedSubscriptionObservation {
+  readonly _tag: "UnsupportedSubscriptionObservation"
+}
+
+/**
+ * Observes a native unbounded subscription without polling, synchronizing its
+ * replay window, or advancing its cursor. Bounded and custom implementations
+ * are refused. Replay metadata is raw; pending slides remain visible in the
+ * buffer rather than being applied by inspection.
+ *
+ * @stability unstable
+ * @category getters
+ * @since 4.1.3
+ */
+export const observeSubscriptionUnsafe = <A>(
+  self: Subscription<A>
+): Result.Result<SubscriptionObservation<A>, UnsupportedSubscriptionObservation> => {
+  if (
+    Object.getPrototypeOf(self) !== SubscriptionImpl.prototype ||
+    Object.getPrototypeOf(self.pubsub) !== UnboundedPubSub.prototype ||
+    !(self.pubsub instanceof UnboundedPubSub) ||
+    Object.getPrototypeOf(self.subscription) !== UnboundedPubSubSubscription.prototype ||
+    !(self.subscription instanceof UnboundedPubSubSubscription) ||
+    Object.getPrototypeOf(self.strategy) !== DroppingStrategy.prototype ||
+    (self.replayWindow !== emptyReplayWindow && Object.getPrototypeOf(self.replayWindow) !== ReplayWindowImpl.prototype)
+  ) {
+    return Result.fail({ _tag: "UnsupportedSubscriptionObservation" })
+  }
+  const backing = self.subscription.observeUnsafe()
+  const replay = self.replayWindow instanceof ReplayWindowImpl ? self.replayWindow : undefined
+  return Result.succeed({
+    subscription: self,
+    unread: backing.unread,
+    cursor: backing.cursor,
+    publisher: {
+      owner: self.pubsub,
+      head: self.pubsub.publisherHead,
+      tail: self.pubsub.publisherTail,
+      publisherIndex: self.pubsub.publisherIndex,
+      subscribersIndex: self.pubsub.subscribersIndex,
+      replayBuffer: self.pubsub.replayBuffer
+    },
+    replay: replay && {
+      owner: replay,
+      buffer: replay.buffer,
+      values: replay.values.slice(),
+      index: replay.index,
+      remaining: replay.remaining,
+      slideIndex: replay.slideIndex,
+      newestIndex: replay.newestIndex
+    },
+    pollers: MutableList.toArray(self.pollers),
+    ended: self.ended.current,
+    shutdown: self.shutdownFlag.current
+  })
+}
+
 // -----------------------------------------------------------------------------
 // internal
 // -----------------------------------------------------------------------------
@@ -2347,6 +2452,26 @@ class UnboundedPubSubSubscription<in out A> implements PubSub.BackingSubscriptio
     this.subscriberHead = subscriberHead
     this.subscriberIndex = subscriberIndex
     this.unsubscribed = unsubscribed
+  }
+
+  observeUnsafe(): Pick<SubscriptionObservation<A>, "cursor" | "unread"> {
+    const unread: Array<A> = []
+    if (!this.unsubscribed) {
+      let node = this.subscriberHead.next
+      while (node !== null) {
+        if (node.value !== AbsentValue) unread.push(node.value)
+        node = node.next
+      }
+    }
+    return {
+      cursor: {
+        owner: this,
+        head: this.subscriberHead,
+        index: this.subscriberIndex,
+        unsubscribed: this.unsubscribed
+      },
+      unread
+    }
   }
 
   isEmpty(): boolean {
