@@ -28,6 +28,7 @@ import type * as Filter from "./Filter.ts"
 import type { LazyArg } from "./Function.ts"
 import { constant, constTrue, constVoid, dual, identity } from "./Function.ts"
 import type { TypeLambda } from "./HKT.ts"
+import * as Inspection from "./Inspection.ts"
 import * as Count from "./internal/count.ts"
 import * as internalExecutionPlan from "./internal/executionPlan.ts"
 import * as internal from "./internal/stream.ts"
@@ -9756,12 +9757,12 @@ export const changesWith: {
   <A, E, R>(self: Stream<A, E, R>, f: (x: A, y: A) => boolean): Stream<A, E, R>
 } = dual(
   2,
-  <A, E, R>(self: Stream<A, E, R>, f: (x: A, y: A) => boolean): Stream<A, E, R> =>
-    transformPull(self, (pull, _scope) =>
-      Effect.sync(() => {
+  <A, E, R>(self: Stream<A, E, R>, f: (x: A, y: A) => boolean): Stream<A, E, R> => {
+    const stream = transformPull(self, (pull, scope) =>
+      Effect.suspend(() => {
         let first = true
         let last: A
-        return Effect.flatMap(pull, function loop(arr): Pull.Pull<Arr.NonEmptyReadonlyArray<A>, E> {
+        const pump = Effect.flatMap(pull, function loop(arr): Pull.Pull<Arr.NonEmptyReadonlyArray<A>, E> {
           const out: Array<A> = []
           let i = 0
           if (first) {
@@ -9778,7 +9779,24 @@ export const changesWith: {
           }
           return Arr.isArrayNonEmpty(out) ? Effect.succeed(out) : Effect.flatMap(pull, loop)
         })
+        const fiber = Fiber.getCurrent()!
+        const inspection = fiber.getRef(Inspection.CurrentInspection)
+        if (inspection === undefined) return Effect.succeed(pump)
+        const unregister = inspection.register(pump, "Stream.changesWith", () => ({
+          stream,
+          source: self,
+          comparator: f,
+          pull,
+          scope,
+          fiber,
+          context: fiber.context,
+          first,
+          last
+        }))
+        return Effect.as(Scope.addFinalizer(scope, Effect.sync(unregister)), pump)
       }))
+    return stream
+  }
 )
 
 /**
