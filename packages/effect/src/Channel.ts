@@ -477,23 +477,63 @@ export const DefaultChunkSize: number = 4096
 const asyncQueue = <A, E = never, R = never>(
   scope: Scope.Scope,
   f: (queue: Queue.Queue<A, E | Cause.Done>) => Effect.Effect<unknown, E, R | Scope.Scope>,
-  options?: {
+  options: {
     readonly bufferSize?: number | undefined
     readonly strategy?: "sliding" | "dropping" | "suspend" | undefined
-  }
-) =>
-  Queue.make<A, E | Cause.Done>({
+  } | undefined,
+  channel: object,
+  kind: "Channel.callback" | "Channel.callbackArray"
+) => {
+  let acquiredQueue: Queue.Queue<A, E | Cause.Done> | undefined
+  let setup: Effect.Effect<unknown, E, R | Scope.Scope> | undefined
+  let setupFiber: Fiber.Fiber<unknown> | undefined
+  let setupCause: Cause.Cause<E> | undefined
+  const fiber = Fiber.getCurrent()!
+  const inspection = fiber.getRef(Inspection.CurrentInspection)
+  const acquire = Queue.make<A, E | Cause.Done>({
     capacity: options?.bufferSize,
     strategy: options?.strategy
   }).pipe(
-    Effect.tap((queue) => Scope.addFinalizer(scope, Queue.shutdown(queue))),
-    Effect.tap((queue) =>
-      Scope.provide(f(queue), scope).pipe(
-        Effect.catchCause((cause) => Queue.failCause(queue, cause)),
-        Effect.forkIn(scope, { startImmediately: true })
+    Effect.tap((queue) => {
+      acquiredQueue = queue
+      return Scope.addFinalizer(scope, Queue.shutdown(queue))
+    }),
+    Effect.flatMap((queue) => {
+      setup = f(queue)
+      return Scope.provide(setup, scope).pipe(
+        Effect.catchCause((cause) => {
+          setupCause = cause
+          return Queue.failCause(queue, setupCause)
+        }),
+        Effect.forkIn(scope, { startImmediately: true }),
+        Effect.map((fiber) => {
+          setupFiber = fiber
+          return queue
+        })
       )
-    )
+    })
   )
+  if (inspection !== undefined) {
+    const context = fiber.context
+    internalInspection.register(scope, inspection, acquire, kind, () => ({
+      channel,
+      callback: f,
+      scope,
+      fiber,
+      context,
+      queue: acquiredQueue,
+      setup,
+      setupFiber,
+      setupCause,
+      phase: setupFiber === undefined ?
+        (setup === undefined ? "Acquiring" : "Starting") :
+        setupFiber.pollUnsafe() === undefined
+        ? "Running"
+        : "Completed"
+    }))
+  }
+  return acquire
+}
 
 /**
  * Creates a `Channel` that interacts with a callback function using a queue.
@@ -524,8 +564,12 @@ export const callback = <A, E = never, R = never>(
     readonly bufferSize?: number | undefined
     readonly strategy?: "sliding" | "dropping" | "suspend" | undefined
   }
-): Channel<A, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> =>
-  fromTransform((_, scope) => Effect.map(asyncQueue(scope, f, options), Queue.take))
+): Channel<A, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> => {
+  const channel: Channel<A, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> = fromTransform((_, scope) =>
+    Effect.map(asyncQueue(scope, f, options, channel, "Channel.callback"), Queue.take)
+  )
+  return channel
+}
 
 /**
  * Creates a `Channel` that interacts with a callback function using a queue, emitting arrays.
@@ -553,8 +597,13 @@ export const callbackArray = <A, E = never, R = never>(
     readonly bufferSize?: number | undefined
     readonly strategy?: "sliding" | "dropping" | "suspend" | undefined
   }
-): Channel<Arr.NonEmptyReadonlyArray<A>, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> =>
-  fromTransform((_, scope) => Effect.map(asyncQueue(scope, f, options), Queue.takeAll))
+): Channel<Arr.NonEmptyReadonlyArray<A>, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> => {
+  const channel: Channel<Arr.NonEmptyReadonlyArray<A>, E, void, unknown, unknown, unknown, Exclude<R, Scope.Scope>> =
+    fromTransform((_, scope) =>
+      Effect.map(asyncQueue(scope, f, options, channel, "Channel.callbackArray"), Queue.takeAll)
+    )
+  return channel
+}
 
 /**
  * Creates a `Channel` that lazily evaluates to another channel.

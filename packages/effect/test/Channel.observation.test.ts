@@ -1,8 +1,44 @@
 import { assert, describe, it } from "@effect/vitest"
-import { Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Stream } from "effect"
+import { type Cause, Channel, Effect, Exit, Latch, MutableList, Queue, Scheduler, Scope, Stream } from "effect"
 import * as Inspection from "effect/Inspection"
 
 describe("Channel observation", () => {
+  it.effect("exposes the actual callback queue and setup fiber without consuming messages", () =>
+    Effect.gen(function*() {
+      const finish = yield* Latch.make()
+      const scope = yield* Scope.make()
+      let read: (() => any) | undefined
+      const inspection = Inspection.make({
+        register(_owner, kind, reader) {
+          if (kind === "Channel.callbackArray") read = reader
+          return () => {
+            if (kind === "Channel.callbackArray") read = undefined
+          }
+        }
+      })
+      let actualQueue: Queue.Queue<number, Cause.Done> | undefined
+      const callback = Effect.fnUntraced(function*(queue: Queue.Queue<number, Cause.Done>) {
+        actualQueue = queue
+        yield* Queue.offerAll(queue, [1, 2])
+        yield* finish.await
+      })
+      const stream = Stream.callback(callback)
+      const pull = yield* Stream.toPull(stream).pipe(
+        Scope.provide(scope),
+        Effect.provideService(Inspection.CurrentInspection, inspection)
+      )
+      assert.isDefined(read)
+      assert.strictEqual(read!().queue, actualQueue)
+      assert.strictEqual(read!().callback, callback)
+      assert.strictEqual(read!().channel, stream.channel)
+      assert.isDefined(read!().setupFiber)
+      assert.isUndefined(read!().setupFiber.pollUnsafe())
+      assert.deepStrictEqual(MutableList.toArray(read!().queue.messages), [1, 2])
+      assert.deepStrictEqual(yield* pull, [1, 2])
+      yield* Scope.close(scope, Exit.void)
+      assert.isUndefined(read)
+    }))
+
   it.effect("retains distinct switch inputs when the mapper reuses one channel", () =>
     Effect.gen(function*() {
       const entered = yield* Latch.make()
@@ -32,7 +68,8 @@ describe("Channel observation", () => {
         Channel.switchMap(mapper),
         Channel.toPull,
         Scope.provide(scope),
-        Effect.provideService(Inspection.CurrentInspection, inspection)
+        Effect.provideService(Inspection.CurrentInspection, inspection),
+        Effect.asVoid
       )
       yield* Queue.offer(source, 1)
       yield* entered.await
