@@ -1,6 +1,15 @@
 import type * as Inspection from "../Inspection.ts"
 import type * as Scope from "../Scope.ts"
-import * as effect from "./effect.ts"
+
+/** @internal */
+export const scopeObservers = new WeakMap<Scope.Scope, Set<() => void>>()
+
+/** @internal */
+export const switchMapSources = new WeakMap<object, {
+  readonly source: object
+  readonly mapper: unknown
+  readonly stream?: { readonly source: object; readonly mapper: unknown }
+}>()
 
 /** @internal */
 export const register = (
@@ -11,9 +20,11 @@ export const register = (
   read: () => unknown
 ): void => {
   const unregister = inspection.register(owner, kind, read)
-  if (scope.state._tag === "Closed") {
+  let observers = scopeObservers.get(scope)
+  if (observers === undefined && scope.state._tag === "Closed") {
     unregister()
-  } else {
-    effect.scopeAddFinalizerUnsafe(scope, {}, () => effect.sync(unregister))
+    return
   }
+  if (observers === undefined) scopeObservers.set(scope, observers = new Set())
+  observers.add(unregister)
 }

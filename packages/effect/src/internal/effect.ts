@@ -86,6 +86,7 @@ import {
   Yield
 } from "./core.ts"
 import * as doNotation from "./doNotation.ts"
+import * as internalInspection from "./inspection.ts"
 import * as InternalMetric from "./metric.ts"
 import * as InternalRecord from "./record.ts"
 import {
@@ -4045,16 +4046,65 @@ export const scopeCloseUnsafe = <A, E>(self: Scope.Scope, exit_: Exit.Exit<A, E>
   if (self.parent !== undefined) {
     scopeRemoveFinalizerUnsafe(self.parent, self)
   }
-  if (state._tag === "Empty") return
+  if (state._tag === "Empty") {
+    closeScopeObservers(self)
+    return
+  }
+  const parent = getCurrentFiber()!
+  const inspection = parent.getRef(CurrentInspection)
+  if (inspection !== undefined || internalInspection.scopeObservers.has(self)) {
+    if (!internalInspection.scopeObservers.has(self)) internalInspection.scopeObservers.set(self, new Set())
+    ;(parent as FiberImpl)._stack.push(scopeCloseInspection(self))
+  }
   if (state.finalizer !== undefined) {
+    if (inspection !== undefined) {
+      const context = parent.context
+      internalInspection.register(self, inspection, self, "Scope.close", () => ({
+        scope: self,
+        exit: exit_,
+        finalizers: [[state.finalizerKey, state.finalizer]],
+        index: 0,
+        exits: [],
+        fibers: [],
+        parent,
+        context
+      }))
+    }
     return runFinalizer(state.finalizer, exit_)
   }
   const finalizers = state.finalizers!
   if (finalizers.size === 1) {
+    if (inspection !== undefined) {
+      const context = parent.context
+      internalInspection.register(self, inspection, self, "Scope.close", () => ({
+        scope: self,
+        exit: exit_,
+        finalizers: Array.from(finalizers),
+        index: 0,
+        exits: [],
+        fibers: [],
+        parent,
+        context
+      }))
+    }
     return runFinalizer(finalizers.values().next().value!, exit_)
   }
   return scopeCloseFinalizers(self, finalizers, exit_)
 }
+
+const closeScopeObservers = (scope: Scope.Scope): void => {
+  const observers = internalInspection.scopeObservers.get(scope)
+  if (observers === undefined) return
+  internalInspection.scopeObservers.delete(scope)
+  for (const unregister of observers) unregister()
+}
+
+const scopeCloseInspection: (scope: Scope.Scope) => Primitive = makePrimitive({
+  op: "ScopeCloseInspection",
+  [contAll]() {
+    closeScopeObservers(this[args])
+  }
+})
 
 const runFinalizer = (
   finalizer: (exit: Exit.Exit<any, any>) => Effect.Effect<unknown>,
@@ -4086,16 +4136,19 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
   const parent = getCurrentFiber()!
   let index = arr.length - 1
   const inspection = parent.getRef(CurrentInspection)
-  const unregister = inspection?.register(self, "Scope.close", () => ({
-    scope: self,
-    exit: exit_,
-    finalizers: arr,
-    index,
-    exits,
-    fibers,
-    parent,
-    context: parent.context
-  }))
+  const context = parent.context
+  if (inspection !== undefined) {
+    internalInspection.register(self, inspection, self, "Scope.close", () => ({
+      scope: self,
+      exit: exit_,
+      finalizers: arr,
+      index,
+      exits,
+      fibers,
+      parent,
+      context
+    }))
+  }
   for (; index >= 0; index--) {
     const [key, finalizer] = arr[index]
     if (self.strategy === "sequential") {
@@ -4109,7 +4162,6 @@ const scopeCloseFinalizers = fnUntraced(function*<A, E>(
   if (fibers.length > 0) {
     exits = yield* fiberAwaitAll(fibers)
   }
-  unregister?.()
   return yield* exitAsVoidAll(exits)
 })
 
