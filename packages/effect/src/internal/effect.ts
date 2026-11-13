@@ -14,7 +14,7 @@ import type { LazyArg } from "../Function.ts"
 import { constant, constFalse, constTrue, constUndefined, constVoid, dual, identity } from "../Function.ts"
 import * as Hash from "../Hash.ts"
 import { toJson, toStringUnknown } from "../Inspectable.ts"
-import { CurrentInspection } from "../Inspection.ts"
+import { CurrentInspection, type Inspection } from "../Inspection.ts"
 import * as Iterable from "../Iterable.ts"
 import type * as _Latch from "../Latch.ts"
 import type * as Logger from "../Logger.ts"
@@ -519,11 +519,31 @@ const captureAsyncContext = (): AsyncContext | undefined =>
 /** @internal */
 export const getCurrentFiber = (): Fiber.Fiber<any, any> | undefined => (globalThis as any)[currentFiberTypeId]
 
+type FiberCreation =
+  | { readonly site: "Unobserved" }
+  | { readonly site: "runForkWith"; readonly initialEffect: object; readonly options: Effect.RunOptions | undefined }
+  | {
+    readonly site: "forkUnsafe"
+    readonly parent: Fiber.Fiber<any, any>
+    readonly initialEffect: object
+    readonly immediate: boolean
+    readonly daemon: boolean
+    readonly uninterruptible: boolean | "inherit"
+  }
+  | {
+    readonly site: "forkIn.closed"
+    readonly parent: Fiber.Fiber<any, any>
+    readonly scope: Scope.Scope
+    readonly initialEffect: object
+  }
+  | { readonly site: "cached"; readonly parent: Fiber.Fiber<any, any>; readonly initialEffect: object }
+
 /** @internal */
 export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
   constructor(
     context: Context.Context<never>,
-    interruptible: boolean = true
+    interruptible: boolean = true,
+    creation?: FiberCreation
   ) {
     this.setContext(context)
     this.id = ++fiberIdStore.id
@@ -541,6 +561,7 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     this._parent = undefined
     this._asyncContext = undefined
     this.cache.runtimeMetrics?.recordFiberStart(this.context)
+    this.refreshInspection(creation)
   }
 
   get [FiberTypeId](): Fiber.Fiber.Variance<A, E> {
@@ -561,6 +582,12 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
   declare _deferredInterrupt: boolean
   declare _parent: FiberImpl<any, any> | undefined
   declare _asyncContext: AsyncContext | undefined
+  declare private inspection: {
+    readonly service: Inspection
+    readonly creation: FiberCreation
+    readonly creator: Fiber.Fiber<any, any> | undefined
+    unregister: () => void
+  } | undefined
 
   // set in setContext
   declare context: Context.Context<never>
@@ -568,7 +595,49 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
 
   declare _dispatcher: Scheduler.SchedulerDispatcher | undefined
   get currentDispatcher(): Scheduler.SchedulerDispatcher {
-    return this._dispatcher ??= this.cache.scheduler.makeDispatcher()
+    if (this._dispatcher === undefined) {
+      this._dispatcher = this.cache.scheduler.makeDispatcher()
+      this.refreshInspection()
+    }
+    return this._dispatcher
+  }
+
+  private refreshInspection(creation?: FiberCreation): void {
+    if (this._stack === undefined || this._exit !== undefined) return
+    const service = this.inspection?.service ?? this.getRef(CurrentInspection)
+    if (service === undefined) return
+    const inspection = this.inspection ??= {
+      service,
+      creation: creation ?? { site: "Unobserved" },
+      creator: creation === undefined ? undefined : getCurrentFiber(),
+      unregister: constVoid
+    }
+    inspection.unregister()
+    inspection.unregister = service.register(this, "Fiber", () => ({
+      fiber: this,
+      creation: inspection.creation,
+      creator: inspection.creator,
+      context: this.context,
+      currentInspection: this.getRef(CurrentInspection),
+      scheduler: this.cache.scheduler,
+      tracerContext: this.cache.tracerContext,
+      maxOpsBeforeYield: this.cache.maxOpsBeforeYield,
+      preventYield: this.cache.preventYield,
+      dispatcher: this._dispatcher,
+      running: this._running,
+      autoYielded: this._autoYielded,
+      yielded: this._yielded,
+      currentOpCount: this.currentOpCount,
+      stack: this._stack,
+      children: this._children,
+      parent: this._parent,
+      exit: this._exit,
+      interruptedCause: this._interruptedCause,
+      deferredInterrupt: this._deferredInterrupt,
+      interruptible: this.interruptible,
+      observers: this._observers,
+      asyncContext: this._asyncContext
+    }))
   }
 
   getRef<X>(ref: Context.Reference<X>): X {
@@ -671,6 +740,8 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     if (cache.span !== undefined || cache.stackFrame !== undefined) {
       this.cache = { ...cache, span: undefined, stackFrame: undefined }
     }
+    this.inspection?.unregister()
+    this.inspection = undefined
   }
   runLoop(effect: Primitive): Exit.Exit<A, E> | Yield {
     const prevFiber = (globalThis as any)[currentFiberTypeId]
@@ -794,7 +865,10 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
     this.context = context
     // Every key cached below opts in to Context caching, so contexts related
     // only by non-caching adds cannot have changed any of them
-    if (previous !== undefined && Context.hasSameCache(previous, context)) return
+    if (previous !== undefined && Context.hasSameCache(previous, context)) {
+      if (previous !== context) this.refreshInspection()
+      return
+    }
     // Contexts sharing a cacheRoot resolve every cached key identically, so
     // the derived cache object is computed once per root and shared by all
     // fibers running with that root (forked fibers reuse the parent's).
@@ -804,6 +878,7 @@ export class FiberImpl<A = any, E = any> implements Fiber.Fiber<A, E> {
       this._dispatcher = undefined
     }
     this.cache = cache
+    if (previous !== context) this.refreshInspection()
   }
   get currentSpanLocal(): Tracer.Span | undefined {
     const span = this.cache.span
@@ -4667,7 +4742,19 @@ const makeCachedUnsafe = <A, E, R>(
       }
       exit = undefined
       const clock = fiber.getRef(ClockRef)
-      const run: CachedRun<A, E> = { fiber: new FiberImpl(fiber.context), awaiters: 0, done: false }
+      const run: CachedRun<A, E> = {
+        fiber: new FiberImpl(
+          fiber.context,
+          true,
+          fiber.getRef(CurrentInspection) === undefined ? undefined : {
+            site: "cached",
+            parent: fiber,
+            initialEffect: self
+          }
+        ),
+        awaiters: 0,
+        done: false
+      }
       current = run
       // Join before evaluating, which may synchronously re-enter and interrupt other awaiters.
       const joined = join(fiber, run)
@@ -5691,7 +5778,18 @@ export const forkUnsafe = <FA, FE, A, E, R>(
 ): FiberImpl<A, E> => {
   const parentRuntime = parent as FiberImpl<FA, FE>
   const interruptible = uninterruptible === "inherit" ? parentRuntime.interruptible : !uninterruptible
-  const child = new FiberImpl<A, E>(parentRuntime.context, interruptible)
+  const child = new FiberImpl<A, E>(
+    parentRuntime.context,
+    interruptible,
+    parentRuntime.getRef(CurrentInspection) === undefined ? undefined : {
+      site: "forkUnsafe",
+      parent,
+      initialEffect: effect,
+      immediate,
+      daemon,
+      uninterruptible
+    }
+  )
   if (!daemon) {
     parentRuntime.children().add(child)
     child._parent = parentRuntime
@@ -5795,7 +5893,16 @@ export const forkIn: {
     withFiber((parent) => {
       // A closed scope gets an unstarted fiber, which is interrupted below
       const fiber = scope.state._tag === "Closed"
-        ? new FiberImpl<A, E>(parent.context)
+        ? new FiberImpl<A, E>(
+          parent.context,
+          true,
+          parent.getRef(CurrentInspection) === undefined ? undefined : {
+            site: "forkIn.closed",
+            parent,
+            scope,
+            initialEffect: self
+          }
+        )
         : forkUnsafe(parent, self, options?.startImmediately, true, options?.uninterruptible)
       if (!(fiber as FiberImpl<any, any>)._exit) {
         if (scope.state._tag !== "Closed") {
@@ -5848,7 +5955,10 @@ export const runForkWith = <R>(context: Context.Context<R>) =>
 ): Fiber.Fiber<A, E> => {
   const fiber = new FiberImpl<A, E>(
     options?.scheduler ? Context.add(context, Scheduler.Scheduler, options.scheduler) : context,
-    options?.uninterruptible !== true
+    options?.uninterruptible !== true,
+    Context.get(context, CurrentInspection) === undefined
+      ? undefined
+      : { site: "runForkWith", initialEffect: effect, options }
   )
   fiber.evaluate(effect as any)
   if (fiber._exit) return fiber
