@@ -74,7 +74,7 @@ describe("Scheduler observation", () => {
     const fiber = Effect.runForkWith(context)(Effect.yieldNow)
     while (tasks.length > 0) tasks.shift()!()
     assert.deepStrictEqual(fiber.pollUnsafe(), Exit.void)
-    assert.strictEqual(observed, dispatcher)
+    assert.strictEqual(observed === dispatcher, true)
     assert.strictEqual(registeredNative, false)
     assert.strictEqual(probes, 0)
   })
